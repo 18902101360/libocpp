@@ -64,7 +64,7 @@ typedef struct {
     int reset_hits;
 } sink_t;
 
-static sink_t g_sink_a, g_sink_b;
+static sink_t g_sink[3];
 
 static int sink_send(const void *data, size_t len, void *user) {
     sink_t *sk = (sink_t *)user;
@@ -183,92 +183,94 @@ int main(void) {
         }
     }
 
-    /* Two independent CSMS contexts: own send, pending, seq, timers, control flag. */
-    memset(&g_sink_a, 0, sizeof g_sink_a);
-    memset(&g_sink_b, 0, sizeof g_sink_b);
-    ocpp_link_t la, lb;
-    ocpp_link_init(&la, 0, sink_send, &g_sink_a, 0, 1);
-    ocpp_link_init(&lb, 1, sink_send, &g_sink_b, 2, 0);
-
-    ocpp16_session_t sa, sb;
-    ocpp16_handlers_t ha, hb;
-    memset(&ha, 0, sizeof ha);
-    memset(&hb, 0, sizeof hb);
-    ha.reset_req = reset_count;
-    ha.user = &g_sink_a;
-    hb.reset_req = reset_count;
-    hb.user = &g_sink_b;
-    ocpp16_session_init(&sa, &ha, &la);
-    ocpp16_session_init(&sb, &hb, &lb);
-
-    if (ocpp16_session_send_boot_notification(&sa, &boot) != OCPP_OK) {
-        fail("multi a boot send");
-    }
-    if (strstr(g_sink_a.tx, "BootNotification") == NULL || strstr(g_sink_b.tx, "BootNotification") != NULL) {
-        fail("multi boot routed to A only");
-    }
-    if (ocpp16_session_send_boot_notification(&sb, &boot) != OCPP_OK) {
-        fail("multi b boot send");
-    }
-    if (strstr(g_sink_b.tx, "BootNotification") == NULL) {
-        fail("multi b boot missing");
+    /* Three independent CSMS contexts: own send, pending, seq, timers, control flag. */
+    memset(g_sink, 0, sizeof g_sink);
+    ocpp_link_t link[3];
+    ocpp16_session_t sess[3];
+    ocpp16_handlers_t hh[3];
+    const int accept[3] = {1, 0, 0};
+    memset(hh, 0, sizeof hh);
+    for (int i = 0; i < 3; i++) {
+        ocpp_link_init(&link[i], i, sink_send, &g_sink[i], i, accept[i]);
+        hh[i].reset_req = reset_count;
+        hh[i].user = &g_sink[i];
+        ocpp16_session_init(&sess[i], &hh[i], &link[i]);
     }
 
-    ocpp_rpc_msg_t ma, mb;
-    ocpp_rpc_unpack(g_sink_a.tx, strlen(g_sink_a.tx), &ma);
-    ocpp_rpc_unpack(g_sink_b.tx, strlen(g_sink_b.tx), &mb);
-    if (strcmp(ma.unique_id, mb.unique_id) != 0) {
-        fail("multi independent seq should both start at 1");
+    if (ocpp16_session_send_boot_notification(&sess[0], &boot) != OCPP_OK) {
+        fail("multi 0 boot send");
+    }
+    if (strstr(g_sink[0].tx, "BootNotification") == NULL || g_sink[1].tx[0] || g_sink[2].tx[0]) {
+        fail("multi boot routed to 0 only");
+    }
+    for (int i = 1; i < 3; i++) {
+        if (ocpp16_session_send_boot_notification(&sess[i], &boot) != OCPP_OK ||
+            strstr(g_sink[i].tx, "BootNotification") == NULL) {
+            fail("multi boot send");
+        }
+    }
+
+    ocpp_rpc_msg_t mu[3];
+    for (int i = 0; i < 3; i++) {
+        ocpp_rpc_unpack(g_sink[i].tx, strlen(g_sink[i].tx), &mu[i]);
+    }
+    if (strcmp(mu[0].unique_id, mu[1].unique_id) != 0 || strcmp(mu[0].unique_id, mu[2].unique_id) != 0) {
+        fail("multi independent seq should all start at 1");
     }
 
     bconf.interval = 1;
     ocpp16_boot_notification_conf_encode(&bconf, pbuf, sizeof pbuf);
-    ocpp_rpc_pack_callresult(ma.unique_id, pbuf, frame, sizeof frame);
-    if (ocpp16_session_rx(&sa, frame, strlen(frame)) != OCPP_OK || !sa.registered || sb.registered) {
+    ocpp_rpc_pack_callresult(mu[0].unique_id, pbuf, frame, sizeof frame);
+    if (ocpp16_session_rx(&sess[0], frame, strlen(frame)) != OCPP_OK || !sess[0].registered ||
+        sess[1].registered || sess[2].registered) {
         fail("multi boot conf isolated");
     }
-    ocpp_rpc_pack_callresult(mb.unique_id, pbuf, frame, sizeof frame);
-    if (ocpp16_session_rx(&sb, frame, strlen(frame)) != OCPP_OK || !sb.registered) {
-        fail("multi b boot conf");
+    for (int i = 1; i < 3; i++) {
+        ocpp_rpc_pack_callresult(mu[i].unique_id, pbuf, frame, sizeof frame);
+        if (ocpp16_session_rx(&sess[i], frame, strlen(frame)) != OCPP_OK || !sess[i].registered) {
+            fail("multi boot conf");
+        }
     }
 
-    g_sink_a.tx[0] = 0;
-    g_sink_b.tx[0] = 0;
-    ocpp_port_timer_tick(1000);
-    if (strstr(g_sink_a.tx, "Heartbeat") == NULL) {
-        fail("multi a heartbeat timer");
+    for (int i = 0; i < 3; i++) {
+        g_sink[i].tx[0] = 0;
     }
-    if (strstr(g_sink_b.tx, "Heartbeat") == NULL) {
-        fail("multi b heartbeat timer");
+    ocpp_port_timer_tick(1000);
+    for (int i = 0; i < 3; i++) {
+        if (strstr(g_sink[i].tx, "Heartbeat") == NULL) {
+            fail("multi heartbeat timer");
+        }
     }
 
     ocpp16_reset_req_encode(&rreq, pbuf, sizeof pbuf);
-    ocpp_rpc_pack_call("csms-a", "Reset", pbuf, frame, sizeof frame);
-    if (ocpp16_session_rx(&sa, frame, strlen(frame)) != OCPP_OK || g_sink_a.reset_hits != 1) {
+    ocpp_rpc_pack_call("csms-0", "Reset", pbuf, frame, sizeof frame);
+    if (ocpp16_session_rx(&sess[0], frame, strlen(frame)) != OCPP_OK || g_sink[0].reset_hits != 1) {
         fail("multi primary reset");
     }
-    ocpp_rpc_unpack(g_sink_a.tx, strlen(g_sink_a.tx), &ma);
-    if (ma.type != OCPP_RPC_CALLRESULT) {
+    ocpp_rpc_unpack(g_sink[0].tx, strlen(g_sink[0].tx), &mu[0]);
+    if (mu[0].type != OCPP_RPC_CALLRESULT) {
         fail("multi primary reset result");
     }
-    ocpp_rpc_pack_call("csms-b", "Reset", pbuf, frame, sizeof frame);
-    if (ocpp16_session_rx(&sb, frame, strlen(frame)) != OCPP_OK || g_sink_b.reset_hits != 0) {
-        fail("multi telemetry reset must not run handler");
-    }
-    ocpp_rpc_unpack(g_sink_b.tx, strlen(g_sink_b.tx), &mb);
-    if (mb.type != OCPP_RPC_CALLERROR) {
-        fail("multi telemetry reset CallError");
+    for (int i = 1; i < 3; i++) {
+        ocpp_rpc_pack_call("csms-x", "Reset", pbuf, frame, sizeof frame);
+        if (ocpp16_session_rx(&sess[i], frame, strlen(frame)) != OCPP_OK || g_sink[i].reset_hits != 0) {
+            fail("multi telemetry reset must not run handler");
+        }
+        ocpp_rpc_unpack(g_sink[i].tx, strlen(g_sink[i].tx), &mu[i]);
+        if (mu[i].type != OCPP_RPC_CALLERROR) {
+            fail("multi telemetry reset CallError");
+        }
     }
 
     ocpp16_get_configuration_req_t greq;
     ocpp16_get_configuration_req_example(&greq);
     ocpp16_get_configuration_req_encode(&greq, pbuf, sizeof pbuf);
-    ocpp_rpc_pack_call("csms-b", "GetConfiguration", pbuf, frame, sizeof frame);
-    if (ocpp16_session_rx(&sb, frame, strlen(frame)) != OCPP_OK) {
+    ocpp_rpc_pack_call("csms-2", "GetConfiguration", pbuf, frame, sizeof frame);
+    if (ocpp16_session_rx(&sess[2], frame, strlen(frame)) != OCPP_OK) {
         fail("multi telemetry get config");
     }
-    ocpp_rpc_unpack(g_sink_b.tx, strlen(g_sink_b.tx), &mb);
-    if (mb.type != OCPP_RPC_CALLRESULT) {
+    ocpp_rpc_unpack(g_sink[2].tx, strlen(g_sink[2].tx), &mu[2]);
+    if (mu[2].type != OCPP_RPC_CALLRESULT) {
         fail("multi telemetry get config result");
     }
 
@@ -276,6 +278,6 @@ int main(void) {
         fprintf(stderr, "%d failures\n", g_fail);
         return 1;
     }
-    printf("ocpp1.6: 39 message req/conf codecs + boot/reset + multi-context session OK\n");
+    printf("ocpp1.6: 39 message req/conf codecs + boot/reset + 3-context session OK\n");
     return 0;
 }

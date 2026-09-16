@@ -21,6 +21,7 @@ extern "C" {
 #define OCPP_PORT_TIMER_MAX 16
 #endif
 
+/* Single-link defaults. For N CSMS, assign unique ids yourself (e.g. heartbeat = i). */
 #define OCPP_PORT_TIMER_HEARTBEAT 0
 #define OCPP_PORT_TIMER_BOOT_RETRY 1
 #define OCPP_PORT_TIMER_CALL 2

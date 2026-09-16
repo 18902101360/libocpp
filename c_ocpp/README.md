@@ -23,44 +23,49 @@ WS[i] rx  -->  session[i] (layer 2)  -->  RPC pack/unpack (layer 1)  -->  sessio
 
 Each OCPP action is `ocpp16/messages/<name>.c/.h` or `ocpp201/messages/<name>.c/.h`. Structs use **fixed buffers**. Application data never uses `malloc`.
 
-## Multi-link (two operators)
+## Multi-link (N operators, e.g. 3)
 
-Firmware owns the sockets. The library never shares a global send among sessions.
+There is no dual-only type. 2, 3, or N is `session[N]` + `link[N]` + N WebSockets. Typical 3-way policy: one control CSMS, two telemetry-only.
 
 ```c
-ocpp16_session_t ctx[2]; /* BSS, not stack — each has 2+4 KiB frame buffers */
+#define OCPP_CSMS_N 3
+ocpp16_session_t ctx[OCPP_CSMS_N]; /* BSS — each ~6 KiB (payload+frame) */
 
-static int ws0_send(const void *data, size_t len, void *user);
-static int ws1_send(const void *data, size_t len, void *user);
+static int ws_send(const void *data, size_t len, void *user); /* user = &ws[i] */
 
 void charger_ocpp_start(void) {
     ocpp_port_init();
-
-    ocpp_link_t primary, telemetry;
-    ocpp_link_init(&primary, 0, ws0_send, &ws[0], /*heartbeat_timer*/ 0, /*accept_control*/ 1);
-    ocpp_link_init(&telemetry, 1, ws1_send, &ws[1], /*heartbeat_timer*/ 2, /*accept_control*/ 0);
-
     ocpp16_handlers_t h = {0};
     h.reset_req = my_reset;
     h.boot_notification_conf = my_boot_conf;
-    ocpp16_session_init(&ctx[0], &h, &primary);
-    ocpp16_session_init(&ctx[1], &h, &telemetry);
 
+    ocpp_link_t link[OCPP_CSMS_N];
+    const int accept_control[OCPP_CSMS_N] = {1, 0, 0}; /* only CSMS 0 may Reset/RemoteStart */
     ocpp16_boot_notification_req_t boot;
     ocpp16_boot_notification_req_example(&boot);
-    ocpp16_session_send_boot_notification(&ctx[0], &boot);
-    ocpp16_session_send_boot_notification(&ctx[1], &boot);
+
+    for (int i = 0; i < OCPP_CSMS_N; i++) {
+        ocpp_link_init(&link[i], i, ws_send, &ws[i], /*heartbeat_timer*/ i, accept_control[i]);
+        ocpp16_session_init(&ctx[i], &h, &link[i]);
+        ocpp16_session_send_boot_notification(&ctx[i], &boot);
+    }
 }
 
-/* WS text on socket i: */
 void on_ws_text(int i, const char *data, size_t len) {
     ocpp16_session_rx(&ctx[i], data, len);
 }
+
+void fanout_status(const ocpp16_status_notification_req_t *req) {
+    for (int i = 0; i < OCPP_CSMS_N; i++) {
+        ocpp16_session_send_status_notification(&ctx[i], req);
+    }
+}
 ```
 
-- **Timer ids** must be unique across all contexts (`0 .. OCPP_PORT_TIMER_MAX-1`, default 16).
-- **`accept_control=0`**: Reset / RemoteStart / SetChargingProfile / … reply `CallError` `SecurityError` and do not run handlers. Queries such as `GetConfiguration` still answer. Firmware chooses who is primary; failover is `ocpp16_session_bind()` with a new `accept_control`.
-- **Telemetry fan-out** (StatusNotification, MeterValues, Heartbeat): firmware calls `ocpp16_session_send_*` on every context it wants to notify.
+- **Timer ids** must be unique across all contexts (`0 .. OCPP_PORT_TIMER_MAX-1`, default 16). With 3 links, heartbeat timers `0,1,2` are enough; do not reuse `OCPP_PORT_TIMER_HEARTBEAT` on every session.
+- **RAM**: `N * sizeof(ocpp16_session_t)` plus one shared arena. Raise `OCPP_PORT_TIMER_MAX` if you also need boot-retry/call timers per link (`i*3+0` heartbeat, `i*3+1` retry, …).
+- **`accept_control=0`**: Reset / RemoteStart / SetChargingProfile / … reply `CallError` `SecurityError` and do not run handlers. Queries such as `GetConfiguration` still answer. Failover: `ocpp16_session_bind()` flipping which index has `accept_control=1`.
+- **Telemetry fan-out**: firmware loops `send_*` over the contexts that should see the event.
 - Single-link bring-up can still use `ocpp_port_set_send()` and `session_init(s, h, NULL)`.
 
 Put `ocpp16_session_t` in BSS. Override sizes: `OCPP_PORT_ARENA_SIZE`, `OCPP_PAYLOAD_MAX`, `OCPP_FRAME_MAX`, `OCPP_PORT_TIMER_MAX`.
@@ -84,4 +89,4 @@ cmake --build c_ocpp/build
 ctest --test-dir c_ocpp/build --output-on-failure
 ```
 
-Codecs round-trip every Request/Confirmation. Session tests cover BootNotification, Reset, and two concurrent contexts (isolated send/pending/timers; telemetry link rejects control).
+Codecs round-trip every Request/Confirmation. Session tests cover BootNotification, Reset, and three concurrent contexts (isolated send/pending/timers; only the control link accepts Reset).
