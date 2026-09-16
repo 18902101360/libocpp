@@ -33,7 +33,7 @@ static int on_reset(const ocpp201_reset_req_t *req, ocpp201_reset_conf_t *conf, 
 }
 
 typedef struct { char tx[OCPP_FRAME_MAX]; int reset_hits; } sink_t;
-static sink_t g_sink_a, g_sink_b;
+static sink_t g_sink[3];
 static int sink_send(const void *data, size_t len, void *user) {
     sink_t *sk = user;
     if (len >= sizeof sk->tx) return -1;
@@ -120,7 +120,7 @@ int main(void) {
     ocpp_rpc_msg_t msg;
     if (ocpp_rpc_unpack(g_tx, strlen(g_tx), &msg) != OCPP_OK) fail("unpack boot");
     ocpp201_boot_notification_conf_t bc; ocpp201_boot_notification_conf_example(&bc);
-    char pbuf[512]; ocpp201_boot_notification_conf_encode(&bc, pbuf, sizeof pbuf);
+    char pbuf[OCPP_PAYLOAD_MAX]; ocpp201_boot_notification_conf_encode(&bc, pbuf, sizeof pbuf);
     char frame[OCPP_FRAME_MAX]; ocpp_rpc_pack_callresult(msg.unique_id, pbuf, frame, sizeof frame);
     if (ocpp201_session_rx(&s, frame, strlen(frame)) != OCPP_OK || !g_boot_ok) fail("boot conf");
 
@@ -130,29 +130,64 @@ int main(void) {
     if (ocpp201_session_rx(&s, frame, strlen(frame)) != OCPP_OK) fail("reset rx");
     if (ocpp_rpc_unpack(g_tx, strlen(g_tx), &msg) != OCPP_OK || msg.type != OCPP_RPC_CALLRESULT) fail("reset conf");
 
-    memset(&g_sink_a, 0, sizeof g_sink_a);
-    memset(&g_sink_b, 0, sizeof g_sink_b);
-    ocpp_link_t la, lb;
-    ocpp_link_init(&la, 0, sink_send, &g_sink_a, 0, 1);
-    ocpp_link_init(&lb, 1, sink_send, &g_sink_b, 3, 0);
-    ocpp201_session_t sa, sb; ocpp201_handlers_t ha, hb;
-    memset(&ha, 0, sizeof ha); memset(&hb, 0, sizeof hb);
-    ha.reset_req = reset_count; ha.user = &g_sink_a;
-    hb.reset_req = reset_count; hb.user = &g_sink_b;
-    ocpp201_session_init(&sa, &ha, &la);
-    ocpp201_session_init(&sb, &hb, &lb);
-    if (ocpp201_session_send_boot_notification(&sa, &boot) != OCPP_OK) fail("multi a boot");
-    if (strstr(g_sink_b.tx, "BootNotification")) fail("multi boot leaked to B");
-    if (ocpp201_session_send_boot_notification(&sb, &boot) != OCPP_OK) fail("multi b boot");
+    memset(g_sink, 0, sizeof g_sink);
+    ocpp_link_t link[3];
+    ocpp201_session_t sess[3];
+    ocpp201_handlers_t hh[3];
+    const int accept[3] = {1, 0, 0};
+    memset(hh, 0, sizeof hh);
+    for (int i = 0; i < 3; i++) {
+        ocpp_link_init(&link[i], i, sink_send, &g_sink[i], i, accept[i]);
+        hh[i].reset_req = reset_count;
+        hh[i].user = &g_sink[i];
+        ocpp201_session_init(&sess[i], &hh[i], &link[i]);
+    }
+    if (ocpp201_session_send_boot_notification(&sess[0], &boot) != OCPP_OK) fail("multi 0 boot");
+    if (g_sink[1].tx[0] || g_sink[2].tx[0]) fail("multi 201 boot leaked");
+    for (int i = 1; i < 3; i++) {
+        if (ocpp201_session_send_boot_notification(&sess[i], &boot) != OCPP_OK) fail("multi boot send");
+        if (strstr(g_sink[i].tx, "BootNotification") == NULL) fail("multi boot missing");
+    }
+
+    ocpp_rpc_msg_t mu[3];
+    for (int i = 0; i < 3; i++) ocpp_rpc_unpack(g_sink[i].tx, strlen(g_sink[i].tx), &mu[i]);
+    bc.interval = 1;
+    ocpp201_boot_notification_conf_encode(&bc, pbuf, sizeof pbuf);
+    ocpp_rpc_pack_callresult(mu[0].unique_id, pbuf, frame, sizeof frame);
+    if (ocpp201_session_rx(&sess[0], frame, strlen(frame)) != OCPP_OK || !sess[0].registered ||
+        sess[1].registered || sess[2].registered) fail("multi 201 boot conf isolated");
+    for (int i = 1; i < 3; i++) {
+        ocpp_rpc_pack_callresult(mu[i].unique_id, pbuf, frame, sizeof frame);
+        if (ocpp201_session_rx(&sess[i], frame, strlen(frame)) != OCPP_OK || !sess[i].registered) fail("multi 201 boot conf");
+    }
+
+    for (int i = 0; i < 3; i++) g_sink[i].tx[0] = 0;
+    ocpp_port_timer_tick(1000);
+    for (int i = 0; i < 3; i++) {
+        if (strstr(g_sink[i].tx, "Heartbeat") == NULL) fail("multi 201 heartbeat timer");
+    }
+
     ocpp201_reset_req_encode(&rr, pbuf, sizeof pbuf);
-    ocpp_rpc_pack_call("csms-b", "Reset", pbuf, frame, sizeof frame);
-    if (ocpp201_session_rx(&sb, frame, strlen(frame)) != OCPP_OK || g_sink_b.reset_hits != 0) fail("multi 201 telemetry reset");
-    ocpp_rpc_msg_t mb; ocpp_rpc_unpack(g_sink_b.tx, strlen(g_sink_b.tx), &mb);
-    if (mb.type != OCPP_RPC_CALLERROR) fail("multi 201 telemetry CallError");
-    ocpp_rpc_pack_call("csms-a", "Reset", pbuf, frame, sizeof frame);
-    if (ocpp201_session_rx(&sa, frame, strlen(frame)) != OCPP_OK || g_sink_a.reset_hits != 1) fail("multi 201 primary reset");
+    ocpp_rpc_pack_call("csms-0", "Reset", pbuf, frame, sizeof frame);
+    if (ocpp201_session_rx(&sess[0], frame, strlen(frame)) != OCPP_OK || g_sink[0].reset_hits != 1) fail("multi 201 primary reset");
+    ocpp_rpc_unpack(g_sink[0].tx, strlen(g_sink[0].tx), &mu[0]);
+    if (mu[0].type != OCPP_RPC_CALLRESULT) fail("multi 201 primary reset result");
+    for (int i = 1; i < 3; i++) {
+        ocpp_rpc_pack_call("csms-x", "Reset", pbuf, frame, sizeof frame);
+        if (ocpp201_session_rx(&sess[i], frame, strlen(frame)) != OCPP_OK || g_sink[i].reset_hits != 0) fail("multi 201 telemetry reset");
+        ocpp_rpc_unpack(g_sink[i].tx, strlen(g_sink[i].tx), &mu[i]);
+        if (mu[i].type != OCPP_RPC_CALLERROR) fail("multi 201 telemetry CallError");
+    }
+
+    ocpp201_get_variables_req_t gv;
+    ocpp201_get_variables_req_example(&gv);
+    ocpp201_get_variables_req_encode(&gv, pbuf, sizeof pbuf);
+    ocpp_rpc_pack_call("csms-2", "GetVariables", pbuf, frame, sizeof frame);
+    if (ocpp201_session_rx(&sess[2], frame, strlen(frame)) != OCPP_OK) fail("multi 201 get variables");
+    ocpp_rpc_unpack(g_sink[2].tx, strlen(g_sink[2].tx), &mu[2]);
+    if (mu[2].type != OCPP_RPC_CALLRESULT) fail("multi 201 get variables result");
 
     if (g_fail) { fprintf(stderr, "%d failures\n", g_fail); return 1; }
-    printf("ocpp2.0.1: 64 message req/conf codecs + boot/reset + multi-context session OK\n");
+    printf("ocpp2.0.1: 64 message req/conf codecs + boot/reset + 3-context session OK\n");
     return 0;
 }

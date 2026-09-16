@@ -89,4 +89,4 @@ cmake --build c_ocpp/build
 ctest --test-dir c_ocpp/build --output-on-failure
 ```
 
-Codecs round-trip every Request/Confirmation. Session tests cover BootNotification, Reset, and three concurrent contexts (isolated send/pending/timers; only the control link accepts Reset).
+Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts (isolated send/pending/timers; only the control link accepts Reset).
