@@ -1,9 +1,13 @@
 #ifndef OCPP201_SESSION_H
 #define OCPP201_SESSION_H
 #include "messages/ocpp201_messages.h"
+#include "ocpp_port.h"
 #include "ocpp_rpc.h"
 #ifdef __cplusplus
 extern "C" {
+#endif
+#ifndef OCPP201_PENDING_MAX
+#define OCPP201_PENDING_MAX 8
 #endif
 #ifndef OCPP_PAYLOAD_MAX
 #define OCPP_PAYLOAD_MAX 2048
@@ -78,10 +82,18 @@ typedef struct ocpp201_handlers { void *user;
     void (*status_notification_conf)(const ocpp201_status_notification_conf_t *conf, void *user);
     void (*transaction_event_conf)(const ocpp201_transaction_event_conf_t *conf, void *user);
 } ocpp201_handlers_t;
-typedef struct ocpp201_session { ocpp201_handlers_t handlers; unsigned seq; int registered; int heartbeat_interval_s;
-    struct { int used; char uid[37]; char action[48]; } pending[8]; char payload[OCPP_PAYLOAD_MAX]; char frame[OCPP_FRAME_MAX];
+typedef struct ocpp201_session {
+    ocpp_link_t link;
+    ocpp201_handlers_t handlers;
+    unsigned seq;
+    int registered;
+    int heartbeat_interval_s;
+    struct { int used; char uid[37]; char action[48]; } pending[OCPP201_PENDING_MAX];
+    char payload[OCPP_PAYLOAD_MAX];
+    char frame[OCPP_FRAME_MAX];
 } ocpp201_session_t;
-void ocpp201_session_init(ocpp201_session_t *s, const ocpp201_handlers_t *h);
+void ocpp201_session_init(ocpp201_session_t *s, const ocpp201_handlers_t *h, const ocpp_link_t *link);
+void ocpp201_session_bind(ocpp201_session_t *s, const ocpp_link_t *link);
 ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len);
 ocpp_err_t ocpp201_session_call(ocpp201_session_t *s, const char *action, const char *payload_json);
 ocpp_err_t ocpp201_session_send_authorize(ocpp201_session_t *s, const ocpp201_authorize_req_t *req);

@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 #ifndef OCPP_PORT_TIMER_MAX
-#define OCPP_PORT_TIMER_MAX 8
+#define OCPP_PORT_TIMER_MAX 16
 #endif
 
 #define OCPP_PORT_TIMER_HEARTBEAT 0
@@ -27,6 +27,25 @@ extern "C" {
 
 typedef void (*ocpp_port_timer_fn)(int timer_id, void *ctx);
 typedef int (*ocpp_port_send_fn)(const void *data, size_t len, void *user);
+
+/**
+ * One CSMS connection. Firmware owns N of these and N sessions.
+ * Timer ids must be unique across all links (0 .. OCPP_PORT_TIMER_MAX-1).
+ * accept_control=0: CSMS CALLs that mutate the charger are rejected (telemetry link).
+ */
+typedef struct ocpp_link {
+    int id;
+    ocpp_port_send_fn send;
+    void *send_user;
+    int heartbeat_timer_id;
+    int accept_control;
+} ocpp_link_t;
+
+void ocpp_link_init(ocpp_link_t *link, int id, ocpp_port_send_fn send, void *user,
+                    int heartbeat_timer_id, int accept_control);
+int ocpp_link_send(const ocpp_link_t *link, const void *data, size_t len);
+/** 1 if the CSMS action would change charger state (Reset, RemoteStart, …). */
+int ocpp_action_is_control(const char *action);
 
 /** Bind cJSON to the arena allocator. Call once at startup. */
 void ocpp_port_init(void);
@@ -45,6 +64,7 @@ void ocpp_port_timer_stop(int timer_id);
 /** Host helper: advance virtual time and fire due timers. MCU may drive from SysTick. */
 void ocpp_port_timer_tick(uint32_t elapsed_ms);
 
+/** Single-link fallback when ocpp_link.send is NULL. Prefer per-session ocpp_link_t. */
 void ocpp_port_set_send(ocpp_port_send_fn fn, void *user);
 int ocpp_port_send(const void *data, size_t len);
 

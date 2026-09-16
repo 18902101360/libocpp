@@ -146,6 +146,75 @@ int ocpp_port_send(const void *data, size_t len) {
     return g_send(data, len, g_send_user);
 }
 
+void ocpp_link_init(ocpp_link_t *link, int id, ocpp_port_send_fn send, void *user,
+                    int heartbeat_timer_id, int accept_control) {
+    if (link == NULL) {
+        return;
+    }
+    link->id = id;
+    link->send = send;
+    link->send_user = user;
+    link->heartbeat_timer_id = heartbeat_timer_id;
+    link->accept_control = accept_control ? 1 : 0;
+}
+
+int ocpp_link_send(const ocpp_link_t *link, const void *data, size_t len) {
+    if (link != NULL && link->send != NULL) {
+        return link->send(data, len, link->send_user);
+    }
+    return ocpp_port_send(data, len);
+}
+
+int ocpp_action_is_control(const char *action) {
+    static const char *const k[] = {
+        "Reset",
+        "RemoteStartTransaction",
+        "RemoteStopTransaction",
+        "RequestStartTransaction",
+        "RequestStopTransaction",
+        "ChangeAvailability",
+        "ChangeConfiguration",
+        "UnlockConnector",
+        "UpdateFirmware",
+        "SignedUpdateFirmware",
+        "SetChargingProfile",
+        "ClearChargingProfile",
+        "ReserveNow",
+        "CancelReservation",
+        "SendLocalList",
+        "TriggerMessage",
+        "ExtendedTriggerMessage",
+        "GetDiagnostics",
+        "GetLog",
+        "InstallCertificate",
+        "DeleteCertificate",
+        "CertificateSigned",
+        "ClearCache",
+        "PublishFirmware",
+        "UnpublishFirmware",
+        "SetVariables",
+        "SetDisplayMessage",
+        "ClearDisplayMessage",
+        "SetMonitoringBase",
+        "SetMonitoringLevel",
+        "SetVariableMonitoring",
+        "ClearVariableMonitoring",
+        "SetNetworkProfile",
+        "CostUpdated",
+        "CustomerInformation",
+        NULL,
+    };
+    if (action == NULL) {
+        return 0;
+    }
+    for (int i = 0; k[i] != NULL; i++) {
+        if (strcmp(action, k[i]) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void ocpp_port_log(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);

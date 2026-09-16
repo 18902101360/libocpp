@@ -1,8 +1,9 @@
-/* Layer 2 session for OCPP 1.6. Transport = ocpp_port_send / ocpp16_session_rx. */
+/* Layer 2: one OCPP 1.6 CSMS context. N sessions = N independent connections. */
 #ifndef OCPP16_SESSION_H
 #define OCPP16_SESSION_H
 
 #include "messages/ocpp16_messages.h"
+#include "ocpp_port.h"
 #include "ocpp_rpc.h"
 
 #ifdef __cplusplus
@@ -65,16 +66,19 @@ typedef struct ocpp16_handlers {
 #endif
 
 typedef struct ocpp16_session {
+    ocpp_link_t link;
     ocpp16_handlers_t handlers;
     unsigned seq;
     int registered;
     int heartbeat_interval_s;
-    struct { int used; char uid[37]; char action[48]; } pending[8];
+    struct { int used; char uid[37]; char action[48]; } pending[OCPP16_PENDING_MAX];
     char payload[OCPP_PAYLOAD_MAX];
     char frame[OCPP_FRAME_MAX];
 } ocpp16_session_t;
 
-void ocpp16_session_init(ocpp16_session_t *s, const ocpp16_handlers_t *h);
+/** link may be NULL (global ocpp_port_send, timer 0, accept_control=1). */
+void ocpp16_session_init(ocpp16_session_t *s, const ocpp16_handlers_t *h, const ocpp_link_t *link);
+void ocpp16_session_bind(ocpp16_session_t *s, const ocpp_link_t *link);
 ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len);
 ocpp_err_t ocpp16_session_call(ocpp16_session_t *s, const char *action, const char *payload_json);
 ocpp_err_t ocpp16_session_send_authorize(ocpp16_session_t *s, const ocpp16_authorize_req_t *req);

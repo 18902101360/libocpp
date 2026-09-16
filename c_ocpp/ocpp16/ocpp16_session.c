@@ -12,15 +12,28 @@ static void heartbeat_timer(int id, void *ctx) {
     ocpp16_session_send_heartbeat(s, &req);
 }
 
-void ocpp16_session_init(ocpp16_session_t *s, const ocpp16_handlers_t *h) {
+void ocpp16_session_bind(ocpp16_session_t *s, const ocpp_link_t *link) {
+    if (link) {
+        s->link = *link;
+    }
+}
+
+void ocpp16_session_init(ocpp16_session_t *s, const ocpp16_handlers_t *h, const ocpp_link_t *link) {
     memset(s, 0, sizeof(*s));
     s->seq = 1;
     s->heartbeat_interval_s = 300;
+    s->link.accept_control = 1;
+    s->link.heartbeat_timer_id = OCPP_PORT_TIMER_HEARTBEAT;
     if (h) s->handlers = *h;
+    ocpp16_session_bind(s, link);
+}
+
+static int session_tx(ocpp16_session_t *s) {
+    return ocpp_link_send(&s->link, s->frame, strlen(s->frame));
 }
 
 static int pending_add(ocpp16_session_t *s, const char *uid, const char *action) {
-    for (int i = 0; i < 8; i++) if (!s->pending[i].used) {
+    for (int i = 0; i < OCPP16_PENDING_MAX; i++) if (!s->pending[i].used) {
         s->pending[i].used = 1;
         ocpp_str_copy(s->pending[i].uid, sizeof(s->pending[i].uid), uid);
         ocpp_str_copy(s->pending[i].action, sizeof(s->pending[i].action), action);
@@ -35,7 +48,7 @@ ocpp_err_t ocpp16_session_call(ocpp16_session_t *s, const char *action, const ch
     ocpp_err_t rc = ocpp_rpc_pack_call(uid, action, payload_json, s->frame, sizeof(s->frame));
     if (rc != OCPP_OK) return rc;
     if (pending_add(s, uid, action) != 0) return OCPP_ERR_OVERFLOW;
-    if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+    if (session_tx(s) != 0) return OCPP_ERR_IO;
     return OCPP_OK;
 }
 
@@ -124,6 +137,11 @@ ocpp_err_t ocpp16_session_send_signed_firmware_status_notification(ocpp16_sessio
 }
 
 static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
+    if (!s->link.accept_control && ocpp_action_is_control(msg->action)) {
+        ocpp_rpc_pack_callerror(msg->unique_id, "SecurityError", "this link does not accept control", s->frame, sizeof(s->frame));
+        session_tx(s);
+        return OCPP_OK;
+    }
     if (strcmp(msg->action, "DataTransfer") == 0) {
         ocpp16_data_transfer_req_t req; ocpp16_data_transfer_conf_t conf;
         ocpp16_data_transfer_req_from_json(msg->payload, &req);
@@ -131,12 +149,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.data_transfer_req) {
             if (s->handlers.data_transfer_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_data_transfer_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "CancelReservation") == 0) {
@@ -146,12 +164,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.cancel_reservation_req) {
             if (s->handlers.cancel_reservation_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_cancel_reservation_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "ChangeAvailability") == 0) {
@@ -161,12 +179,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.change_availability_req) {
             if (s->handlers.change_availability_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_change_availability_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "ChangeConfiguration") == 0) {
@@ -176,12 +194,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.change_configuration_req) {
             if (s->handlers.change_configuration_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_change_configuration_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "ClearCache") == 0) {
@@ -191,12 +209,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.clear_cache_req) {
             if (s->handlers.clear_cache_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_clear_cache_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "ClearChargingProfile") == 0) {
@@ -206,12 +224,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.clear_charging_profile_req) {
             if (s->handlers.clear_charging_profile_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_clear_charging_profile_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "GetCompositeSchedule") == 0) {
@@ -221,12 +239,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.get_composite_schedule_req) {
             if (s->handlers.get_composite_schedule_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_get_composite_schedule_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "GetConfiguration") == 0) {
@@ -236,12 +254,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.get_configuration_req) {
             if (s->handlers.get_configuration_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_get_configuration_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "GetDiagnostics") == 0) {
@@ -251,12 +269,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.get_diagnostics_req) {
             if (s->handlers.get_diagnostics_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_get_diagnostics_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "GetLocalListVersion") == 0) {
@@ -266,12 +284,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.get_local_list_version_req) {
             if (s->handlers.get_local_list_version_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_get_local_list_version_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "RemoteStartTransaction") == 0) {
@@ -281,12 +299,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.remote_start_transaction_req) {
             if (s->handlers.remote_start_transaction_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_remote_start_transaction_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "RemoteStopTransaction") == 0) {
@@ -296,12 +314,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.remote_stop_transaction_req) {
             if (s->handlers.remote_stop_transaction_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_remote_stop_transaction_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "ReserveNow") == 0) {
@@ -311,12 +329,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.reserve_now_req) {
             if (s->handlers.reserve_now_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_reserve_now_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "Reset") == 0) {
@@ -326,12 +344,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.reset_req) {
             if (s->handlers.reset_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_reset_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "SendLocalList") == 0) {
@@ -341,12 +359,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.send_local_list_req) {
             if (s->handlers.send_local_list_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_send_local_list_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "SetChargingProfile") == 0) {
@@ -356,12 +374,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.set_charging_profile_req) {
             if (s->handlers.set_charging_profile_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_set_charging_profile_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "TriggerMessage") == 0) {
@@ -371,12 +389,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.trigger_message_req) {
             if (s->handlers.trigger_message_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_trigger_message_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "UnlockConnector") == 0) {
@@ -386,12 +404,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.unlock_connector_req) {
             if (s->handlers.unlock_connector_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_unlock_connector_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "UpdateFirmware") == 0) {
@@ -401,12 +419,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.update_firmware_req) {
             if (s->handlers.update_firmware_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_update_firmware_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "CertificateSigned") == 0) {
@@ -416,12 +434,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.certificate_signed_req) {
             if (s->handlers.certificate_signed_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_certificate_signed_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "DeleteCertificate") == 0) {
@@ -431,12 +449,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.delete_certificate_req) {
             if (s->handlers.delete_certificate_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_delete_certificate_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "ExtendedTriggerMessage") == 0) {
@@ -446,12 +464,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.extended_trigger_message_req) {
             if (s->handlers.extended_trigger_message_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_extended_trigger_message_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "GetInstalledCertificateIds") == 0) {
@@ -461,12 +479,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.get_installed_certificate_ids_req) {
             if (s->handlers.get_installed_certificate_ids_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_get_installed_certificate_ids_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "GetLog") == 0) {
@@ -476,12 +494,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.get_log_req) {
             if (s->handlers.get_log_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_get_log_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "InstallCertificate") == 0) {
@@ -491,12 +509,12 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.install_certificate_req) {
             if (s->handlers.install_certificate_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_install_certificate_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     else if (strcmp(msg->action, "SignedUpdateFirmware") == 0) {
@@ -506,16 +524,16 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
         if (s->handlers.signed_update_firmware_req) {
             if (s->handlers.signed_update_firmware_req(&req, &conf, s->handlers.user) != 0) {
                 ocpp_rpc_pack_callerror(msg->unique_id, "InternalError", "handler", s->frame, sizeof(s->frame));
-                ocpp_port_send(s->frame, strlen(s->frame)); return OCPP_OK;
+                session_tx(s); return OCPP_OK;
             }
         }
         ocpp16_signed_update_firmware_conf_encode(&conf, s->payload, sizeof(s->payload));
         ocpp_rpc_pack_callresult(msg->unique_id, s->payload, s->frame, sizeof(s->frame));
-        if (ocpp_port_send(s->frame, strlen(s->frame)) != 0) return OCPP_ERR_IO;
+        if (session_tx(s) != 0) return OCPP_ERR_IO;
         return OCPP_OK;
     }
     ocpp_rpc_pack_callerror(msg->unique_id, "NotImplemented", msg->action, s->frame, sizeof(s->frame));
-    ocpp_port_send(s->frame, strlen(s->frame));
+    session_tx(s);
     return OCPP_OK;
 }
 
@@ -529,7 +547,9 @@ static void handle_result(ocpp16_session_t *s, const char *action, const cJSON *
         ocpp16_boot_notification_conf_t conf; ocpp16_boot_notification_conf_from_json(payload, &conf);
         s->registered = 1;
         if (conf.interval > 0) s->heartbeat_interval_s = conf.interval;
-        ocpp_port_timer_start(OCPP_PORT_TIMER_HEARTBEAT, (uint32_t)s->heartbeat_interval_s * 1000u, 1, heartbeat_timer, s);
+        if (s->link.heartbeat_timer_id >= 0) {
+            ocpp_port_timer_start(s->link.heartbeat_timer_id, (uint32_t)s->heartbeat_interval_s * 1000u, 1, heartbeat_timer, s);
+        }
         if (s->handlers.boot_notification_conf) s->handlers.boot_notification_conf(&conf, s->handlers.user);
         return;
     }
@@ -602,7 +622,7 @@ ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len)
     if (rc != OCPP_OK) return rc;
     if (msg.type == OCPP_RPC_CALL) return handle_call(s, &msg);
     if (msg.type == OCPP_RPC_CALLRESULT) {
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < OCPP16_PENDING_MAX; i++) {
             if (s->pending[i].used && strcmp(s->pending[i].uid, msg.unique_id) == 0) {
                 s->pending[i].used = 0;
                 handle_result(s, s->pending[i].action, msg.payload);
