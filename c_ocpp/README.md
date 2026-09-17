@@ -89,7 +89,7 @@ cmake --build c_ocpp/build
 ctest --test-dir c_ocpp/build --output-on-failure
 ```
 
-Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts (isolated send/pending/timers; only the control link accepts Reset).
+Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts. `test_ocpp_both` links both libraries in one binary.
 
 ## 移植与编译框架
 
@@ -134,21 +134,34 @@ OCPP 2.0.1 再加：
 - `ocpp201/ocpp201_session.c`
 - `ocpp201/messages/*.c`（含各 action、`ocpp201_types.c`、`ocpp201_messages.c`）
 
-两套可以同时链进固件（两路运营商各用一个版本），**同一条 WebSocket 只能跑一个版本**。不要把 `tests/*.c`、`c_ocpp/build/` 编进镜像。
+两套可以同时链进固件（两路运营商各用一个版本），**同一条 WebSocket 只能跑一个版本**。`port` / `layer1` / `cJSON` 只编一份（CMake 目标 `c_ocpp_core`），不要把这些 `.c` 各链两遍。不要把 `tests/*.c`、`c_ocpp/build/` 编进镜像。
+
+### 1.6 与 2.0.1 会不会文件名冲突
+
+磁盘上很多同名文件（`authorize.c` / `authorize.h`），但：
+
+- **C 符号不冲突**：函数和类型都是 `ocpp16_*` 与 `ocpp201_*`。
+- **目录不冲突**：分别在 `ocpp16/messages/` 与 `ocpp201/messages/`。
+- **同名头文件会冲突**：不要把两个 `messages/` 都加到**同一个**翻译单元的 `-I`。对外只用 `#include "ocpp16.h"` / `#include "ocpp201.h"`。索引头已写成 `ocpp16/messages/authorize.h` 这种带版本的路径。
+- **编 messages 的 .c 时**：只给这一路加对应的 `…/messages`（Keil 里按组设 Include）。
+- **链接**：`c_ocpp_core` 一份 + `c_ocpp16` + `c_ocpp201`。若把 `cJSON.c`/`ocpp_port.c` 打进两个 `.a`，会出现重复定义。
+
+同一 `.c` 里可以同时持有 `ocpp16_session_t` 和 `ocpp201_session_t`（见 `tests/test_ocpp_both.c`）。
 
 ### Include 路径
 
+全局（应用 + 两个版本一起用时）：
+
 ```
+c_ocpp
 c_ocpp/port
 c_ocpp/layer1
 c_ocpp/third_party/cjson
-# 若编 1.6：
 c_ocpp/ocpp16
-c_ocpp/ocpp16/messages
-# 若编 2.0.1：
 c_ocpp/ocpp201
-c_ocpp/ocpp201/messages
 ```
+
+**不要**把 `ocpp16/messages` 和 `ocpp201/messages` 同时放进全局 Include。只在编译该目录下 `.c` 时加自己的 `messages/`。
 
 语言：**C11**（`snprintf`、匿名不强依赖）。不要开 C++ 名修饰去编这些 `.c`。需要 `stddef.h` / `stdint.h` / `string.h` / `stdio.h`（`snprintf`）。MCU 上可把 `ocpp_port_log` 做成空函数，避免拉 `vfprintf`。
 
@@ -190,23 +203,26 @@ Host 的 `ocpp_port_now_ms` 用了 `clock_gettime`，**不能**原样链到裸�
 ```cmake
 set(C_OCPP ${CMAKE_SOURCE_DIR}/c_ocpp)
 
-add_library(c_ocpp16 STATIC
+add_library(c_ocpp_core STATIC
     ${C_OCPP}/third_party/cjson/cJSON.c
     ${C_OCPP}/layer1/ocpp_json.c
     ${C_OCPP}/layer1/ocpp_rpc.c
-    ${CMAKE_SOURCE_DIR}/port/ocpp_port_mcu.c   # 你们的移植
+    ${CMAKE_SOURCE_DIR}/port/ocpp_port_mcu.c)
+target_include_directories(c_ocpp_core PUBLIC
+    ${C_OCPP} ${C_OCPP}/port ${C_OCPP}/layer1 ${C_OCPP}/third_party/cjson)
+
+add_library(c_ocpp16 STATIC
     ${C_OCPP}/ocpp16/ocpp16_session.c
     ${C_OCPP}/ocpp16/messages/authorize.c
-    # … 其余 ocpp16/messages/*.c，或 file(GLOB) 仅 messages
+    # … 其余 ocpp16/messages/*.c
 )
-target_include_directories(c_ocpp16 PUBLIC
-    ${C_OCPP}/port ${C_OCPP}/layer1 ${C_OCPP}/third_party/cjson
-    ${C_OCPP}/ocpp16 ${C_OCPP}/ocpp16/messages)
-target_compile_definitions(c_ocpp16 PUBLIC
+target_include_directories(c_ocpp16 PUBLIC ${C_OCPP}/ocpp16
+    PRIVATE ${C_OCPP}/ocpp16/messages)
+target_link_libraries(c_ocpp16 PUBLIC c_ocpp_core)
+target_compile_definitions(c_ocpp_core PUBLIC
     OCPP_PORT_ARENA_SIZE=4096
     OCPP_PAYLOAD_MAX=1536
     OCPP_FRAME_MAX=3072)
-target_compile_features(c_ocpp16 PUBLIC c_std_11)
 ```
 
 交叉编译工具链文件示例（ARM GCC）：
@@ -238,18 +254,20 @@ ctest --test-dir c_ocpp/build --output-on-failure
 
 ```makefile
 C_OCPP := c_ocpp
-INCLUDES := -I$(C_OCPP)/port -I$(C_OCPP)/layer1 -I$(C_OCPP)/third_party/cjson \
-            -I$(C_OCPP)/ocpp16 -I$(C_OCPP)/ocpp16/messages
+INCLUDES := -I$(C_OCPP) -I$(C_OCPP)/port -I$(C_OCPP)/layer1 -I$(C_OCPP)/third_party/cjson \
+            -I$(C_OCPP)/ocpp16
+# 编译 ocpp16/messages/*.c 时再加： -I$(C_OCPP)/ocpp16/messages
+# 同时编 2.0.1 时：公共 INCLUDES 加 -I$(C_OCPP)/ocpp201，
+# 且 messages 的 -I 只加在对应那一组 .c 上，不要两套 messages 同时进全局 -I
 CFLAGS += -std=c11 -Wall -Wextra -DOCPP_PORT_ARENA_SIZE=4096
 PORT_SRC := board/ocpp_port_mcu.c
-LIB_SRC := $(C_OCPP)/third_party/cjson/cJSON.c \
-           $(C_OCPP)/layer1/ocpp_json.c $(C_OCPP)/layer1/ocpp_rpc.c \
-           $(C_OCPP)/ocpp16/ocpp16_session.c \
-           $(wildcard $(C_OCPP)/ocpp16/messages/*.c)
-# 不要加入 $(C_OCPP)/port/ocpp_port.c 和 tests/
+CORE_SRC := $(C_OCPP)/third_party/cjson/cJSON.c \
+            $(C_OCPP)/layer1/ocpp_json.c $(C_OCPP)/layer1/ocpp_rpc.c
+LIB16_SRC := $(C_OCPP)/ocpp16/ocpp16_session.c \
+             $(wildcard $(C_OCPP)/ocpp16/messages/*.c)
 ```
 
-**Keil / IAR：** 建组 `cjson` / `c_ocpp_layer1` / `c_ocpp16_msg` / `port`；把上述 `.c` 加进去；Include 与宏和上表相同；优化可开 `-Os`；确认堆不必给 cJSON（arena 是静态数组）。若 IDE 默认 C89，改为 C99/C11。
+**Keil / IAR：** 建组 `c_ocpp_core` / `c_ocpp16_msg` / `c_ocpp201_msg` / `port`。两组 messages 用**不同**的组 Include（各自的 `messages/`）。应用组不要加两个 `messages/`。
 
 ### 移植检查单
 
@@ -259,4 +277,5 @@ LIB_SRC := $(C_OCPP)/third_party/cjson/cJSON.c \
 - [ ] WS text 完整一帧再 `session_rx`（不要半包）
 - [ ] session 对象在 BSS；arena 只单线程/单任务使用
 - [ ] 子协议与库一致：`ocpp1.6` 配 `c_ocpp16`，`ocpp2.0.1` 配 `c_ocpp201`
+- [ ] 同时用 1.6 和 2.0.1 时 `cJSON`/`port`/`layer1` 只编一份；全局 Include 不含两套 `messages/`
 - [ ] 主机 `ctest` 仍通过后再切交叉编译
