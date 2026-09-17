@@ -21,7 +21,7 @@ WS[i] rx  -->  session[i] (layer 2)  -->  RPC pack/unpack (layer 1)  -->  sessio
 3. **layer1** — `[2|3|4, uniqueId, …]` string assembly; payload codec in per-message files.
 4. **layer2** — one context per CSMS.
 
-Each OCPP action is `ocpp16/messages/<name>.c/.h` or `ocpp201/messages/<name>.c/.h`. Structs use **fixed buffers**. Application data never uses `malloc`.
+Each OCPP action is `ocpp16/messages/ocpp16_<name>.c/.h` or `ocpp201/messages/ocpp201_<name>.c/.h` (version prefix so Keil object/header names do not collide). Structs use **fixed buffers**. Application data never uses `malloc`.
 
 ## Multi-link (N operators, e.g. 3)
 
@@ -138,15 +138,12 @@ OCPP 2.0.1 再加：
 
 ### 1.6 与 2.0.1 会不会文件名冲突
 
-磁盘上很多同名文件（`authorize.c` / `authorize.h`），但：
+**不会。** 消息 `.c` / `.h` 都带版本前缀，Keil 按文件名生成 `.o` 时不会把两路编成同一个 `authorize.o`：
 
-- **C 符号不冲突**：函数和类型都是 `ocpp16_*` 与 `ocpp201_*`。
-- **目录不冲突**：分别在 `ocpp16/messages/` 与 `ocpp201/messages/`。
-- **同名头文件会冲突**：不要把两个 `messages/` 都加到**同一个**翻译单元的 `-I`。对外只用 `#include "ocpp16.h"` / `#include "ocpp201.h"`。索引头已写成 `ocpp16/messages/authorize.h` 这种带版本的路径。
-- **编 messages 的 .c 时**：只给这一路加对应的 `…/messages`（Keil 里按组设 Include）。
-- **链接**：`c_ocpp_core` 一份 + `c_ocpp16` + `c_ocpp201`。若把 `cJSON.c`/`ocpp_port.c` 打进两个 `.a`，会出现重复定义。
+- `ocpp16/messages/ocpp16_authorize.c` / `ocpp16_authorize.h`
+- `ocpp201/messages/ocpp201_authorize.c` / `ocpp201_authorize.h`
 
-同一 `.c` 里可以同时持有 `ocpp16_session_t` 和 `ocpp201_session_t`（见 `tests/test_ocpp_both.c`）。
+C 符号同样是 `ocpp16_*` / `ocpp201_*`。对外仍只 `#include "ocpp16.h"` / `#include "ocpp201.h"`。`port` / `layer1` / `cJSON` 只编一份（`c_ocpp_core`）。同一 `.c` 里可以同时持有两种 session（见 `tests/test_ocpp_both.c`）。编译 `messages/*.c` 时仍建议只加**这一路**的 `messages/` 到 Include。
 
 ### Include 路径
 
@@ -161,7 +158,7 @@ c_ocpp/ocpp16
 c_ocpp/ocpp201
 ```
 
-**不要**把 `ocpp16/messages` 和 `ocpp201/messages` 同时放进全局 Include。只在编译该目录下 `.c` 时加自己的 `messages/`。
+**不要**把 `ocpp16/messages` 和 `ocpp201/messages` 同时放进全局 Include（即使文件已改名前缀，短 `#include "ocpp16_authorize.h"` 仍只应在对应组里解析）。只在编译该目录下 `.c` 时加自己的 `messages/`。
 
 语言：**C11**（`snprintf`、匿名不强依赖）。不要开 C++ 名修饰去编这些 `.c`。需要 `stddef.h` / `stdint.h` / `string.h` / `stdio.h`（`snprintf`）。MCU 上可把 `ocpp_port_log` 做成空函数，避免拉 `vfprintf`。
 
@@ -213,7 +210,7 @@ target_include_directories(c_ocpp_core PUBLIC
 
 add_library(c_ocpp16 STATIC
     ${C_OCPP}/ocpp16/ocpp16_session.c
-    ${C_OCPP}/ocpp16/messages/authorize.c
+    ${C_OCPP}/ocpp16/messages/ocpp16_authorize.c
     # … 其余 ocpp16/messages/*.c
 )
 target_include_directories(c_ocpp16 PUBLIC ${C_OCPP}/ocpp16
