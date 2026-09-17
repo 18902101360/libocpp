@@ -89,7 +89,7 @@ cmake --build c_ocpp/build
 ctest --test-dir c_ocpp/build --output-on-failure
 ```
 
-Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts. `test_ocpp_both` links both libraries in one binary. `test_ocpp_csms` starts the Python CSMS in `csms/` and drives it with a host WebSocket helper plus `c_ocpp` sessions.
+Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts. `test_ocpp_both` links both libraries in one binary. `test_ocpp_csms` starts the Python CSMS and, over WebSocket, checks **every** 1.6 and 2.0.1 Request/Confirmation (CP→CSMS and CSMS→CP).
 
 ## Host CSMS (Python, for integration tests)
 
