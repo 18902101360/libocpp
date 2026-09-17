@@ -1,0 +1,67 @@
+#include "ocpp201_cost_updated.h"
+#include <string.h>
+
+cJSON *ocpp201_cost_updated_req_to_json(const ocpp201_cost_updated_req_t *in) {
+    if (!in) return NULL;
+    cJSON *obj = cJSON_CreateObject();
+    if (!obj) return NULL;
+    if (1) ocpp_json_add_double(obj, "totalCost", in->totalCost);
+    if (ocpp_json_add_str(obj, "transactionId", in->transactionId) < 0) { cJSON_Delete(obj); return NULL; }
+    return obj;
+}
+ocpp_err_t ocpp201_cost_updated_req_from_json(const cJSON *obj, ocpp201_cost_updated_req_t *out) {
+    if (!obj||!out) return OCPP_ERR_ARG;
+    memset(out,0,sizeof(*out));
+    if (ocpp_json_get_double(obj, "totalCost", &out->totalCost, 1) < 0) return OCPP_ERR_PARSE;
+    if (ocpp_json_get_str(obj, "transactionId", out->transactionId, sizeof(out->transactionId), 1) < 0) return OCPP_ERR_PARSE;
+    return OCPP_OK;
+}
+ocpp_err_t ocpp201_cost_updated_req_encode(const ocpp201_cost_updated_req_t *in, char *buf, size_t buflen) {
+    ocpp_port_arena_reset();
+    cJSON *o = ocpp201_cost_updated_req_to_json(in);
+    if (!o) return OCPP_ERR_NOMEM;
+    return ocpp_json_dump(o, buf, buflen);
+}
+ocpp_err_t ocpp201_cost_updated_req_decode(const char *json, ocpp201_cost_updated_req_t *out) {
+    if (!json||!out) return OCPP_ERR_ARG;
+    ocpp_port_arena_reset();
+    cJSON *o = cJSON_Parse(json);
+    if (!o) return OCPP_ERR_PARSE;
+    return ocpp201_cost_updated_req_from_json(o, out);
+}
+void ocpp201_cost_updated_req_example(ocpp201_cost_updated_req_t *out) {
+    memset(out, 0, sizeof(*out));
+    out->totalCost = 1.5;
+    ocpp_str_copy(out->transactionId, sizeof(out->transactionId), "tx-1");
+}
+
+cJSON *ocpp201_cost_updated_conf_to_json(const ocpp201_cost_updated_conf_t *in) {
+    if (!in) return NULL;
+    cJSON *obj = cJSON_CreateObject();
+    if (!obj) return NULL;
+    (void)in; return obj;
+}
+ocpp_err_t ocpp201_cost_updated_conf_from_json(const cJSON *obj, ocpp201_cost_updated_conf_t *out) {
+    if (!obj||!out) return OCPP_ERR_ARG;
+    memset(out,0,sizeof(*out));
+    (void)obj;
+    (void)out;
+    return OCPP_OK;
+}
+ocpp_err_t ocpp201_cost_updated_conf_encode(const ocpp201_cost_updated_conf_t *in, char *buf, size_t buflen) {
+    ocpp_port_arena_reset();
+    cJSON *o = ocpp201_cost_updated_conf_to_json(in);
+    if (!o) return OCPP_ERR_NOMEM;
+    return ocpp_json_dump(o, buf, buflen);
+}
+ocpp_err_t ocpp201_cost_updated_conf_decode(const char *json, ocpp201_cost_updated_conf_t *out) {
+    if (!json||!out) return OCPP_ERR_ARG;
+    ocpp_port_arena_reset();
+    cJSON *o = cJSON_Parse(json);
+    if (!o) return OCPP_ERR_PARSE;
+    return ocpp201_cost_updated_conf_from_json(o, out);
+}
+void ocpp201_cost_updated_conf_example(ocpp201_cost_updated_conf_t *out) {
+    memset(out, 0, sizeof(*out));
+    (void)out;
+}
