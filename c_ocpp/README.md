@@ -89,7 +89,19 @@ cmake --build c_ocpp/build
 ctest --test-dir c_ocpp/build --output-on-failure
 ```
 
-Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts. `test_ocpp_both` links both libraries in one binary.
+Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts. `test_ocpp_both` links both libraries in one binary. `test_ocpp_csms` starts the Python CSMS in `csms/` and drives it with a host WebSocket helper plus `c_ocpp` sessions.
+
+## Host CSMS (Python, for integration tests)
+
+`c_ocpp/csms` is a **modular OCPP 1.6 + 2.0.1 server** (`python3 -m ocpp_csms`). It is not firmware. The C library still has no TCP; `tests/ws_client.c` is test-only.
+
+```bash
+cd c_ocpp/csms
+python3 -m ocpp_csms --port 9000
+# charge point: ws://127.0.0.1:9000/<cpId>  subprotocol ocpp1.6 or ocpp2.0.1
+```
+
+See `c_ocpp/csms/README.md`.
 
 ## 移植与编译框架
 
@@ -105,6 +117,7 @@ c_ocpp/
   ocpp201/        2.0.1 消息编解码 + session
   third_party/cjson/
   tests/          仅主机；MCU 不要加入编译
+  csms/           主机 Python CSMS（1.6 / 2.0.1），给 c_ocpp 联调用
 ```
 
 对外入口：

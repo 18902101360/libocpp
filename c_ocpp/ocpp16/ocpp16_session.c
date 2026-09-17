@@ -541,6 +541,7 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
     return OCPP_OK;
 }
 
+/* 桩发出 CALL 的 CALLRESULT：按 pending.action 分发 *_conf 回调。Boot 成功则启心跳。 */
 static void handle_result(ocpp16_session_t *s, const char *action, const cJSON *payload) {
     if (strcmp(action, "Authorize") == 0) {
         ocpp16_authorize_conf_t conf; ocpp16_authorize_conf_from_json(payload, &conf);

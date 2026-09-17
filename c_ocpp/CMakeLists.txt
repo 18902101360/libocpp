@@ -63,3 +63,24 @@ add_test(NAME test_ocpp201 COMMAND test_ocpp201)
 add_executable(test_ocpp_both tests/test_ocpp_both.c)
 target_link_libraries(test_ocpp_both PRIVATE c_ocpp16 c_ocpp201)
 add_test(NAME test_ocpp_both COMMAND test_ocpp_both)
+
+# Python CSMS (stdlib) + c_ocpp WebSocket client. Not linked into MCU firmware.
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+add_executable(test_ocpp_csms tests/test_ocpp_csms.c tests/ws_client.c)
+target_link_libraries(test_ocpp_csms PRIVATE c_ocpp16 c_ocpp201)
+add_test(
+    NAME test_ocpp_csms_py
+    COMMAND ${Python3_EXECUTABLE} -m unittest discover -s tests -v
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/csms
+)
+set_tests_properties(test_ocpp_csms_py PROPERTIES
+    ENVIRONMENT "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/csms"
+)
+add_test(
+    NAME test_ocpp_csms
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/csms/run_live_test.py $<TARGET_FILE:test_ocpp_csms>
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/csms
+)
+set_tests_properties(test_ocpp_csms PROPERTIES
+    ENVIRONMENT "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/csms"
+)
