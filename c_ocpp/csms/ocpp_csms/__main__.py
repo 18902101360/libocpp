@@ -12,13 +12,16 @@ def main() -> None:
     p.add_argument("--port", type=int, default=9000)
     p.add_argument("--interval", type=int, default=300, help="BootNotification.conf interval seconds")
     p.add_argument("--no-reset", action="store_true", help="do not send Reset after Boot")
+    p.add_argument("--reset-after-boot", action="store_true", help="send Reset after Boot (default off)")
+    p.add_argument("--no-probe", action="store_true", help="do not send every CSMS CALL after PROBE_CSMS")
     p.add_argument("--quiet", action="store_true")
     args = p.parse_args()
     cfg = CsmsConfig(
         host=args.host,
         port=args.port,
         heartbeat_interval=args.interval,
-        send_reset_after_boot=not args.no_reset,
+        send_reset_after_boot=args.reset_after_boot and not args.no_reset,
+        probe_all=not args.no_probe,
         log_frames=not args.quiet,
     )
     run_server(cfg)

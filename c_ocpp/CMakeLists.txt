@@ -83,4 +83,5 @@ add_test(
 )
 set_tests_properties(test_ocpp_csms PROPERTIES
     ENVIRONMENT "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/csms"
+    TIMEOUT 90
 )

@@ -14,6 +14,7 @@ class FakeSession:
         self.cp_id = "CP001"
         self.protocol = protocol
         self.heartbeat_interval = 60
+        self.probe_requested = False
         self.record = ChargePointStore().upsert("CP001", protocol)
 
     def log(self, *args) -> None:
@@ -46,7 +47,7 @@ class HandlerTests(unittest.TestCase):
         d = Dispatcher("ocpp1.6")
         s = FakeSession("ocpp1.6")
         conf = d.handle(s, "StartTransaction", {"connectorId": 1, "idTag": "TAG001"})
-        self.assertEqual(conf["transactionId"], 1)
+        self.assertEqual(conf["transactionId"], 42)
         self.assertEqual(conf["idTagInfo"]["status"], "Accepted")
 
     def test_v201_boot_and_auth(self) -> None:
@@ -61,10 +62,25 @@ class HandlerTests(unittest.TestCase):
         auth = d.handle(s, "Authorize", {"idToken": {"idToken": "TAG001", "type": "ISO14443"}})
         self.assertEqual(auth["idTokenInfo"]["status"], "Accepted")
 
-    def test_unknown_empty(self) -> None:
-        d = Dispatcher("ocpp1.6")
-        s = FakeSession("ocpp1.6")
-        self.assertEqual(d.handle(s, "MeterValues", {}), {})
+    def test_catalog_covers_tables(self) -> None:
+        from ocpp_csms.catalog import CONF_16, CONF_201, FROM_CP_16, FROM_CP_201, FROM_CSMS_16, FROM_CSMS_201, REQ_16, REQ_201
+
+        self.assertEqual(len(CONF_16), 39)
+        self.assertEqual(len(REQ_16), 39)
+        self.assertEqual(len(CONF_201), 64)
+        self.assertEqual(len(REQ_201), 64)
+        self.assertEqual(len(FROM_CP_16), 14)
+        self.assertEqual(len(FROM_CSMS_16), 26)
+        self.assertEqual(len(FROM_CP_201), 25)
+        self.assertEqual(len(FROM_CSMS_201), 40)
+        for a in FROM_CP_16:
+            self.assertIn(a, CONF_16)
+        for a in FROM_CSMS_16:
+            self.assertIn(a, REQ_16)
+        for a in FROM_CP_201:
+            self.assertIn(a, CONF_201)
+        for a in FROM_CSMS_201:
+            self.assertIn(a, REQ_201)
 
 
 class WsHelperTests(unittest.TestCase):

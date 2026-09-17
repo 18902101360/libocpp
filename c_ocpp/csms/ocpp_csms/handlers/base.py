@@ -9,6 +9,7 @@ class SessionView(Protocol):
     cp_id: str
     protocol: str
     heartbeat_interval: int
+    probe_requested: bool
     record: ChargePointRecord
 
     def log(self, *args: Any) -> None: ...

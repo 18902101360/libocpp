@@ -47,13 +47,14 @@ def main() -> int:
             str(port),
             "--interval",
             "3600",
+            "--quiet",
         ],
         cwd=str(CSMS_DIR),
         env=env,
     )
     try:
         wait_port("127.0.0.1", port)
-        proc = subprocess.run([client, "127.0.0.1", str(port)], timeout=30)
+        proc = subprocess.run([client, "127.0.0.1", str(port)], timeout=90)
         return proc.returncode
     finally:
         server.terminate()

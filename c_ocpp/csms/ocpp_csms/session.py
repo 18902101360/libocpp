@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
-from ocpp_csms.config import CsmsConfig
+from ocpp_csms.catalog import from_csms, req_for
+from ocpp_csms.config import DONE_VENDOR, CsmsConfig
 from ocpp_csms.dispatch import Dispatcher
 from ocpp_csms.outbound import reset_payload
 from ocpp_csms import rpc
@@ -27,6 +29,10 @@ class ChargePointSession:
         self.dispatcher = Dispatcher(self.protocol)
         self._csms_seq = 1
         self._reset_sent = False
+        self._probed = False
+        self.probe_requested = False
+        self._waiters: dict[str, asyncio.Event] = {}
+        self._waiter_ok: dict[str, bool] = {}
 
     def log(self, *args: Any) -> None:
         if self.config.log_frames:
@@ -48,21 +54,26 @@ class ChargePointSession:
                     continue
                 if msg.msg_type == rpc.CALL:
                     await self._on_call(msg)
-                elif msg.msg_type == rpc.CALLRESULT:
-                    self.log("callresult", msg.unique_id)
-                elif msg.msg_type == rpc.CALLERROR:
-                    self.log("callerror", msg.unique_id, msg.error_code)
+                elif msg.msg_type in (rpc.CALLRESULT, rpc.CALLERROR):
+                    self._finish_waiter(msg.unique_id, ok=msg.msg_type == rpc.CALLRESULT)
+                    self.log("reply", msg.unique_id, msg.error_code or "ok")
         finally:
             self.store.disconnect(self.cp_id)
             self.ws.close()
             self.log("disconnected", self.cp_id)
+
+    def _finish_waiter(self, uid: str, ok: bool) -> None:
+        self._waiter_ok[uid] = ok
+        ev = self._waiters.get(uid)
+        if ev is not None:
+            ev.set()
 
     async def _on_call(self, msg: rpc.RpcMessage) -> None:
         action = msg.action or ""
         try:
             payload = self.dispatcher.handle(self, action, msg.payload or {})
             out = rpc.pack_result(msg.unique_id, payload)
-        except Exception as exc:  # noqa: BLE001 — CSMS must always answer CALL
+        except Exception as exc:  # noqa: BLE001
             self.log("handler error", action, exc)
             out = rpc.pack_error(msg.unique_id, "InternalError", str(exc))
         if self.config.log_frames:
@@ -71,12 +82,35 @@ class ChargePointSession:
         if action == "BootNotification" and self.config.send_reset_after_boot and not self._reset_sent:
             self._reset_sent = True
             await self.send_call("Reset", reset_payload(self.protocol))
+        if self.config.probe_all and self.probe_requested and not self._probed:
+            self._probed = True
+            self.probe_requested = False
+            asyncio.create_task(self._probe_all_csms_calls())
 
     async def send_call(self, action: str, payload: dict) -> str:
         uid = f"csms-{self._csms_seq}"
         self._csms_seq += 1
+        ev = asyncio.Event()
+        self._waiters[uid] = ev
         frame = rpc.pack_call(uid, action, payload)
         if self.config.log_frames:
             print("[csms tx]", self.cp_id, frame[:240], flush=True)
         await self.ws.send_text(frame)
         return uid
+
+    async def _probe_all_csms_calls(self) -> None:
+        actions = from_csms(self.protocol)
+        self.log("probe CSMS CALLs", self.protocol, len(actions))
+        for action in actions:
+            uid = await self.send_call(action, req_for(self.protocol, action))
+            try:
+                await asyncio.wait_for(self._waiters[uid].wait(), timeout=8)
+            except asyncio.TimeoutError as exc:
+                raise RuntimeError(f"no CALLRESULT for {action}") from exc
+            if not self._waiter_ok.get(uid):
+                raise RuntimeError(f"CallError for CSMS {action}")
+        await self.send_call(
+            "DataTransfer",
+            {"vendorId": DONE_VENDOR, "messageId": "probe", "data": "ok"},
+        )
+        self.log("probe done", self.cp_id)

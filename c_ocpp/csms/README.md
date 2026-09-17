@@ -32,7 +32,7 @@ Subprotocols (must match the C library you link):
 - `ocpp1.6`
 - `ocpp2.0.1`
 
-After `BootNotification`, the CSMS sends `Reset` (`Soft` on 1.6, `Immediate` on 2.0.1). Disable with `--no-reset`.
+After `BootNotification`, the live test sends `DataTransfer` `vendorId=PROBE_CSMS`. The CSMS then issues **every CSMS-originated CALL** (example payloads from `catalog.py`) and finishes with `vendorId=ALL_CSMS_DONE`. Disable with `--no-probe`. Optional `--reset-after-boot` still sends a single Reset after Boot.
 
 ## Live test with c_ocpp
 
