@@ -81,27 +81,176 @@ Put `ocpp16_session_t` in BSS. Override sizes: `OCPP_PORT_ARENA_SIZE`, `OCPP_PAY
 | `ocpp_link.send` | Write one WebSocket **text** frame for **that** CSMS |
 | `ocpp_port_log` | RTT/UART, or empty |
 
-## Host tests (no network)
+## 本地编译与测试（Linux 主机）
+
+`c_ocpp/CMakeLists.txt` 只编 **主机**：三份静态库 + 测试程序。命令默认在 **仓库根目录** 执行（能看到 `c_ocpp/` 文件夹）。单片机工程不要用这套 CMake 去链 `test_*`，固件编法见下文「移植与编译框架」。
+
+### 一键脚本
+
+配环境、编库、跑完全部 `ctest`（含 WebSocket 联调）：
+
+```bash
+chmod +x c_ocpp/build_and_test.sh   # 只需一次
+./c_ocpp/build_and_test.sh
+```
+
+常用参数：
+
+```bash
+./c_ocpp/build_and_test.sh --clean                 # 删掉 c_ocpp/build 后重来
+./c_ocpp/build_and_test.sh -j 8                    # 指定并行数
+./c_ocpp/build_and_test.sh -- -G Ninja             # -- 后面交给 cmake 配置
+./c_ocpp/build_and_test.sh -- -DPython3_EXECUTABLE=/usr/bin/python3
+```
+
+脚本会检查 `cc` / `cmake` / `ctest` / `python3`。成功时应 5/5 Passed。下面各小节是同一流程的拆开说明。
+
+### 环境
+
+| 工具 | 说明 |
+| --- | --- |
+| C 编译器 | `gcc` 或 `clang`，C11 |
+| CMake | ≥ 3.14 |
+| Make 或 Ninja | CMake 默认生成器一般是 Make |
+| Python 3 | 3.8+ 即可；CSMS **不用 pip**（只用标准库） |
+
+```bash
+cc --version
+cmake --version
+python3 --version
+```
+
+Debian / Ubuntu 缺包时：
+
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake python3
+```
+
+代码用本仓库的 MCU 库分支，例如：
+
+```bash
+git fetch origin
+git checkout cursor/c-ocpp-mcu-76bd
+```
+
+### 配置
 
 ```bash
 cmake -S c_ocpp -B c_ocpp/build
+```
+
+- `-S c_ocpp`：源码目录（其中的 `CMakeLists.txt`）
+- `-B c_ocpp/build`：产物目录，不要提交进 git
+
+指定编译器或生成器：
+
+```bash
+cmake -S c_ocpp -B c_ocpp/build -DCMAKE_C_COMPILER=gcc
+cmake -S c_ocpp -B c_ocpp/build -G Ninja
+cmake -S c_ocpp -B c_ocpp/build -DPython3_EXECUTABLE=/usr/bin/python3
+```
+
+`messages/*.c` 用了 `file(GLOB …)`。增删报文 `.c` 之后要 **再跑一遍这条 cmake**，然后才 `--build`。
+
+### 编译
+
+```bash
 cmake --build c_ocpp/build
+cmake --build c_ocpp/build -j$(nproc)    # 多核
+```
+
+只编某一个目标：
+
+```bash
+cmake --build c_ocpp/build --target test_ocpp16
+cmake --build c_ocpp/build --target test_ocpp_csms
+```
+
+产物都在 `c_ocpp/build/`：
+
+| 文件 | 内容 |
+| --- | --- |
+| `libc_ocpp_core.a` | cJSON + `ocpp_json.c` + `ocpp_rpc.c` + **主机** `port/ocpp_port.c` |
+| `libc_ocpp16.a` | 1.6 session + `ocpp16/messages/*.c`，PUBLIC 链 core |
+| `libc_ocpp201.a` | 2.0.1 同上 |
+| `test_ocpp16` / `test_ocpp201` / `test_ocpp_both` | 无 socket 的编解码与 session |
+| `test_ocpp_csms` | C 客户端（`tests/test_ocpp_csms.c` + `tests/ws_client.c`） |
+
+`c_ocpp_core` 只编一次，避免 1.6 和 2.0.1 各链一份 cJSON / `ocpp_port` 造成符号重复。主机 `ocpp_port.c` 用了 `clock_gettime`，**不能**原样链进裸机。
+
+### 跑测试
+
+```bash
 ctest --test-dir c_ocpp/build --output-on-failure
 ```
 
-Codecs round-trip every Request/Confirmation. Session tests (1.6 and 2.0.1) cover BootNotification, Reset, and three concurrent contexts. `test_ocpp_both` links both libraries in one binary. `test_ocpp_csms` starts the Python CSMS and, over WebSocket, checks **every** 1.6 and 2.0.1 Request/Confirmation (CP→CSMS and CSMS→CP).
+应 5/5 Passed：
 
-## Host CSMS (Python, for integration tests)
+| 测试 | 做什么 |
+| --- | --- |
+| `test_ocpp16` | 1.6 全部报文编解码 + Boot / Reset / 三路 session（无网络） |
+| `test_ocpp201` | 2.0.1 同样 |
+| `test_ocpp_both` | 同一进程同时链接 1.6 与 2.0.1 |
+| `test_ocpp_csms_py` | `PYTHONPATH=c_ocpp/csms` 下跑 Python unittest |
+| `test_ocpp_csms` | 拉起 Python CSMS，C 客户端走 WebSocket，覆盖全部 1.6 / 2.0.1 的 Request 与 Confirmation |
 
-`c_ocpp/csms` is a **modular OCPP 1.6 + 2.0.1 server** (`python3 -m ocpp_csms`). It is not firmware. The C library still has no TCP; `tests/ws_client.c` is test-only.
+只跑一类或直接跑二进制：
+
+```bash
+ctest --test-dir c_ocpp/build -R test_ocpp16 --output-on-failure
+./c_ocpp/build/test_ocpp16
+./c_ocpp/build/test_ocpp201
+./c_ocpp/build/test_ocpp_both
+```
+
+`test_ocpp_csms` 不要只启动二进制：CTest 会执行
+
+```text
+python3 c_ocpp/csms/run_live_test.py <build>/test_ocpp_csms
+```
+
+脚本占用一个空闲端口、启动 `python3 -m ocpp_csms`，再跑 C 客户端（超时 90 秒）。
+
+### 手动起 CSMS 再连（可选）
+
+`c_ocpp/csms` 是模块化的 1.6 + 2.0.1 服务器，不是固件。协议库本身仍无 TCP；`tests/ws_client.c` 仅主机测试用。
+
+终端 A：
 
 ```bash
 cd c_ocpp/csms
-python3 -m ocpp_csms --port 9000
-# charge point: ws://127.0.0.1:9000/<cpId>  subprotocol ocpp1.6 or ocpp2.0.1
+PYTHONPATH=. python3 -m ocpp_csms --host 127.0.0.1 --port 9000 --interval 3600
 ```
 
-See `c_ocpp/csms/README.md`.
+终端 B（仓库根，且已编译）：
+
+```bash
+./c_ocpp/build/test_ocpp_csms 127.0.0.1 9000
+```
+
+成功时类似：`all req/conf OCPP 1.6 (14+26) and 2.0.1 (25+40) OK`。
+
+桩 URL：`ws://127.0.0.1:9000/<chargePointId>`，子协议 `ocpp1.6` 或 `ocpp2.0.1`。更多参数见 `c_ocpp/csms/README.md`。
+
+### 常见问题
+
+| 现象 | 处理 |
+| --- | --- |
+| `Could not find Python3` | 安装 `python3`，或加 `-DPython3_EXECUTABLE=/usr/bin/python3` |
+| 新增 `messages/*.c` 没进库 | 再执行一次 `cmake -S c_ocpp -B c_ocpp/build` |
+| `test_ocpp_csms` 连不上 / 超时 | 确认本机 `127.0.0.1` 可 listen；不要拦回环 |
+| 想看 CSMS 收发 | 不要 `--quiet`，直接 `python3 -m ocpp_csms --port 9000` |
+
+干净重编：
+
+```bash
+rm -rf c_ocpp/build
+cmake -S c_ocpp -B c_ocpp/build
+cmake --build c_ocpp/build -j$(nproc)
+ctest --test-dir c_ocpp/build --output-on-failure
+```
+
 
 ## 移植与编译框架
 
