@@ -2,7 +2,6 @@
 #include "ws_client.h"
 
 #include <arpa/inet.h>
-#include <errno.h>
 #include <netdb.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -258,6 +257,18 @@ int ws_connect(ws_conn_t *c, const char *host, int port, const char *path, const
         }
     }
     if (strstr(hdr, "101") == NULL) {
+        close(fd);
+        return -1;
+    }
+    sha1_ctx sh;
+    sha1_init(&sh);
+    sha1_update(&sh, (const uint8_t *)key_b64, strlen(key_b64));
+    sha1_update(&sh, (const uint8_t *)WS_GUID, strlen(WS_GUID));
+    uint8_t digest[20];
+    sha1_final(&sh, digest);
+    char expect[29];
+    b64_20(digest, expect);
+    if (strstr(hdr, expect) == NULL) {
         close(fd);
         return -1;
     }
