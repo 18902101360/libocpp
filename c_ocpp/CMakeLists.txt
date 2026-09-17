@@ -1,3 +1,4 @@
+# Host 构建：静态库 + 无网络单元测试。MCU 工程不必用本文件，按 README 列源文件即可。
 cmake_minimum_required(VERSION 3.14)
 project(c_ocpp C)
 
@@ -8,8 +9,8 @@ add_compile_options(-Wall -Wextra)
 
 set(CJSON_SRC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cjson/cJSON.c)
 
-# Shared once: do not archive port/cJSON/layer1 into both version libs
-# (linking c_ocpp16 + c_ocpp201 would duplicate those symbols).
+# 公共层只编进 c_ocpp_core 一次。1.6 与 2.0.1 各自的 .a 再 PUBLIC 链接它，
+# 避免同一固件里 cJSON / ocpp_port 符号重复。
 add_library(c_ocpp_core STATIC
     ${CJSON_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}/layer1/ocpp_json.c

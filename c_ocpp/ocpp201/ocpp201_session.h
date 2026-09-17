@@ -1,3 +1,8 @@
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * 第 2 层：一条 OCPP 2.0.1 连接。API 形态与 ocpp16_session 相同，消息类型不同
+ *（交易用 TransactionEvent，配置用 Get/SetVariables）。
+ */
 #ifndef OCPP201_SESSION_H
 #define OCPP201_SESSION_H
 #include "messages/ocpp201_messages.h"
@@ -7,7 +12,7 @@
 extern "C" {
 #endif
 #ifndef OCPP201_PENDING_MAX
-#define OCPP201_PENDING_MAX 8
+#define OCPP201_PENDING_MAX 8 /* 本路未完成 CALL 条数上限 */
 #endif
 #ifndef OCPP_PAYLOAD_MAX
 #define OCPP_PAYLOAD_MAX 2048
@@ -81,20 +86,21 @@ typedef struct ocpp201_handlers { void *user;
     void (*sign_certificate_conf)(const ocpp201_sign_certificate_conf_t *conf, void *user);
     void (*status_notification_conf)(const ocpp201_status_notification_conf_t *conf, void *user);
     void (*transaction_event_conf)(const ocpp201_transaction_event_conf_t *conf, void *user);
-} ocpp201_handlers_t;
+} ocpp201_handlers_t; /* *_req 返回 0 成功；*_conf 为桩发出 CALL 的应答 */
 typedef struct ocpp201_session {
-    ocpp_link_t link;
+    ocpp_link_t link;                 /* 本路 send / 心跳槽 / accept_control */
     ocpp201_handlers_t handlers;
-    unsigned seq;
-    int registered;
-    int heartbeat_interval_s;
+    unsigned seq;                     /* 发出 CALL 的 uniqueId 计数，从 1 起 */
+    int registered;                   /* 收到 BootNotification.conf 后置 1 */
+    int heartbeat_interval_s;         /* 来自 Boot conf.interval，默认 300 */
     struct { int used; char uid[37]; char action[48]; } pending[OCPP201_PENDING_MAX];
     char payload[OCPP_PAYLOAD_MAX];
     char frame[OCPP_FRAME_MAX];
-} ocpp201_session_t;
+} ocpp201_session_t; /* 放 BSS；payload+frame 约数 KiB */
+/** link 可为 NULL：send 走全局 ocpp_port_send，心跳槽 0，accept_control=1。 */
 void ocpp201_session_init(ocpp201_session_t *s, const ocpp201_handlers_t *h, const ocpp_link_t *link);
 void ocpp201_session_bind(ocpp201_session_t *s, const ocpp_link_t *link);
-ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len);
+ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len); /* 完整 WS text 帧 */
 ocpp_err_t ocpp201_session_call(ocpp201_session_t *s, const char *action, const char *payload_json);
 ocpp_err_t ocpp201_session_send_authorize(ocpp201_session_t *s, const ocpp201_authorize_req_t *req);
 ocpp_err_t ocpp201_session_send_boot_notification(ocpp201_session_t *s, const ocpp201_boot_notification_req_t *req);

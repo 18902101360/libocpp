@@ -1,4 +1,4 @@
-/* One firmware image: OCPP 1.6 + 2.0.1. Types/symbols must not collide. */
+/* 同一镜像同时链 1.6 与 2.0.1：类型/符号不得冲突。 */
 #include "ocpp16.h"
 #include "ocpp201.h"
 #include "ocpp_port.h"

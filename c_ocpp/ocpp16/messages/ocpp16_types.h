@@ -1,4 +1,4 @@
-/* Generated shared types for ocpp16 */
+/* OCPP 1.6 共用嵌套结构（IdTagInfo、MeterValue、ChargingProfile 等）。 */
 #ifndef OCPP16_TYPES_H
 #define OCPP16_TYPES_H
 

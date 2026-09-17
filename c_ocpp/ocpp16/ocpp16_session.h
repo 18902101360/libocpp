@@ -1,4 +1,8 @@
-/* Layer 2: one OCPP 1.6 CSMS context. N sessions = N independent connections. */
+/* SPDX-License-Identifier: Apache-2.0
+ *
+ * 第 2 层：一条 OCPP 1.6 连接的上下文（pending uniqueId、心跳、控制权）。
+ * N 个运营商 = N 个本结构 + N 条 WebSocket；rx 喂完整 JSON 文本帧。
+ */
 #ifndef OCPP16_SESSION_H
 #define OCPP16_SESSION_H
 
@@ -11,9 +15,13 @@ extern "C" {
 #endif
 
 #ifndef OCPP16_PENDING_MAX
-#define OCPP16_PENDING_MAX 8
+#define OCPP16_PENDING_MAX 8 /* 本路未完成 CALL 条数上限 */
 #endif
 
+/**
+ * 固件回调。*_req：CSMS→桩，填好 conf 后返回 0；非 0 则回 CallError InternalError。
+ * *_conf：桩→CSMS 的 CALLRESULT。未实现的指针可为 NULL（req 侧用 example conf）。
+ */
 typedef struct ocpp16_handlers {
     void *user;
     int (*data_transfer_req)(const ocpp16_data_transfer_req_t *req, ocpp16_data_transfer_conf_t *conf, void *user);
@@ -59,27 +67,30 @@ typedef struct ocpp16_handlers {
 } ocpp16_handlers_t;
 
 #ifndef OCPP_PAYLOAD_MAX
-#define OCPP_PAYLOAD_MAX 2048
+#define OCPP_PAYLOAD_MAX 2048 /* 业务 JSON，不含 RPC 外壳 */
 #endif
 #ifndef OCPP_FRAME_MAX
-#define OCPP_FRAME_MAX 4096
+#define OCPP_FRAME_MAX 4096 /* 整帧 [2,id,action,payload] */
 #endif
 
 typedef struct ocpp16_session {
-    ocpp_link_t link;
+    ocpp_link_t link;                 /* 本路 send / 心跳槽 / accept_control */
     ocpp16_handlers_t handlers;
-    unsigned seq;
-    int registered;
-    int heartbeat_interval_s;
+    unsigned seq;                     /* 发出 CALL 的 uniqueId 计数，从 1 起 */
+    int registered;                   /* 收到 BootNotification.conf 后置 1 */
+    int heartbeat_interval_s;         /* 来自 Boot conf.interval，默认 300 */
     struct { int used; char uid[37]; char action[48]; } pending[OCPP16_PENDING_MAX];
     char payload[OCPP_PAYLOAD_MAX];
     char frame[OCPP_FRAME_MAX];
 } ocpp16_session_t;
 
-/** link may be NULL (global ocpp_port_send, timer 0, accept_control=1). */
+/** link 可为 NULL：send 走全局 ocpp_port_send，心跳槽 0，accept_control=1。 */
 void ocpp16_session_init(ocpp16_session_t *s, const ocpp16_handlers_t *h, const ocpp_link_t *link);
+/** 运行时换链路或改 accept_control（主备切换）。 */
 void ocpp16_session_bind(ocpp16_session_t *s, const ocpp_link_t *link);
+/** WS 收齐一帧后调用。内部会 arena_reset。 */
 ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len);
+/** 发任意 action 的 CALL；uniqueId 由 seq 生成并记入 pending。 */
 ocpp_err_t ocpp16_session_call(ocpp16_session_t *s, const char *action, const char *payload_json);
 ocpp_err_t ocpp16_session_send_authorize(ocpp16_session_t *s, const ocpp16_authorize_req_t *req);
 ocpp_err_t ocpp16_session_send_boot_notification(ocpp16_session_t *s, const ocpp16_boot_notification_req_t *req);

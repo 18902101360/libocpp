@@ -1,4 +1,6 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: Apache-2.0
+ * cJSON 辅助：字符串进定长数组，数值/bool 读写。dump 用 PrintPreallocated，避免再 malloc。
+ */
 #include "ocpp_json.h"
 
 #include <string.h>

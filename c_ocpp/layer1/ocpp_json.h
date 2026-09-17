@@ -1,4 +1,6 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: Apache-2.0
+ * 定长缓冲上的 JSON 字段读写。应用数据不要 malloc；cJSON 节点走 arena。
+ */
 #ifndef OCPP_JSON_H
 #define OCPP_JSON_H
 
@@ -12,9 +14,11 @@
 extern "C" {
 #endif
 
-void ocpp_str_copy(char *dst, size_t dst_size, const char *src);
+void ocpp_str_copy(char *dst, size_t dst_size, const char *src); /* 定长拷贝并保证 '\0' */
 
 ocpp_err_t ocpp_json_dump(const cJSON *obj, char *buf, size_t buflen);
+
+/** required=1 时缺字段返回失败；0 表示可选。成功 0，失败负。 */
 
 int ocpp_json_get_str(const cJSON *obj, const char *key, char *dst, size_t dst_size, int required);
 int ocpp_json_get_int(const cJSON *obj, const char *key, int *out, int required);

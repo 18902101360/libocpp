@@ -1,5 +1,6 @@
 #ifndef OCPP201_TYPES_H
 #define OCPP201_TYPES_H
+/* OCPP 2.0.1 共用嵌套结构（IdToken、Transaction、Variable 等）。 */
 #include "cJSON.h"
 #include "ocpp_err.h"
 #ifdef __cplusplus

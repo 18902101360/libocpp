@@ -1,3 +1,4 @@
+/* OCPP 2.0.1 编解码 + session。覆盖方式同 test_ocpp16。 */
 #include "ocpp201.h"
 #include "ocpp_port.h"
 #include <stdio.h>

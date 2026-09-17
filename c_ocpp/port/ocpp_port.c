@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0
  *
- * Host (Linux) default port: bump arena + monotonic clock + software timers.
- * On MCU, reimplement this file with your heap/tick/UART-or-WS send.
+ * Linux 宿主默认移植：bump arena + CLOCK_MONOTONIC + 软件定时器。
+ * 单片机请换本文件：malloc 可仍用 arena，tick 用 SysTick，send 写你们的 WS。
  */
 #include "ocpp_port.h"
 
@@ -21,9 +21,9 @@ typedef struct {
     void *ctx;
 } ocpp_port_timer_t;
 
-static uint8_t g_arena[OCPP_PORT_ARENA_SIZE];
+static uint8_t g_arena[OCPP_PORT_ARENA_SIZE]; /* 全工程一份，不可重入 */
 static size_t g_arena_off;
-static ocpp_port_send_fn g_send;
+static ocpp_port_send_fn g_send; /* 仅 link.send 为空时的回落 */
 static void *g_send_user;
 static ocpp_port_timer_t g_timers[OCPP_PORT_TIMER_MAX];
 static uint32_t g_now_ms;
@@ -58,7 +58,7 @@ void *ocpp_port_malloc(size_t size) {
     if (size == 0) {
         return NULL;
     }
-    size_t aligned = (size + 7u) & ~7u;
+    size_t aligned = (size + 7u) & ~7u; /* 8 字节对齐，方便 MCU */
     if (g_arena_off + aligned > OCPP_PORT_ARENA_SIZE) {
         return NULL;
     }
@@ -165,6 +165,7 @@ int ocpp_link_send(const ocpp_link_t *link, const void *data, size_t len) {
     return ocpp_port_send(data, len);
 }
 
+/* 会改桩运行状态的 CSMS action；与协议版本无关，1.6/2.0.1 共用。 */
 int ocpp_action_is_control(const char *action) {
     static const char *const k[] = {
         "Reset",

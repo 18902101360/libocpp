@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+/* 语义同 ocpp16_session.c：每路独立 seq/pending/send，Boot 后按本路 timer 发心跳。 */
 static void heartbeat_timer(int id, void *ctx) { ocpp201_session_t *s=(ocpp201_session_t*)ctx; (void)id; ocpp201_heartbeat_req_t req; ocpp201_heartbeat_req_example(&req); ocpp201_session_send_heartbeat(s,&req); }
 static int session_tx(ocpp201_session_t *s) { return ocpp_link_send(&s->link, s->frame, strlen(s->frame)); }
 void ocpp201_session_bind(ocpp201_session_t *s, const ocpp_link_t *link) { if(link) s->link=*link; }
@@ -38,7 +39,9 @@ ocpp_err_t ocpp201_session_send_security_event_notification(ocpp201_session_t *s
 ocpp_err_t ocpp201_session_send_sign_certificate(ocpp201_session_t *s, const ocpp201_sign_certificate_req_t *req) { ocpp_err_t rc=ocpp201_sign_certificate_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"SignCertificate",s->payload); }
 ocpp_err_t ocpp201_session_send_status_notification(ocpp201_session_t *s, const ocpp201_status_notification_req_t *req) { ocpp_err_t rc=ocpp201_status_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"StatusNotification",s->payload); }
 ocpp_err_t ocpp201_session_send_transaction_event(ocpp201_session_t *s, const ocpp201_transaction_event_req_t *req) { ocpp_err_t rc=ocpp201_transaction_event_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"TransactionEvent",s->payload); }
+/* CSMS→桩 CALL：decode → handler（可改 conf）→ CALLRESULT；handler 非 0 则 InternalError。 */
 static ocpp_err_t handle_call(ocpp201_session_t *s, ocpp_rpc_msg_t *msg) {
+    /* 遥测链路：不跑 handler，避免第二家 CSMS Reset/启停。 */
     if (!s->link.accept_control && ocpp_action_is_control(msg->action)) {
         ocpp_rpc_pack_callerror(msg->unique_id,"SecurityError","this link does not accept control",s->frame,sizeof(s->frame));
         session_tx(s); return OCPP_OK;
@@ -84,6 +87,7 @@ static ocpp_err_t handle_call(ocpp201_session_t *s, ocpp_rpc_msg_t *msg) {
     else if (strcmp(msg->action,"UnpublishFirmware")==0) { ocpp201_unpublish_firmware_req_t req; ocpp201_unpublish_firmware_conf_t conf; ocpp201_unpublish_firmware_req_from_json(msg->payload,&req); ocpp201_unpublish_firmware_conf_example(&conf); if(s->handlers.unpublish_firmware_req){ if(s->handlers.unpublish_firmware_req(&req,&conf,s->handlers.user)!=0){ ocpp_rpc_pack_callerror(msg->unique_id,"InternalError","handler",s->frame,sizeof(s->frame)); session_tx(s); return OCPP_OK; } } ocpp201_unpublish_firmware_conf_encode(&conf,s->payload,sizeof(s->payload)); ocpp_rpc_pack_callresult(msg->unique_id,s->payload,s->frame,sizeof(s->frame)); if(session_tx(s)!=0) return OCPP_ERR_IO; return OCPP_OK; }
     else if (strcmp(msg->action,"UpdateFirmware")==0) { ocpp201_update_firmware_req_t req; ocpp201_update_firmware_conf_t conf; ocpp201_update_firmware_req_from_json(msg->payload,&req); ocpp201_update_firmware_conf_example(&conf); if(s->handlers.update_firmware_req){ if(s->handlers.update_firmware_req(&req,&conf,s->handlers.user)!=0){ ocpp_rpc_pack_callerror(msg->unique_id,"InternalError","handler",s->frame,sizeof(s->frame)); session_tx(s); return OCPP_OK; } } ocpp201_update_firmware_conf_encode(&conf,s->payload,sizeof(s->payload)); ocpp_rpc_pack_callresult(msg->unique_id,s->payload,s->frame,sizeof(s->frame)); if(session_tx(s)!=0) return OCPP_ERR_IO; return OCPP_OK; }
     ocpp_rpc_pack_callerror(msg->unique_id,"NotImplemented",msg->action,s->frame,sizeof(s->frame)); session_tx(s); return OCPP_OK; }
+/* 桩发出 CALL 的 CALLRESULT：按 pending.action 分发 *_conf 回调。Boot 成功则启心跳。 */
 static void handle_result(ocpp201_session_t *s, const char *action, const cJSON *payload) {
     if (strcmp(action,"Authorize")==0) { ocpp201_authorize_conf_t conf; ocpp201_authorize_conf_from_json(payload,&conf); if(s->handlers.authorize_conf) s->handlers.authorize_conf(&conf,s->handlers.user); return; }
     else if (strcmp(action,"BootNotification")==0) { ocpp201_boot_notification_conf_t conf; ocpp201_boot_notification_conf_from_json(payload,&conf); s->registered=1; if(conf.interval>0) s->heartbeat_interval_s=conf.interval; if(s->link.heartbeat_timer_id>=0) ocpp_port_timer_start(s->link.heartbeat_timer_id,(uint32_t)s->heartbeat_interval_s*1000u,1,heartbeat_timer,s); if(s->handlers.boot_notification_conf) s->handlers.boot_notification_conf(&conf,s->handlers.user); return; }
@@ -111,4 +115,21 @@ static void handle_result(ocpp201_session_t *s, const char *action, const cJSON 
     else if (strcmp(action,"StatusNotification")==0) { ocpp201_status_notification_conf_t conf; ocpp201_status_notification_conf_from_json(payload,&conf); if(s->handlers.status_notification_conf) s->handlers.status_notification_conf(&conf,s->handlers.user); return; }
     else if (strcmp(action,"TransactionEvent")==0) { ocpp201_transaction_event_conf_t conf; ocpp201_transaction_event_conf_from_json(payload,&conf); if(s->handlers.transaction_event_conf) s->handlers.transaction_event_conf(&conf,s->handlers.user); return; }
 }
-ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len) { ocpp_port_arena_reset(); ocpp_rpc_msg_t msg; ocpp_err_t rc=ocpp_rpc_unpack(frame,len,&msg); if(rc!=OCPP_OK) return rc; if(msg.type==OCPP_RPC_CALL) return handle_call(s,&msg); if(msg.type==OCPP_RPC_CALLRESULT){ for(int i=0;i<8;i++){ if(s->pending[i].used && strcmp(s->pending[i].uid,msg.unique_id)==0){ s->pending[i].used=0; handle_result(s,s->pending[i].action,msg.payload); return OCPP_OK; } } return OCPP_ERR_NOTFOUND; } return OCPP_OK; }
+ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len) {
+    ocpp_port_arena_reset(); /* 本帧独占 arena；不要与其它 session 并行 rx */
+    ocpp_rpc_msg_t msg;
+    ocpp_err_t rc = ocpp_rpc_unpack(frame, len, &msg);
+    if (rc != OCPP_OK) return rc;
+    if (msg.type == OCPP_RPC_CALL) return handle_call(s, &msg);
+    if (msg.type == OCPP_RPC_CALLRESULT) {
+        for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
+            if (s->pending[i].used && strcmp(s->pending[i].uid, msg.unique_id) == 0) {
+                s->pending[i].used = 0;
+                handle_result(s, s->pending[i].action, msg.payload);
+                return OCPP_OK;
+            }
+        }
+        return OCPP_ERR_NOTFOUND;
+    }
+    return OCPP_OK;
+}

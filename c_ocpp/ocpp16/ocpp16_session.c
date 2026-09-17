@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+/* BootNotification.conf 之后按 interval 周期发 Heartbeat。 */
 static void heartbeat_timer(int id, void *ctx) {
     ocpp16_session_t *s = (ocpp16_session_t *)ctx;
     (void)id;
@@ -32,6 +33,7 @@ static int session_tx(ocpp16_session_t *s) {
     return ocpp_link_send(&s->link, s->frame, strlen(s->frame));
 }
 
+/* 记录发出的 CALL，等 CALLRESULT 用 uniqueId 找回 action。 */
 static int pending_add(ocpp16_session_t *s, const char *uid, const char *action) {
     for (int i = 0; i < OCPP16_PENDING_MAX; i++) if (!s->pending[i].used) {
         s->pending[i].used = 1;
@@ -136,7 +138,9 @@ ocpp_err_t ocpp16_session_send_signed_firmware_status_notification(ocpp16_sessio
     return ocpp16_session_call(s, "SignedFirmwareStatusNotification", s->payload);
 }
 
+/* CSMS→桩 CALL：decode → handler（可改 conf）→ CALLRESULT；handler 非 0 则 InternalError。 */
 static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
+    /* 遥测链路：不跑 handler，避免第二家 CSMS Reset/启停。 */
     if (!s->link.accept_control && ocpp_action_is_control(msg->action)) {
         ocpp_rpc_pack_callerror(msg->unique_id, "SecurityError", "this link does not accept control", s->frame, sizeof(s->frame));
         session_tx(s);
@@ -616,7 +620,7 @@ static void handle_result(ocpp16_session_t *s, const char *action, const cJSON *
 }
 
 ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len) {
-    ocpp_port_arena_reset();
+    ocpp_port_arena_reset(); /* 本帧独占 arena；不要与其它 session 并行 rx */
     ocpp_rpc_msg_t msg;
     ocpp_err_t rc = ocpp_rpc_unpack(frame, len, &msg);
     if (rc != OCPP_OK) return rc;

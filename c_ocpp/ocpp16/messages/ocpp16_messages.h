@@ -1,6 +1,7 @@
 #ifndef OCPP16_MESSAGES_H
 #define OCPP16_MESSAGES_H
-/* OCPP 1.6 message index */
+/* OCPP 1.6 报文索引。每个 action 一对 ocpp16_<name>.c/.h：
+ * req/conf 定长结构、to_json/from_json、encode/decode（encode 前 arena_reset）、example。 */
 
 #include "ocpp16/messages/ocpp16_authorize.h"
 #include "ocpp16/messages/ocpp16_boot_notification.h"

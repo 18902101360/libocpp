@@ -1,5 +1,6 @@
 #ifndef OCPP201_MESSAGES_H
 #define OCPP201_MESSAGES_H
+/* OCPP 2.0.1 报文索引。编解码约定同 ocpp16_messages.h；文件名一律 ocpp201_ 前缀。 */
 #include "ocpp201/messages/ocpp201_authorize.h"
 #include "ocpp201/messages/ocpp201_boot_notification.h"
 #include "ocpp201/messages/ocpp201_cancel_reservation.h"

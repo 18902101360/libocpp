@@ -1,4 +1,6 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-License-Identifier: Apache-2.0
+ * 组/解 JSON-RPC 数组。payload 原样嵌入，不转义内部引号（调用方须保证 payload 是合法 JSON 对象）。
+ */
 #include "ocpp_rpc.h"
 
 #include "ocpp_json.h"

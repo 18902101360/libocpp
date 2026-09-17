@@ -1,4 +1,4 @@
-/* Codec + session req/conf tests. No sockets — transport is ocpp_port_send. */
+/* 编解码 + session 收发。无 socket，send 接到 mock_send。 */
 #include "ocpp16.h"
 #include "ocpp_port.h"
 
