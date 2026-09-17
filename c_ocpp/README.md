@@ -132,7 +132,7 @@ OCPP 1.6 再加：
 OCPP 2.0.1 再加：
 
 - `ocpp201/ocpp201_session.c`
-- `ocpp201/messages/*.c`（当前 64 个 action，含 `ocpp201_messages.c`）
+- `ocpp201/messages/*.c`（含各 action、`ocpp201_types.c`、`ocpp201_messages.c`）
 
 两套可以同时链进固件（两路运营商各用一个版本），**同一条 WebSocket 只能跑一个版本**。不要把 `tests/*.c`、`c_ocpp/build/` 编进镜像。
 
