@@ -42,6 +42,11 @@
         printf("201 CONF %s %s\n", action, buf);                                                       \
     } while (0)
 
+/**
+ * main - 本文件的测试入口
+ *
+ * 返回 0 表示全部检查通过。失败时向 stderr 打 FAIL，并返回非 0。
+ */
 int main(void) {
     ocpp_port_init();
     D16(authorize, "Authorize");

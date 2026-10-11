@@ -65,4 +65,9 @@ static const ocpp201_message_info_t k_table[OCPP201_MESSAGE_COUNT] = {
     { "UnpublishFirmware", 0, 1 },
     { "UpdateFirmware", 0, 1 },
 };
+/**
+ * ocpp201_message_table - 2.0.1 全部 action 以及谁发起 CALL
+ *
+ * 含义与 ocpp16_message_table 相同。返回静态表，不要释放。
+ */
 const ocpp201_message_info_t *ocpp201_message_table(void) { return k_table; }

@@ -49,6 +49,15 @@ typedef struct ocpp_link {
     int accept_control;
 } ocpp_link_t;
 
+/**
+ * ocpp_link_init - 填好一条到 CSMS 的链路
+ * @link: 输出。NULL 时直接返回
+ * @id: 固件自己编的路号
+ * @send: 写这一路 WebSocket 文本帧
+ * @user: 传给 send 的指针
+ * @heartbeat_timer_id: 本路心跳槽，全工程唯一
+ * @accept_control: 非 0 才执行 Reset 等控制类 CALL
+ */
 void ocpp_link_init(ocpp_link_t *link, int id, ocpp_port_send_fn send, void *user,
                     int heartbeat_timer_id, int accept_control);
 /** 优先 link->send；未绑定时回落到全局 ocpp_port_send。 */
@@ -59,26 +68,44 @@ int ocpp_action_is_control(const char *action);
 /** 启动时调用一次：把 cJSON 钩到 malloc/free，并清定时器表。 */
 void ocpp_port_init(void);
 
-/** cJSON 的分配。宿主实现调用 malloc、free、realloc。 */
+/** 分配 size 字节。0 返回 NULL。宿主实现调用 malloc。 */
 void *ocpp_port_malloc(size_t size);
+/** 释放 ocpp_port_malloc 的指针。NULL 可以传入。宿主实现调用 free。 */
 void ocpp_port_free(void *ptr);
+/**
+ * ocpp_port_realloc - 调整块大小
+ * @size: 0 时释放 ptr 并返回 NULL
+ *
+ * 宿主实现调用 realloc。
+ */
 void *ocpp_port_realloc(void *ptr, size_t size);
 /** 兼容旧入口。系统堆实现里是空函数，树由 cJSON_Delete 释放。 */
 void ocpp_port_arena_reset(void);
+/** 旧静态池的用量。系统堆实现固定返回 0。 */
 size_t ocpp_port_arena_used(void);
 
 /** 单调毫秒。MCU 用 SysTick / HAL_GetTick。 */
 uint32_t ocpp_port_now_ms(void);
 
+/**
+ * ocpp_port_timer_start - 占用一个软件定时器槽
+ * @timer_id: 多路不能共用。非法或 fn 为空时返回 -1
+ * @periodic: 非 0 则到期后按 delay_ms 重复
+ *
+ * 返回 0 表示已装入。时间要靠 ocpp_port_timer_tick 推进。
+ */
 int ocpp_port_timer_start(int timer_id, uint32_t delay_ms, int periodic, ocpp_port_timer_fn fn, void *ctx);
+/** 停掉一个槽。断线时必须停心跳，否则下一次 tick 还会发送。越界则忽略。 */
 void ocpp_port_timer_stop(int timer_id);
 /** 推进软件定时器。MCU 可在节拍中断里调，elapsed_ms 为距上次的间隔。 */
 void ocpp_port_timer_tick(uint32_t elapsed_ms);
 
 /** 仅单路、且 link.send 为空时使用。多路请走 ocpp_link_t.send。 */
 void ocpp_port_set_send(ocpp_port_send_fn fn, void *user);
+/** 调用全局发送函数。还没 set_send 时返回 -1。多路请用 ocpp_link_send。 */
 int ocpp_port_send(const void *data, size_t len);
 
+/** 打一行诊断。宿主写 stderr。裸机可做成空函数，避免链进 vfprintf。 */
 void ocpp_port_log(const char *fmt, ...);
 
 #ifdef __cplusplus

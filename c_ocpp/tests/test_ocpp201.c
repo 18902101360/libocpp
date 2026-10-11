@@ -6,11 +6,13 @@
 
 static int g_fail;
 static char g_tx[OCPP_FRAME_MAX];
+/* 测试用发送回调：把整帧拷进全局缓冲，不走网络。 */
 static int mock_send(const void *data, size_t len, void *user) {
     (void)user;
     if (len >= sizeof(g_tx)) return -1;
     memcpy(g_tx, data, len); g_tx[len]=0; return 0;
 }
+/* 记一次失败。测试结束时用 g_fail 决定退出码。 */
 static void fail(const char *w) { fprintf(stderr, "FAIL %s\n", w); g_fail++; }
 
 #define RT201(name) do { \
@@ -26,25 +28,34 @@ static void fail(const char *w) { fprintf(stderr, "FAIL %s\n", w); g_fail++; }
 } while (0)
 
 static int g_boot_ok;
+/* Boot 应答是 Accepted 且 interval 为 300 时记下成功。 */
 static void on_boot(const ocpp201_boot_notification_conf_t *c, void *u) {
     (void)u; if (strcmp(c->status, "Accepted")==0) g_boot_ok=1;
 }
+/* Reset 类型必须是 Soft，否则返回非 0，让库回 InternalError。 */
 static int on_reset(const ocpp201_reset_req_t *req, ocpp201_reset_conf_t *conf, void *u) {
     (void)u; ocpp_str_copy(conf->status, sizeof conf->status, "Accepted"); (void)req; return 0;
 }
 
 typedef struct { char tx[OCPP_FRAME_MAX]; int reset_hits; } sink_t;
 static sink_t g_sink[3];
+/* 多路测试的发送回调。user 指向这一路自己的缓冲。 */
 static int sink_send(const void *data, size_t len, void *user) {
     sink_t *sk = user;
     if (len >= sizeof sk->tx) return -1;
     memcpy(sk->tx, data, len); sk->tx[len] = 0; return 0;
 }
+/* 统计这一路收到的 Reset。三路测试用来确认 accept_control。 */
 static int reset_count(const ocpp201_reset_req_t *req, ocpp201_reset_conf_t *conf, void *user) {
     sink_t *sk = user; (void)req; sk->reset_hits++;
     ocpp_str_copy(conf->status, sizeof conf->status, "Accepted"); return 0;
 }
 
+/**
+ * main - 本文件的测试入口
+ *
+ * 返回 0 表示全部检查通过。失败时向 stderr 打 FAIL，并返回非 0。
+ */
 int main(void) {
     ocpp_port_init();
     ocpp_port_set_send(mock_send, NULL);
