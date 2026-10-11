@@ -32,6 +32,7 @@ ocpp_err_t ocpp16_data_transfer_req_decode(const char *json, ocpp16_data_transfe
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_data_transfer_req_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_data_transfer_req_example(ocpp16_data_transfer_req_t *out) {
@@ -71,6 +72,7 @@ ocpp_err_t ocpp16_data_transfer_conf_decode(const char *json, ocpp16_data_transf
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_data_transfer_conf_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_data_transfer_conf_example(ocpp16_data_transfer_conf_t *out) {

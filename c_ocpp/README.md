@@ -313,7 +313,7 @@ c_ocpp/
   README.md                 本文件
   build_and_test.sh         主机一键配置 + 编译 + ctest
   CMakeLists.txt            仅 Linux 主机
-  port/                     时钟 / arena / 定时器；MCU 替换实现
+  port/                     malloc/free、时钟、定时器；MCU 替换实现
   layer1/                   RPC 组帧 + JSON 辅助（cJSON）
   ocpp16/                   1.6 session + messages
   ocpp201/                  2.0.1 session + messages
@@ -339,12 +339,12 @@ WS[i] rx  -->  session[i]（第 2 层）  -->  RPC 组帧（第 1 层）  -->  s
                   | uniqueId / pending / 定时器 / accept_control
 ```
 
-1. **port**（`port/ocpp_port.c`）— cJSON arena、时钟、软件定时器。芯片上换实现。
+1. **port**（`port/ocpp_port.c`）— `malloc` / `free`、时钟、软件定时器。芯片上换实现。
 2. **`ocpp_link_t`** — 把一个 session 绑到一条传输和策略（send、心跳槽、是否接受控制）。
 3. **第 1 层** — 拼 `[2|3|4, uniqueId, …]`；payload 编解码在每个报文自己的 `.c`。
 4. **第 2 层** — **每个 CSMS 一个** `ocpp16_session_t` 或 `ocpp201_session_t`。
 
-结构体用 **定长缓冲**。应用业务数据不要 `malloc`。cJSON arena **全进程一份**，encode / `session_rx` **不要并行**。
+结构体用 **定长缓冲**。业务字段不要自己 `malloc`。cJSON 树用系统 `malloc` / `free`，用完 `cJSON_Delete`。软件定时器表没有锁，encode / `session_rx` 不要并行。
 
 ### 多运营商（2、3、N 路）
 
@@ -386,7 +386,7 @@ void fanout_status(const ocpp16_status_notification_req_t *req) {
 ```
 
 - **定时器 id** 必须在全部上下文里唯一（`0 .. OCPP_PORT_TIMER_MAX-1`，默认 16）。3 路心跳用 `0,1,2` 即可；不要每路都用 `OCPP_PORT_TIMER_HEARTBEAT`（值为 0）。
-- **RAM**：`N * sizeof(ocpp16_session_t)` 外加一份共享 arena。若每路还要 boot-retry / call 定时器，加大 `OCPP_PORT_TIMER_MAX`，例如 `i*3+0` 心跳、`i*3+1` retry。
+- **RAM**：`N * sizeof(ocpp16_session_t)`。cJSON 树临时走堆，编完就释放。若每路还要 boot-retry / call 定时器，加大 `OCPP_PORT_TIMER_MAX`，例如 `i*3+0` 心跳、`i*3+1` retry。
 - **`accept_control=0`**：Reset / RemoteStart / SetChargingProfile 等回 `CallError` `SecurityError`，不跑业务 handler。查询类如 `GetConfiguration` 仍应答。主备切换：`ocpp16_session_bind()` 改哪一路 `accept_control=1`。
 - **遥测扇出**：固件自己循环 `send_*`。
 - 单路仍可用 `ocpp_port_set_send()` 和 `session_init(s, h, NULL)`。
@@ -443,13 +443,13 @@ c_ocpp/ocpp201
 
 | 宏 | 默认 | 含义 |
 | --- | --- | --- |
-| `OCPP_PORT_ARENA_SIZE` | 8192 | cJSON bump 池，编/解最大一帧要装得下 |
+| `OCPP_PORT_ARENA_SIZE` | 8192 | 仅静态池移植使用。宿主 `ocpp_port.c` 改走 `malloc`，不读这个宏 |
 | `OCPP_PAYLOAD_MAX` | 2048 | session 里 payload 缓冲 |
 | `OCPP_FRAME_MAX` | 4096 | 整帧 `[2,…,payload]` |
 | `OCPP_PORT_TIMER_MAX` | 16 | 软件定时器槽，N 路心跳 id 必须互斥 |
 | `OCPP16_PENDING_MAX` / `OCPP201_PENDING_MAX` | 8 | 每路未完成 CALL 数 |
 
-N 路 RAM 大约 `N × (PAYLOAD + FRAME)` 再加一份 arena。
+N 路 RAM 大约 `N × (PAYLOAD + FRAME)`，外加编解码当次的堆分配。
 
 ### MCU 替换 `port.c`
 
@@ -457,8 +457,8 @@ N 路 RAM 大约 `N × (PAYLOAD + FRAME)` 再加一份 arena。
 
 | 函数 | 单片机上做什么 |
 | --- | --- |
-| `ocpp_port_init` | 把 cJSON hook 指到 arena（可抄 host 里 `cJSON_InitHooks`） |
-| `ocpp_port_malloc/free/realloc` + `arena_reset` | 一块静态 `uint8_t arena[OCPP_PORT_ARENA_SIZE]`，bump 分配；`free` 可为 no-op。`session_rx` 入口已 `arena_reset` |
+| `ocpp_port_init` | 把 cJSON hook 指到 `malloc` / `free`（可抄 host 里 `cJSON_InitHooks`） |
+| `ocpp_port_malloc/free/realloc` | 宿主实现调用 `malloc` / `free` / `realloc`。cJSON 树在 `ocpp_json_dump` 和 `session_rx` 里 `cJSON_Delete` |
 | `ocpp_port_now_ms` | SysTick / `HAL_GetTick` |
 | `ocpp_port_timer_start/stop` | 硬件周期中断，或在节拍里调 `ocpp_port_timer_tick(elapsed_ms)` |
 | `ocpp_link.send` | 为 **这一路** CSMS 写一条 WebSocket **text** 帧；返回 0 成功 |
@@ -537,7 +537,7 @@ LIB16_SRC := $(C_OCPP)/ocpp16/ocpp16_session.c \
 - [ ] `ocpp_port_init` 在任何 encode/rx 之前调用
 - [ ] 每路 `heartbeat_timer_id` 唯一，且 `< OCPP_PORT_TIMER_MAX`
 - [ ] WS text 完整一帧再 `session_rx`
-- [ ] session 对象在 BSS；arena 只单线程/单任务使用
+- [ ] session 对象在 BSS；定时器表只在一个任务里推进
 - [ ] 子协议与库一致：`ocpp1.6` ↔ `c_ocpp16`，`ocpp2.0.1` ↔ `c_ocpp201`
 - [ ] 同时用 1.6 和 2.0.1 时 `cJSON`/`port`/`layer1` 只编一份；全局 Include 不含两套 `messages/`
 - [ ] 主机 `ctest` 仍通过后再切交叉编译

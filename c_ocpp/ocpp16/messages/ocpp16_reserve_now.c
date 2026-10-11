@@ -34,6 +34,7 @@ ocpp_err_t ocpp16_reserve_now_req_decode(const char *json, ocpp16_reserve_now_re
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_reserve_now_req_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_reserve_now_req_example(ocpp16_reserve_now_req_t *out) {
@@ -70,6 +71,7 @@ ocpp_err_t ocpp16_reserve_now_conf_decode(const char *json, ocpp16_reserve_now_c
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_reserve_now_conf_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_reserve_now_conf_example(ocpp16_reserve_now_conf_t *out) {

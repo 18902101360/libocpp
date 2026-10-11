@@ -1,6 +1,6 @@
 /*
  * 充电桩窗口。一条 QWebSocket 对一个 c_ocpp session。
- * cJSON arena 是进程全局的，所以两条连接的收发都留在 GUI 线程。
+ * 套接字和软件定时器表都不是线程安全的，收发留在 GUI 线程。
  */
 #ifndef QT_OCPP_MAINWINDOW_H
 #define QT_OCPP_MAINWINDOW_H

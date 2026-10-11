@@ -16,6 +16,10 @@ extern "C" {
 
 void ocpp_str_copy(char *dst, size_t dst_size, const char *src); /* 定长拷贝并保证 '\0' */
 
+/**
+ * 把 obj 打进 buf，然后 cJSON_Delete(obj)。
+ * 调用方不要再使用这棵树。
+ */
 ocpp_err_t ocpp_json_dump(const cJSON *obj, char *buf, size_t buflen);
 
 /** required=1 时缺字段返回失败；0 表示可选。成功 0，失败负。 */

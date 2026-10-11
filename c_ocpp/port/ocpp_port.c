@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0
  *
- * Linux 宿主默认移植：bump arena + CLOCK_MONOTONIC + 软件定时器。
- * 单片机请换本文件：malloc 可仍用 arena，tick 用 SysTick，send 写你们的 WS。
+ * Linux 宿主默认移植：系统 malloc/free + CLOCK_MONOTONIC + 软件定时器。
+ * 单片机若没有堆，再换成本文件：tick 用 SysTick，send 写你们的 WS。
  */
 #include "ocpp_port.h"
 
@@ -9,6 +9,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -21,65 +22,49 @@ typedef struct {
     void *ctx;
 } ocpp_port_timer_t;
 
-static uint8_t g_arena[OCPP_PORT_ARENA_SIZE]; /* 全工程一份，不可重入 */
-static size_t g_arena_off;
 static ocpp_port_send_fn g_send; /* 仅 link.send 为空时的回落 */
 static void *g_send_user;
 static ocpp_port_timer_t g_timers[OCPP_PORT_TIMER_MAX];
 static uint32_t g_now_ms;
 
-static void *hooks_malloc(size_t sz) {
-    return ocpp_port_malloc(sz);
-}
-
-static void hooks_free(void *p) {
-    ocpp_port_free(p);
-}
-
 void ocpp_port_init(void) {
-    g_arena_off = 0;
     memset(g_timers, 0, sizeof(g_timers));
     cJSON_Hooks hooks;
     memset(&hooks, 0, sizeof(hooks));
-    hooks.malloc_fn = hooks_malloc;
-    hooks.free_fn = hooks_free;
+    /*
+     * 必须直接挂 malloc/free。cJSON 只有在这两个函数指针就是 libc 的
+     * malloc/free 时才会用 realloc，否则它会自己再分配一块再拷贝。
+     */
+    hooks.malloc_fn = malloc;
+    hooks.free_fn = free;
     cJSON_InitHooks(&hooks);
 }
 
 void ocpp_port_arena_reset(void) {
-    g_arena_off = 0;
+    /* 内存由 malloc/free 成对释放。编解码入口仍会调用，这里不再整块丢弃。 */
 }
 
 size_t ocpp_port_arena_used(void) {
-    return g_arena_off;
+    return 0;
 }
 
 void *ocpp_port_malloc(size_t size) {
     if (size == 0) {
         return NULL;
     }
-    size_t aligned = (size + 7u) & ~7u; /* 8 字节对齐，方便 MCU */
-    if (g_arena_off + aligned > OCPP_PORT_ARENA_SIZE) {
-        return NULL;
-    }
-    void *p = &g_arena[g_arena_off];
-    g_arena_off += aligned;
-    return p;
+    return malloc(size);
 }
 
 void ocpp_port_free(void *ptr) {
-    (void)ptr; /* bump arena: freed by ocpp_port_arena_reset() */
+    free(ptr);
 }
 
 void *ocpp_port_realloc(void *ptr, size_t size) {
-    void *n = ocpp_port_malloc(size);
-    if (n == NULL) {
+    if (size == 0) {
+        free(ptr);
         return NULL;
     }
-    if (ptr != NULL && size > 0) {
-        memcpy(n, ptr, size);
-    }
-    return n;
+    return realloc(ptr, size);
 }
 
 uint32_t ocpp_port_now_ms(void) {

@@ -28,6 +28,7 @@ ocpp_err_t ocpp16_unlock_connector_req_decode(const char *json, ocpp16_unlock_co
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_unlock_connector_req_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_unlock_connector_req_example(ocpp16_unlock_connector_req_t *out) {
@@ -61,6 +62,7 @@ ocpp_err_t ocpp16_unlock_connector_conf_decode(const char *json, ocpp16_unlock_c
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_unlock_connector_conf_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_unlock_connector_conf_example(ocpp16_unlock_connector_conf_t *out) {

@@ -46,6 +46,7 @@ ocpp_err_t ocpp16_meter_values_req_decode(const char *json, ocpp16_meter_values_
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_meter_values_req_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_meter_values_req_example(ocpp16_meter_values_req_t *out) {
@@ -82,6 +83,7 @@ ocpp_err_t ocpp16_meter_values_conf_decode(const char *json, ocpp16_meter_values
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_meter_values_conf_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_meter_values_conf_example(ocpp16_meter_values_conf_t *out) {

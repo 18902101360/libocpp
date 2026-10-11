@@ -25,7 +25,9 @@ ocpp_err_t ocpp201_get_report_req_decode(const char *json, ocpp201_get_report_re
     ocpp_port_arena_reset();
     cJSON *o = cJSON_Parse(json);
     if (!o) return OCPP_ERR_PARSE;
-    return ocpp201_get_report_req_from_json(o, out);
+    ocpp_err_t rc = ocpp201_get_report_req_from_json(o, out);
+    cJSON_Delete(o);
+    return rc;
 }
 void ocpp201_get_report_req_example(ocpp201_get_report_req_t *out) {
     memset(out, 0, sizeof(*out));
@@ -56,7 +58,9 @@ ocpp_err_t ocpp201_get_report_conf_decode(const char *json, ocpp201_get_report_c
     ocpp_port_arena_reset();
     cJSON *o = cJSON_Parse(json);
     if (!o) return OCPP_ERR_PARSE;
-    return ocpp201_get_report_conf_from_json(o, out);
+    ocpp_err_t rc = ocpp201_get_report_conf_from_json(o, out);
+    cJSON_Delete(o);
+    return rc;
 }
 void ocpp201_get_report_conf_example(ocpp201_get_report_conf_t *out) {
     memset(out, 0, sizeof(*out));

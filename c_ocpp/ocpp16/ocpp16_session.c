@@ -621,20 +621,25 @@ static void handle_result(ocpp16_session_t *s, const char *action, const cJSON *
 }
 
 ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len) {
-    ocpp_port_arena_reset(); /* 本帧独占 arena；不要与其它 session 并行 rx */
     ocpp_rpc_msg_t msg;
     ocpp_err_t rc = ocpp_rpc_unpack(frame, len, &msg);
-    if (rc != OCPP_OK) return rc;
-    if (msg.type == OCPP_RPC_CALL) return handle_call(s, &msg);
-    if (msg.type == OCPP_RPC_CALLRESULT) {
+    if (rc != OCPP_OK) {
+        return rc;
+    }
+    if (msg.type == OCPP_RPC_CALL) {
+        rc = handle_call(s, &msg);
+    } else if (msg.type == OCPP_RPC_CALLRESULT) {
+        rc = OCPP_ERR_NOTFOUND;
         for (int i = 0; i < OCPP16_PENDING_MAX; i++) {
             if (s->pending[i].used && strcmp(s->pending[i].uid, msg.unique_id) == 0) {
                 s->pending[i].used = 0;
                 handle_result(s, s->pending[i].action, msg.payload);
-                return OCPP_OK;
+                rc = OCPP_OK;
+                break;
             }
         }
-        return OCPP_ERR_NOTFOUND;
     }
-    return OCPP_OK;
+    /* unpack 把 payload 从根上摘下来了，根已经 Delete。payload 还在堆上。 */
+    cJSON_Delete(msg.payload);
+    return rc;
 }

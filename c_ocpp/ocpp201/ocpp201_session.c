@@ -116,20 +116,23 @@ static void handle_result(ocpp201_session_t *s, const char *action, const cJSON 
     else if (strcmp(action,"TransactionEvent")==0) { ocpp201_transaction_event_conf_t conf; ocpp201_transaction_event_conf_from_json(payload,&conf); if(s->handlers.transaction_event_conf) s->handlers.transaction_event_conf(&conf,s->handlers.user); return; }
 }
 ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len) {
-    ocpp_port_arena_reset(); /* 本帧独占 arena；不要与其它 session 并行 rx */
     ocpp_rpc_msg_t msg;
     ocpp_err_t rc = ocpp_rpc_unpack(frame, len, &msg);
     if (rc != OCPP_OK) return rc;
-    if (msg.type == OCPP_RPC_CALL) return handle_call(s, &msg);
-    if (msg.type == OCPP_RPC_CALLRESULT) {
+    if (msg.type == OCPP_RPC_CALL) {
+        rc = handle_call(s, &msg);
+    } else if (msg.type == OCPP_RPC_CALLRESULT) {
+        rc = OCPP_ERR_NOTFOUND;
         for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
             if (s->pending[i].used && strcmp(s->pending[i].uid, msg.unique_id) == 0) {
                 s->pending[i].used = 0;
                 handle_result(s, s->pending[i].action, msg.payload);
-                return OCPP_OK;
+                rc = OCPP_OK;
+                break;
             }
         }
-        return OCPP_ERR_NOTFOUND;
     }
-    return OCPP_OK;
+    /* unpack 摘下的 payload 还在堆上，用完交给 free。 */
+    cJSON_Delete(msg.payload);
+    return rc;
 }

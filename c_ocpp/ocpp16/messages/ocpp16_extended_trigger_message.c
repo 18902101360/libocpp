@@ -28,6 +28,7 @@ ocpp_err_t ocpp16_extended_trigger_message_req_decode(const char *json, ocpp16_e
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_extended_trigger_message_req_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_extended_trigger_message_req_example(ocpp16_extended_trigger_message_req_t *out) {
@@ -61,6 +62,7 @@ ocpp_err_t ocpp16_extended_trigger_message_conf_decode(const char *json, ocpp16_
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_extended_trigger_message_conf_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_extended_trigger_message_conf_example(ocpp16_extended_trigger_message_conf_t *out) {

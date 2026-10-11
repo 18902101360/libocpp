@@ -23,9 +23,13 @@ void ocpp_str_copy(char *dst, size_t dst_size, const char *src) {
 
 ocpp_err_t ocpp_json_dump(const cJSON *obj, char *buf, size_t buflen) {
     if (obj == NULL || buf == NULL || buflen < 3) {
+        cJSON_Delete((cJSON *)obj);
         return OCPP_ERR_ARG;
     }
-    if (!cJSON_PrintPreallocated((cJSON *)obj, buf, (int)buflen, 0)) {
+    /* PrintPreallocated 只写调用方的 buf。树本身要用 free 还回去。 */
+    int ok = cJSON_PrintPreallocated((cJSON *)obj, buf, (int)buflen, 0);
+    cJSON_Delete((cJSON *)obj);
+    if (!ok) {
         return OCPP_ERR_OVERFLOW;
     }
     return OCPP_OK;

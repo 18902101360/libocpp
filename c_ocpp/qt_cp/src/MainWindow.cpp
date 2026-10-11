@@ -410,8 +410,8 @@ void MainWindow::on201Disconnected() {
 /**
  * MainWindow::on16Text - 把一整帧文本交给 session
  *
- * session_rx 会清空 cJSON arena。bytes 必须活到调用结束，不能把临时指针传进去。
- * 2.0.1 的槽也在这个线程，所以两路不会同时碰 arena。
+ * bytes 必须活到 session_rx 返回，解析期间还要读这块缓冲。
+ * 2.0.1 的槽也在这个线程，两路不会同时改同一份定时器表。
  */
 void MainWindow::on16Text(const QString &message) {
     logLine(QStringLiteral("1.6 RX %1").arg(message));

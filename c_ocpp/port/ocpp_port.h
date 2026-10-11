@@ -3,8 +3,8 @@
  * MCU 移植层。协议代码不直接 malloc / 读时钟 / 发网络。
  * 芯片工程保留本头文件，替换 ocpp_port.c（或提供同名函数并排除 host 实现）。
  *
- * 多路 CSMS：每个 session 绑自己的 ocpp_link_t；cJSON arena 全局一份，
- * encode / session_rx 不要并行。
+ * 多路 CSMS：每个 session 绑自己的 ocpp_link_t。
+ * cJSON 走 ocpp_port_malloc/free，也就是系统 malloc/free。
  */
 #ifndef OCPP_PORT_H
 #define OCPP_PORT_H
@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 #ifndef OCPP_PORT_ARENA_SIZE
-#define OCPP_PORT_ARENA_SIZE 8192u /* cJSON bump 池字节数，按最大一帧加大 */
+#define OCPP_PORT_ARENA_SIZE 8192u /* 保留给仍使用静态池的移植。宿主实现改走 malloc，不再读这个宏。 */
 #endif
 
 #ifndef OCPP_PORT_TIMER_MAX
@@ -56,13 +56,14 @@ int ocpp_link_send(const ocpp_link_t *link, const void *data, size_t len);
 /** 1=会改桩状态的 CSMS action（Reset、RemoteStart、SetChargingProfile…）。 */
 int ocpp_action_is_control(const char *action);
 
-/** 启动时调用一次：把 cJSON 钩到 arena，并清定时器表。 */
+/** 启动时调用一次：把 cJSON 钩到 malloc/free，并清定时器表。 */
 void ocpp_port_init(void);
 
-/** cJSON 用的 bump 分配。free 可为 no-op；每轮编解码前 reset。 */
+/** cJSON 的分配。宿主实现调用 malloc、free、realloc。 */
 void *ocpp_port_malloc(size_t size);
 void ocpp_port_free(void *ptr);
 void *ocpp_port_realloc(void *ptr, size_t size);
+/** 兼容旧入口。系统堆实现里是空函数，树由 cJSON_Delete 释放。 */
 void ocpp_port_arena_reset(void);
 size_t ocpp_port_arena_used(void);
 

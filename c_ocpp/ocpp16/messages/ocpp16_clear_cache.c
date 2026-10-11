@@ -29,6 +29,7 @@ ocpp_err_t ocpp16_clear_cache_req_decode(const char *json, ocpp16_clear_cache_re
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_clear_cache_req_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_clear_cache_req_example(ocpp16_clear_cache_req_t *out) {
@@ -62,6 +63,7 @@ ocpp_err_t ocpp16_clear_cache_conf_decode(const char *json, ocpp16_clear_cache_c
     cJSON *o = cJSON_Parse(json);
     if (o == NULL) return OCPP_ERR_PARSE;
     ocpp_err_t rc = ocpp16_clear_cache_conf_from_json(o, out);
+    cJSON_Delete(o);
     return rc;
 }
 void ocpp16_clear_cache_conf_example(ocpp16_clear_cache_conf_t *out) {

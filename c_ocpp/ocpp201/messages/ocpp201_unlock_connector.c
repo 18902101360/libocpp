@@ -27,7 +27,9 @@ ocpp_err_t ocpp201_unlock_connector_req_decode(const char *json, ocpp201_unlock_
     ocpp_port_arena_reset();
     cJSON *o = cJSON_Parse(json);
     if (!o) return OCPP_ERR_PARSE;
-    return ocpp201_unlock_connector_req_from_json(o, out);
+    ocpp_err_t rc = ocpp201_unlock_connector_req_from_json(o, out);
+    cJSON_Delete(o);
+    return rc;
 }
 void ocpp201_unlock_connector_req_example(ocpp201_unlock_connector_req_t *out) {
     memset(out, 0, sizeof(*out));
@@ -59,7 +61,9 @@ ocpp_err_t ocpp201_unlock_connector_conf_decode(const char *json, ocpp201_unlock
     ocpp_port_arena_reset();
     cJSON *o = cJSON_Parse(json);
     if (!o) return OCPP_ERR_PARSE;
-    return ocpp201_unlock_connector_conf_from_json(o, out);
+    ocpp_err_t rc = ocpp201_unlock_connector_conf_from_json(o, out);
+    cJSON_Delete(o);
+    return rc;
 }
 void ocpp201_unlock_connector_conf_example(ocpp201_unlock_connector_conf_t *out) {
     memset(out, 0, sizeof(*out));
