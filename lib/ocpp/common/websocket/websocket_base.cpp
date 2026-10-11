@@ -39,31 +39,60 @@ WebsocketBase::~WebsocketBase() {
     }
 }
 
+/**
+ * WebsocketBase::set_connection_options_base - set connection options base
+ * @connection_options: 传入的 connection_options
+ */
 void WebsocketBase::set_connection_options_base(const WebsocketConnectionOptions& connection_options) {
     this->connection_options = connection_options;
 }
 
+/**
+ * WebsocketBase::register_connected_callback - register connected callback
+ * @callback: 传入的 callback
+ */
 void WebsocketBase::register_connected_callback(const std::function<void(OcppProtocolVersion protocol)>& callback) {
     this->connected_callback = callback;
 }
 
+/**
+ * WebsocketBase::register_disconnected_callback - register disconnected callback
+ * @callback: 传入的 callback
+ */
 void WebsocketBase::register_disconnected_callback(const std::function<void()>& callback) {
     this->disconnected_callback = callback;
 }
 
+/**
+ * WebsocketBase::register_stopped_connecting_callback - register stopped connecting callback
+ * @callback: 传入的 callback
+ */
 void WebsocketBase::register_stopped_connecting_callback(
     const std::function<void(const WebsocketCloseReason reason)>& callback) {
     this->stopped_connecting_callback = callback;
 }
 
+/**
+ * WebsocketBase::register_message_callback - register message callback
+ * @callback: 传入的 callback
+ */
 void WebsocketBase::register_message_callback(const std::function<void(const std::string& message)>& callback) {
     this->message_callback = callback;
 }
 
+/**
+ * WebsocketBase::register_connection_failed_callback - register connection failed callback
+ * @callback: 传入的 callback
+ */
 void WebsocketBase::register_connection_failed_callback(const std::function<void(ConnectionFailedReason)>& callback) {
     this->connection_failed_callback = callback;
 }
 
+/**
+ * WebsocketBase::initialized - initialized
+ *
+ * 返回 bool。
+ */
 bool WebsocketBase::initialized() {
     if (this->connected_callback == nullptr) {
         EVLOG_error << "Not properly initialized: please register connected callback.";
@@ -81,6 +110,10 @@ bool WebsocketBase::initialized() {
     return true;
 }
 
+/**
+ * WebsocketBase::disconnect - disconnect
+ * @code: 传入的 code
+ */
 void WebsocketBase::disconnect(const WebsocketCloseReason code) {
     if (!this->initialized()) {
         EVLOG_error << "Cannot disconnect a websocket that was not initialized";
@@ -106,10 +139,20 @@ void WebsocketBase::disconnect(const WebsocketCloseReason code) {
     this->close(code, "");
 }
 
+/**
+ * WebsocketBase::is_connected - is connected
+ *
+ * 返回 bool。
+ */
 bool WebsocketBase::is_connected() {
     return this->m_is_connected;
 }
 
+/**
+ * WebsocketBase::getAuthorizationHeader - getAuthorizationHeader
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> WebsocketBase::getAuthorizationHeader() {
     std::optional<std::string> auth_header = std::nullopt;
     const auto authorization_key = this->connection_options.authorization_key;
@@ -127,6 +170,12 @@ std::optional<std::string> WebsocketBase::getAuthorizationHeader() {
     return auth_header;
 }
 
+/**
+ * WebsocketBase::log_on_fail - log on fail
+ * @ec: 传入的 ec
+ * @transport_ec: 传入的 transport_ec
+ * @http_status: 传入的 http_status
+ */
 void WebsocketBase::log_on_fail(const std::error_code& ec, const boost::system::error_code& transport_ec,
                                 const int http_status) {
     EVLOG_error << "Failed to connect to websocket server"
@@ -136,6 +185,11 @@ void WebsocketBase::log_on_fail(const std::error_code& ec, const boost::system::
                 << ", Transport error category: " << transport_ec.category().name();
 }
 
+/**
+ * WebsocketBase::get_reconnect_interval - get reconnect interval
+ *
+ * 返回 long。
+ */
 long WebsocketBase::get_reconnect_interval() {
 
     // We need to add 1 to the repeat times since the first try is already connection_attempt 1
@@ -158,6 +212,9 @@ long WebsocketBase::get_reconnect_interval() {
     return this->reconnect_backoff_ms;
 }
 
+/**
+ * WebsocketBase::cancel_reconnect_timer - cancel reconnect timer
+ */
 void WebsocketBase::cancel_reconnect_timer() {
     const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
     if (this->reconnect_timer) {
@@ -166,6 +223,11 @@ void WebsocketBase::cancel_reconnect_timer() {
     this->reconnect_timer = nullptr;
 }
 
+/**
+ * WebsocketBase::set_websocket_ping_interval - set websocket ping interval
+ * @ping_interval_s: 传入的 ping_interval_s
+ * @pong_timeout_s: 传入的 pong_timeout_s
+ */
 void WebsocketBase::set_websocket_ping_interval(std::int32_t ping_interval_s, std::int32_t pong_timeout_s) {
     static constexpr std::int32_t PING_TIMER_INTERVAL = 1;
 
@@ -218,10 +280,18 @@ void WebsocketBase::set_websocket_ping_interval(std::int32_t ping_interval_s, st
     this->connection_options.pong_timeout_s = pong_timeout_s;
 }
 
+/**
+ * WebsocketBase::set_authorization_key - set authorization key
+ * @authorization_key: 传入的 authorization_key
+ */
 void WebsocketBase::set_authorization_key(const std::string& authorization_key) {
     this->connection_options.authorization_key = authorization_key;
 }
 
+/**
+ * WebsocketBase::on_pong_timeout - on pong timeout
+ * @msg: 传入的 msg
+ */
 void WebsocketBase::on_pong_timeout(std::string msg) {
     EVLOG_info << "Reconnecting because of a pong timeout after " << this->connection_options.pong_timeout_s << "s"
                << " and with reason: " << msg;

@@ -25,6 +25,10 @@ TariffAndCost::TariffAndCost(const FunctionalBlockContext& functional_block_cont
     io_context(io_context) {
 }
 
+/**
+ * TariffAndCost::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void TariffAndCost::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     if (message.messageType == MessageType::CostUpdated) {
         const auto& json_message = message.message;
@@ -34,6 +38,12 @@ void TariffAndCost::handle_message(const ocpp::EnhancedMessage<MessageType>& mes
     }
 }
 
+/**
+ * TariffAndCost::handle_cost_and_tariff - handle cost and tariff
+ * @response: 传入的 response
+ * @original_message: 传入的 original_message
+ * @original_transaction_event_response: 传入的 original_transaction_event_response
+ */
 void TariffAndCost::handle_cost_and_tariff(const TransactionEventResponse& response,
                                            const TransactionEventRequest& original_message,
                                            const json& original_transaction_event_response) {
@@ -181,6 +191,10 @@ void TariffAndCost::handle_cost_and_tariff(const TransactionEventResponse& respo
     }
 }
 
+/**
+ * TariffAndCost::handle_costupdated_req - handle costupdated req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void TariffAndCost::handle_costupdated_req(const Call<CostUpdatedRequest> call) {
     const CostUpdatedResponse response;
     const ocpp::CallResult<CostUpdatedResponse> call_result(response, call.uniqueId);
@@ -256,12 +270,22 @@ void TariffAndCost::handle_costupdated_req(const Call<CostUpdatedRequest> call) 
         this->io_context);
 }
 
+/**
+ * TariffAndCost::is_multilanguage_enabled - is multilanguage enabled
+ *
+ * 返回 bool。
+ */
 bool TariffAndCost::is_multilanguage_enabled() const {
     return this->context.device_model
         .get_optional_value<bool>(ControllerComponentVariables::CustomImplementationMultiLanguageEnabled)
         .value_or(false);
 }
 
+/**
+ * TariffAndCost::is_tariff_enabled - is tariff enabled
+ *
+ * 返回 bool。
+ */
 bool TariffAndCost::is_tariff_enabled() const {
     return this->context.device_model
                .get_optional_value<bool>(ControllerComponentVariables::TariffCostCtrlrAvailableTariff)
@@ -271,6 +295,11 @@ bool TariffAndCost::is_tariff_enabled() const {
                .value_or(false);
 }
 
+/**
+ * TariffAndCost::is_cost_enabled - is cost enabled
+ *
+ * 返回 bool。
+ */
 bool TariffAndCost::is_cost_enabled() const {
     return this->context.device_model
                .get_optional_value<bool>(ControllerComponentVariables::TariffCostCtrlrAvailableCost)

@@ -33,6 +33,9 @@ Schemas::Schemas(json&& schema_in) : schema(std::move(schema_in)) {
     validator->set_root_schema(this->schema);
 }
 
+/**
+ * Schemas::load_root_schema - load root schema
+ */
 void Schemas::load_root_schema() {
     const fs::path config_schema_path = this->schemas_path / "Config.json";
 
@@ -53,14 +56,29 @@ void Schemas::load_root_schema() {
     this->validator->set_root_schema(this->schema);
 }
 
+/**
+ * Schemas::get_schema - get schema
+ *
+ * 返回 json。
+ */
 json Schemas::get_schema() {
     return this->schema;
 }
 
+/**
+ * Schemas::get_validator - get validator
+ *
+ * 返回 std::shared_ptr<json_validator>。
+ */
 std::shared_ptr<json_validator> Schemas::get_validator() {
     return this->validator;
 }
 
+/**
+ * Schemas::loader - loader
+ * @uri: 传入的 uri
+ * @schema: 传入的 schema
+ */
 void Schemas::loader(const json_uri& uri, json& schema) {
     std::string location = uri.location();
     if (location == "http://json-schema.org/draft-07/schema") {
@@ -83,6 +101,11 @@ void Schemas::loader(const json_uri& uri, json& schema) {
     throw std::runtime_error(uri.url() + " is not supported for schema loading at the moment");
 }
 
+/**
+ * Schemas::format_checker - format checker
+ * @format: 传入的 format
+ * @value: 传入的 value
+ */
 void Schemas::format_checker(const std::string& format, const std::string& value) {
     if (format == "date-time") {
         if (!std::regex_match(value, Schemas::date_time_regex)) {

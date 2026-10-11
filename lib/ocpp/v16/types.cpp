@@ -14,6 +14,12 @@ namespace ocpp {
 namespace v16 {
 
 namespace conversions {
+/**
+ * messagetype_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @m: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string messagetype_to_string(MessageType m) {
     switch (m) {
     case MessageType::Authorize:
@@ -179,6 +185,12 @@ std::string messagetype_to_string(MessageType m) {
     throw EnumToStringException{m, "MessageType"};
 }
 
+/**
+ * string_to_messagetype - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 MessageType。
+ */
 MessageType string_to_messagetype(const std::string& s) {
     if (s == "Authorize") {
         return MessageType::Authorize;
@@ -420,6 +432,13 @@ MessageType string_to_messagetype(const std::string& s) {
 
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @message_type: OCPP 报文类型
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const MessageType& message_type) {
     os << conversions::messagetype_to_string(message_type);
     return os;
@@ -507,6 +526,12 @@ std::ostream& operator<<(std::ostream& os, const SupportedFeatureProfiles& suppo
 
 namespace conversions {
 
+/**
+ * charge_point_connection_state_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charge_point_connection_state_to_string(ChargePointConnectionState e) {
     switch (e) {
     case ChargePointConnectionState::Disconnected:
@@ -524,6 +549,12 @@ std::string charge_point_connection_state_to_string(ChargePointConnectionState e
     throw EnumToStringException{e, "ChargePointConnectionState"};
 }
 
+/**
+ * string_to_charge_point_connection_state - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargePointConnectionState。
+ */
 ChargePointConnectionState string_to_charge_point_connection_state(const std::string& s) {
     if (s == "Disconnected") {
         return ChargePointConnectionState::Disconnected;
@@ -545,6 +576,13 @@ ChargePointConnectionState string_to_charge_point_connection_state(const std::st
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charge_point_connection_state: 传入的 charge_point_connection_state
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargePointConnectionState& charge_point_connection_state) {
     os << conversions::charge_point_connection_state_to_string(charge_point_connection_state);
     return os;

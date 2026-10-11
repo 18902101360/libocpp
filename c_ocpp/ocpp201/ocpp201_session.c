@@ -3,43 +3,332 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-/* 语义同 ocpp16_session.c：每路独立 seq/pending/send，Boot 后按本路 timer 发心跳。 */
-static void heartbeat_timer(int id, void *ctx) { ocpp201_session_t *s=(ocpp201_session_t*)ctx; (void)id; ocpp201_heartbeat_req_t req; ocpp201_heartbeat_req_example(&req); ocpp201_session_send_heartbeat(s,&req); }
-static int session_tx(ocpp201_session_t *s) { return ocpp_link_send(&s->link, s->frame, strlen(s->frame)); }
-void ocpp201_session_bind(ocpp201_session_t *s, const ocpp_link_t *link) { if(link) s->link=*link; }
-void ocpp201_session_init(ocpp201_session_t *s, const ocpp201_handlers_t *h, const ocpp_link_t *link) {
-    memset(s,0,sizeof(*s)); s->seq=1; s->heartbeat_interval_s=300;
-    s->link.accept_control=1; s->link.heartbeat_timer_id=OCPP_PORT_TIMER_HEARTBEAT;
-    if(h) s->handlers=*h; ocpp201_session_bind(s, link);
+/* 仅 Boot 已被接受后使用。到期时发一帧 Heartbeat。 */
+static void heartbeat_timer(int id, void *ctx) {
+    ocpp201_session_t *s = (ocpp201_session_t *)ctx;
+    (void)id;
+    ocpp201_heartbeat_req_t req;
+    ocpp201_heartbeat_req_example(&req);
+    ocpp201_session_send_heartbeat(s, &req);
 }
-static int pending_add(ocpp201_session_t *s, const char *uid, const char *action) { for(int i=0;i<8;i++) if(!s->pending[i].used){ s->pending[i].used=1; ocpp_str_copy(s->pending[i].uid,sizeof(s->pending[i].uid),uid); ocpp_str_copy(s->pending[i].action,sizeof(s->pending[i].action),action); return 0;} return -1; }
-ocpp_err_t ocpp201_session_call(ocpp201_session_t *s, const char *action, const char *payload_json) { char uid[16]; snprintf(uid,sizeof(uid),"%u",s->seq++); ocpp_err_t rc=ocpp_rpc_pack_call(uid,action,payload_json,s->frame,sizeof(s->frame)); if(rc!=OCPP_OK) return rc; if(pending_add(s,uid,action)!=0) return OCPP_ERR_OVERFLOW; if(session_tx(s)!=0) return OCPP_ERR_IO; return OCPP_OK; }
+
+/* Pending/Rejected 的一次性定时器。到点重发上次的 BootNotification。 */
+static void boot_retry_timer(int id, void *ctx) {
+    ocpp201_session_t *s = (ocpp201_session_t *)ctx;
+    (void)id;
+    if (s->has_boot_req) {
+        ocpp201_session_send_boot_notification(s, &s->boot_req);
+    }
+}
+/* 把 s->frame 交给这一路 send。0 成功。 */
+static int session_tx(ocpp201_session_t *s) { return ocpp_link_send(&s->link, s->frame, strlen(s->frame)); }
+/**
+ * ocpp201_session_bind - 换掉这一路的发送函数、心跳槽或控制权
+ * @s: 已初始化的 session
+ * @link: 新链路。NULL 时保持原样
+ *
+ * 用途与 ocpp16_session_bind 相同。
+ */
+void ocpp201_session_bind(ocpp201_session_t *s, const ocpp_link_t *link) { if(link) s->link=*link; }
+/**
+ * ocpp201_session_init - 清零并绑定一路 2.0.1 会话
+ * @s: 调用方提供的对象，放 BSS，不要放任务栈
+ * @h: 业务回调。NULL 表示全部用示例应答
+ * @link: 这一路的发送函数。NULL 时走全局 send，心跳槽 0，accept_control 为 1
+ *
+ * uniqueId 从 1 开始，默认心跳间隔 300 秒。
+ */
+void ocpp201_session_init(ocpp201_session_t *s, const ocpp201_handlers_t *h, const ocpp_link_t *link) {
+    memset(s, 0, sizeof(*s));
+    s->seq = 1;
+    s->heartbeat_interval_s = 300;
+    s->link.accept_control = 1;
+    s->link.heartbeat_timer_id = OCPP_PORT_TIMER_HEARTBEAT;
+    if (h) {
+        s->handlers = *h;
+    }
+    ocpp201_session_bind(s, link);
+}
+/* 记下尚未收到 CALLRESULT 的 uniqueId。表满返回 -1。 */
+static int pending_add(ocpp201_session_t *s, const char *uid, const char *action) {
+    for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
+        if (!s->pending[i].used) {
+            s->pending[i].used = 1;
+            ocpp_str_copy(s->pending[i].uid, sizeof(s->pending[i].uid), uid);
+            ocpp_str_copy(s->pending[i].action, sizeof(s->pending[i].action), action);
+            return 0;
+        }
+    }
+    return -1;
+}
+/* 发送失败时撤掉刚记下的 pending，避免槽被一条没发出去的 CALL 占死。 */
+static void pending_drop(ocpp201_session_t *s, const char *uid) {
+    for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
+        if (s->pending[i].used && strcmp(s->pending[i].uid, uid) == 0) {
+            s->pending[i].used = 0;
+            return;
+        }
+    }
+}
+/**
+ * ocpp201_session_call - 发出一条 2.0.1 CALL
+ * @s: 本路会话
+ * @action: OCPP action 名
+ * @payload_json: 已编好的对象文本
+ *
+ * uniqueId 用本路递增序号。返回 OCPP_OK，或组帧、pending、发送的失败码。
+ */
+ocpp_err_t ocpp201_session_call(ocpp201_session_t *s, const char *action, const char *payload_json) {
+    char uid[16];
+    snprintf(uid, sizeof(uid), "%u", s->seq++);
+    ocpp_err_t rc = ocpp_rpc_pack_call(uid, action, payload_json, s->frame, sizeof(s->frame));
+    if (rc != OCPP_OK) return rc;
+    if (pending_add(s, uid, action) != 0) return OCPP_ERR_OVERFLOW;
+    if (session_tx(s) != 0) {
+        pending_drop(s, uid);
+        return OCPP_ERR_IO;
+    }
+    return OCPP_OK;
+}
+/**
+ * ocpp201_session_send_authorize - 桩发出 Authorize
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_authorize(ocpp201_session_t *s, const ocpp201_authorize_req_t *req) { ocpp_err_t rc=ocpp201_authorize_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"Authorize",s->payload); }
-ocpp_err_t ocpp201_session_send_boot_notification(ocpp201_session_t *s, const ocpp201_boot_notification_req_t *req) { ocpp_err_t rc=ocpp201_boot_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"BootNotification",s->payload); }
+/**
+ * ocpp201_session_send_boot_notification - 桩发出 BootNotification
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
+ocpp_err_t ocpp201_session_send_boot_notification(ocpp201_session_t *s, const ocpp201_boot_notification_req_t *req) {
+    /* 留下请求。Pending/Rejected 到点要原样重发。 */
+    if (req != NULL) {
+        s->boot_req = *req;
+        s->has_boot_req = 1;
+    }
+    ocpp_err_t rc = ocpp201_boot_notification_req_encode(req, s->payload, sizeof(s->payload));
+    if (rc != OCPP_OK) return rc;
+    return ocpp201_session_call(s, "BootNotification", s->payload);
+}
+/**
+ * ocpp201_session_send_cleared_charging_limit - 桩发出 ClearedChargingLimit
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_cleared_charging_limit(ocpp201_session_t *s, const ocpp201_cleared_charging_limit_req_t *req) { ocpp_err_t rc=ocpp201_cleared_charging_limit_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"ClearedChargingLimit",s->payload); }
+/**
+ * ocpp201_session_send_data_transfer - 桩发出 DataTransfer
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_data_transfer(ocpp201_session_t *s, const ocpp201_data_transfer_req_t *req) { ocpp_err_t rc=ocpp201_data_transfer_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"DataTransfer",s->payload); }
+/**
+ * ocpp201_session_send_firmware_status_notification - 桩发出 FirmwareStatusNotification
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_firmware_status_notification(ocpp201_session_t *s, const ocpp201_firmware_status_notification_req_t *req) { ocpp_err_t rc=ocpp201_firmware_status_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"FirmwareStatusNotification",s->payload); }
+/**
+ * ocpp201_session_send_get15118_ev_certificate - 桩发出 Get15118EVCertificate
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_get15118_ev_certificate(ocpp201_session_t *s, const ocpp201_get15118_ev_certificate_req_t *req) { ocpp_err_t rc=ocpp201_get15118_ev_certificate_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"Get15118EVCertificate",s->payload); }
+/**
+ * ocpp201_session_send_get_certificate_status - 桩发出 GetCertificateStatus
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_get_certificate_status(ocpp201_session_t *s, const ocpp201_get_certificate_status_req_t *req) { ocpp_err_t rc=ocpp201_get_certificate_status_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"GetCertificateStatus",s->payload); }
+/**
+ * ocpp201_session_send_heartbeat - 桩发出 Heartbeat
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_heartbeat(ocpp201_session_t *s, const ocpp201_heartbeat_req_t *req) { ocpp_err_t rc=ocpp201_heartbeat_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"Heartbeat",s->payload); }
+/**
+ * ocpp201_session_send_log_status_notification - 桩发出 LogStatusNotification
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_log_status_notification(ocpp201_session_t *s, const ocpp201_log_status_notification_req_t *req) { ocpp_err_t rc=ocpp201_log_status_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"LogStatusNotification",s->payload); }
+/**
+ * ocpp201_session_send_meter_values - 桩发出 MeterValues
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_meter_values(ocpp201_session_t *s, const ocpp201_meter_values_req_t *req) { ocpp_err_t rc=ocpp201_meter_values_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"MeterValues",s->payload); }
+/**
+ * ocpp201_session_send_notify_charging_limit - 桩发出 NotifyChargingLimit
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_charging_limit(ocpp201_session_t *s, const ocpp201_notify_charging_limit_req_t *req) { ocpp_err_t rc=ocpp201_notify_charging_limit_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyChargingLimit",s->payload); }
+/**
+ * ocpp201_session_send_notify_customer_information - 桩发出 NotifyCustomerInformation
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_customer_information(ocpp201_session_t *s, const ocpp201_notify_customer_information_req_t *req) { ocpp_err_t rc=ocpp201_notify_customer_information_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyCustomerInformation",s->payload); }
+/**
+ * ocpp201_session_send_notify_display_messages - 桩发出 NotifyDisplayMessages
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_display_messages(ocpp201_session_t *s, const ocpp201_notify_display_messages_req_t *req) { ocpp_err_t rc=ocpp201_notify_display_messages_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyDisplayMessages",s->payload); }
+/**
+ * ocpp201_session_send_notify_ev_charging_needs - 桩发出 NotifyEVChargingNeeds
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_ev_charging_needs(ocpp201_session_t *s, const ocpp201_notify_ev_charging_needs_req_t *req) { ocpp_err_t rc=ocpp201_notify_ev_charging_needs_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyEVChargingNeeds",s->payload); }
+/**
+ * ocpp201_session_send_notify_ev_charging_schedule - 桩发出 NotifyEVChargingSchedule
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_ev_charging_schedule(ocpp201_session_t *s, const ocpp201_notify_ev_charging_schedule_req_t *req) { ocpp_err_t rc=ocpp201_notify_ev_charging_schedule_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyEVChargingSchedule",s->payload); }
+/**
+ * ocpp201_session_send_notify_event - 桩发出 NotifyEvent
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_event(ocpp201_session_t *s, const ocpp201_notify_event_req_t *req) { ocpp_err_t rc=ocpp201_notify_event_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyEvent",s->payload); }
+/**
+ * ocpp201_session_send_notify_monitoring_report - 桩发出 NotifyMonitoringReport
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_monitoring_report(ocpp201_session_t *s, const ocpp201_notify_monitoring_report_req_t *req) { ocpp_err_t rc=ocpp201_notify_monitoring_report_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyMonitoringReport",s->payload); }
+/**
+ * ocpp201_session_send_notify_report - 桩发出 NotifyReport
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_notify_report(ocpp201_session_t *s, const ocpp201_notify_report_req_t *req) { ocpp_err_t rc=ocpp201_notify_report_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"NotifyReport",s->payload); }
+/**
+ * ocpp201_session_send_publish_firmware_status_notification - 桩发出 PublishFirmwareStatusNotification
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_publish_firmware_status_notification(ocpp201_session_t *s, const ocpp201_publish_firmware_status_notification_req_t *req) { ocpp_err_t rc=ocpp201_publish_firmware_status_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"PublishFirmwareStatusNotification",s->payload); }
+/**
+ * ocpp201_session_send_report_charging_profiles - 桩发出 ReportChargingProfiles
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_report_charging_profiles(ocpp201_session_t *s, const ocpp201_report_charging_profiles_req_t *req) { ocpp_err_t rc=ocpp201_report_charging_profiles_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"ReportChargingProfiles",s->payload); }
+/**
+ * ocpp201_session_send_reservation_status_update - 桩发出 ReservationStatusUpdate
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_reservation_status_update(ocpp201_session_t *s, const ocpp201_reservation_status_update_req_t *req) { ocpp_err_t rc=ocpp201_reservation_status_update_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"ReservationStatusUpdate",s->payload); }
+/**
+ * ocpp201_session_send_security_event_notification - 桩发出 SecurityEventNotification
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_security_event_notification(ocpp201_session_t *s, const ocpp201_security_event_notification_req_t *req) { ocpp_err_t rc=ocpp201_security_event_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"SecurityEventNotification",s->payload); }
+/**
+ * ocpp201_session_send_sign_certificate - 桩发出 SignCertificate
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_sign_certificate(ocpp201_session_t *s, const ocpp201_sign_certificate_req_t *req) { ocpp_err_t rc=ocpp201_sign_certificate_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"SignCertificate",s->payload); }
+/**
+ * ocpp201_session_send_status_notification - 桩发出 StatusNotification
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_status_notification(ocpp201_session_t *s, const ocpp201_status_notification_req_t *req) { ocpp_err_t rc=ocpp201_status_notification_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"StatusNotification",s->payload); }
+/**
+ * ocpp201_session_send_transaction_event - 桩发出 TransactionEvent
+ * @s: 本路会话
+ * @req: 已填好的请求。encode 写入 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 满或 send 失败时返回负的 ocpp_err_t。
+ * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
+ */
 ocpp_err_t ocpp201_session_send_transaction_event(ocpp201_session_t *s, const ocpp201_transaction_event_req_t *req) { ocpp_err_t rc=ocpp201_transaction_event_req_encode(req,s->payload,sizeof(s->payload)); if(rc!=OCPP_OK) return rc; return ocpp201_session_call(s,"TransactionEvent",s->payload); }
 /* CSMS→桩 CALL：decode → handler（可改 conf）→ CALLRESULT；handler 非 0 则 InternalError。 */
+/*
+ * 处理 CSMS 发来的 CALL。控制类 action 在 accept_control 为 0 时回 SecurityError。
+ * 回调返回非 0 则回 InternalError，没有回调就用示例 conf。
+ */
 static ocpp_err_t handle_call(ocpp201_session_t *s, ocpp_rpc_msg_t *msg) {
     /* 遥测链路：不跑 handler，避免第二家 CSMS Reset/启停。 */
     if (!s->link.accept_control && ocpp_action_is_control(msg->action)) {
@@ -88,9 +377,32 @@ static ocpp_err_t handle_call(ocpp201_session_t *s, ocpp_rpc_msg_t *msg) {
     else if (strcmp(msg->action,"UpdateFirmware")==0) { ocpp201_update_firmware_req_t req; ocpp201_update_firmware_conf_t conf; ocpp201_update_firmware_req_from_json(msg->payload,&req); ocpp201_update_firmware_conf_example(&conf); if(s->handlers.update_firmware_req){ if(s->handlers.update_firmware_req(&req,&conf,s->handlers.user)!=0){ ocpp_rpc_pack_callerror(msg->unique_id,"InternalError","handler",s->frame,sizeof(s->frame)); session_tx(s); return OCPP_OK; } } ocpp201_update_firmware_conf_encode(&conf,s->payload,sizeof(s->payload)); ocpp_rpc_pack_callresult(msg->unique_id,s->payload,s->frame,sizeof(s->frame)); if(session_tx(s)!=0) return OCPP_ERR_IO; return OCPP_OK; }
     ocpp_rpc_pack_callerror(msg->unique_id,"NotImplemented",msg->action,s->frame,sizeof(s->frame)); session_tx(s); return OCPP_OK; }
 /* 桩发出 CALL 的 CALLRESULT：按 pending.action 分发 *_conf 回调。Boot 成功则启心跳。 */
+/*
+ * 处理本端 CALL 的 CALLRESULT。Boot 应答会启动本路心跳，不判断 status 是不是 Accepted。
+ */
 static void handle_result(ocpp201_session_t *s, const char *action, const cJSON *payload) {
     if (strcmp(action,"Authorize")==0) { ocpp201_authorize_conf_t conf; ocpp201_authorize_conf_from_json(payload,&conf); if(s->handlers.authorize_conf) s->handlers.authorize_conf(&conf,s->handlers.user); return; }
-    else if (strcmp(action,"BootNotification")==0) { ocpp201_boot_notification_conf_t conf; ocpp201_boot_notification_conf_from_json(payload,&conf); s->registered=1; if(conf.interval>0) s->heartbeat_interval_s=conf.interval; if(s->link.heartbeat_timer_id>=0) ocpp_port_timer_start(s->link.heartbeat_timer_id,(uint32_t)s->heartbeat_interval_s*1000u,1,heartbeat_timer,s); if(s->handlers.boot_notification_conf) s->handlers.boot_notification_conf(&conf,s->handlers.user); return; }
+    else if (strcmp(action,"BootNotification")==0) {
+        ocpp201_boot_notification_conf_t conf;
+        ocpp201_boot_notification_conf_from_json(payload, &conf);
+        {
+            int accepted = strcmp(conf.status, "Accepted") == 0;
+            s->registered = accepted ? 1 : 0;
+            if (conf.interval > 0) s->heartbeat_interval_s = conf.interval;
+            /* Accepted 才周期心跳。未批准时 interval 是下一次 Boot 的等待时间。 */
+            if (s->link.heartbeat_timer_id >= 0) {
+                if (accepted) {
+                    ocpp_port_timer_start(s->link.heartbeat_timer_id, (uint32_t)s->heartbeat_interval_s * 1000u, 1, heartbeat_timer, s);
+                } else if (s->has_boot_req && s->heartbeat_interval_s > 0) {
+                    ocpp_port_timer_start(s->link.heartbeat_timer_id, (uint32_t)s->heartbeat_interval_s * 1000u, 0, boot_retry_timer, s);
+                } else {
+                    ocpp_port_timer_stop(s->link.heartbeat_timer_id);
+                }
+            }
+        }
+        if (s->handlers.boot_notification_conf) s->handlers.boot_notification_conf(&conf, s->handlers.user);
+        return;
+    }
     else if (strcmp(action,"ClearedChargingLimit")==0) { ocpp201_cleared_charging_limit_conf_t conf; ocpp201_cleared_charging_limit_conf_from_json(payload,&conf); if(s->handlers.cleared_charging_limit_conf) s->handlers.cleared_charging_limit_conf(&conf,s->handlers.user); return; }
     else if (strcmp(action,"DataTransfer")==0) { ocpp201_data_transfer_conf_t conf; ocpp201_data_transfer_conf_from_json(payload,&conf); if(s->handlers.data_transfer_conf) s->handlers.data_transfer_conf(&conf,s->handlers.user); return; }
     else if (strcmp(action,"FirmwareStatusNotification")==0) { ocpp201_firmware_status_notification_conf_t conf; ocpp201_firmware_status_notification_conf_from_json(payload,&conf); if(s->handlers.firmware_status_notification_conf) s->handlers.firmware_status_notification_conf(&conf,s->handlers.user); return; }
@@ -115,21 +427,32 @@ static void handle_result(ocpp201_session_t *s, const char *action, const cJSON 
     else if (strcmp(action,"StatusNotification")==0) { ocpp201_status_notification_conf_t conf; ocpp201_status_notification_conf_from_json(payload,&conf); if(s->handlers.status_notification_conf) s->handlers.status_notification_conf(&conf,s->handlers.user); return; }
     else if (strcmp(action,"TransactionEvent")==0) { ocpp201_transaction_event_conf_t conf; ocpp201_transaction_event_conf_from_json(payload,&conf); if(s->handlers.transaction_event_conf) s->handlers.transaction_event_conf(&conf,s->handlers.user); return; }
 }
+/**
+ * ocpp201_session_rx - 喂入一条完整的 WebSocket 文本帧
+ * @s: 本路会话
+ * @frame: 一整帧 JSON，不要半包
+ * @len: 字节数
+ *
+ * 分发规则与 ocpp16_session_rx 相同。返回前释放 unpack 摘出的 payload。
+ */
 ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len) {
-    ocpp_port_arena_reset(); /* 本帧独占 arena；不要与其它 session 并行 rx */
     ocpp_rpc_msg_t msg;
     ocpp_err_t rc = ocpp_rpc_unpack(frame, len, &msg);
     if (rc != OCPP_OK) return rc;
-    if (msg.type == OCPP_RPC_CALL) return handle_call(s, &msg);
-    if (msg.type == OCPP_RPC_CALLRESULT) {
+    if (msg.type == OCPP_RPC_CALL) {
+        rc = handle_call(s, &msg);
+    } else if (msg.type == OCPP_RPC_CALLRESULT) {
+        rc = OCPP_ERR_NOTFOUND;
         for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
             if (s->pending[i].used && strcmp(s->pending[i].uid, msg.unique_id) == 0) {
                 s->pending[i].used = 0;
                 handle_result(s, s->pending[i].action, msg.payload);
-                return OCPP_OK;
+                rc = OCPP_OK;
+                break;
             }
         }
-        return OCPP_ERR_NOTFOUND;
     }
-    return OCPP_OK;
+    /* unpack 摘下的 payload 还在堆上，用完交给 free。 */
+    cJSON_Delete(msg.payload);
+    return rc;
 }

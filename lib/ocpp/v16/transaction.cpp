@@ -25,14 +25,28 @@ Transaction::Transaction(const std::int32_t internal_transaction_id, const std::
     meter_values_sample_timer(std::move(meter_values_sample_timer)) {
 }
 
+/**
+ * Transaction::get_connector - get connector
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t Transaction::get_connector() const {
     return this->connector;
 }
 
+/**
+ * Transaction::get_id_tag - get id tag
+ *
+ * 返回 CiString<20>。
+ */
 CiString<20> Transaction::get_id_tag() {
     return this->id_token;
 }
 
+/**
+ * Transaction::add_meter_value - add meter value
+ * @meter_value: 传入的 meter_value
+ */
 void Transaction::add_meter_value(MeterValue meter_value) {
     if (this->active) {
         const std::lock_guard<std::mutex> lock(this->meter_values_mutex);
@@ -47,48 +61,101 @@ void Transaction::add_meter_value(MeterValue meter_value) {
     }
 }
 
+/**
+ * Transaction::get_meter_values - get meter values
+ *
+ * 返回 std::vector<MeterValue>。
+ */
 std::vector<MeterValue> Transaction::get_meter_values() {
     const std::lock_guard<std::mutex> lock(this->meter_values_mutex);
     return this->meter_values;
 }
 
+/**
+ * Transaction::change_meter_values_sample_interval - change meter values sample interval
+ * @interval: 传入的 interval
+ *
+ * 返回 bool。
+ */
 bool Transaction::change_meter_values_sample_interval(std::int32_t interval) {
     this->meter_values_sample_timer->interval(std::chrono::seconds(interval));
     return true;
 }
 
+/**
+ * Transaction::get_transaction_id - get transaction id
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> Transaction::get_transaction_id() {
     return this->transaction_id;
 }
 
+/**
+ * Transaction::get_internal_transaction_id - get internal transaction id
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t Transaction::get_internal_transaction_id() const {
     return this->internal_transaction_id;
 }
 
+/**
+ * Transaction::get_session_id - get session id
+ *
+ * 返回 std::string。
+ */
 std::string Transaction::get_session_id() {
     return this->session_id;
 }
 
+/**
+ * Transaction::set_start_transaction_message_id - set start transaction message id
+ * @message_id: 传入的 message_id
+ */
 void Transaction::set_start_transaction_message_id(const std::string& message_id) {
     this->start_transaction_message_id = message_id;
 }
 
+/**
+ * Transaction::get_start_transaction_message_id - get start transaction message id
+ *
+ * 返回 std::string。
+ */
 std::string Transaction::get_start_transaction_message_id() {
     return this->start_transaction_message_id;
 }
 
+/**
+ * Transaction::set_stop_transaction_message_id - set stop transaction message id
+ * @message_id: 传入的 message_id
+ */
 void Transaction::set_stop_transaction_message_id(const std::string& message_id) {
     this->stop_transaction_message_id = message_id;
 }
 
+/**
+ * Transaction::get_stop_transaction_message_id - get stop transaction message id
+ *
+ * 返回 std::string。
+ */
 std::string Transaction::get_stop_transaction_message_id() {
     return this->stop_transaction_message_id;
 }
 
+/**
+ * Transaction::set_transaction_id - set transaction id
+ * @transaction_id: 传入的 transaction_id
+ */
 void Transaction::set_transaction_id(std::int32_t transaction_id) {
     this->transaction_id = transaction_id;
 }
 
+/**
+ * Transaction::get_transaction_data - get transaction data
+ *
+ * 返回 std::vector<TransactionData>。
+ */
 std::vector<TransactionData> Transaction::get_transaction_data() {
     std::vector<TransactionData> transaction_data_vec;
     for (const auto& meter_value : this->get_meter_values()) {
@@ -100,6 +167,9 @@ std::vector<TransactionData> Transaction::get_transaction_data() {
     return transaction_data_vec;
 }
 
+/**
+ * Transaction::stop - stop
+ */
 void Transaction::stop() {
     if (this->meter_values_sample_timer != nullptr) {
         this->meter_values_sample_timer->stop();
@@ -107,40 +177,80 @@ void Transaction::stop() {
     this->active = false;
 }
 
+/**
+ * Transaction::is_active - is active
+ *
+ * 返回 bool。
+ */
 bool Transaction::is_active() const {
     return this->active;
 }
 
+/**
+ * Transaction::is_finished - is finished
+ *
+ * 返回 bool。
+ */
 bool Transaction::is_finished() const {
     return this->finished;
 }
 
+/**
+ * Transaction::set_finished - set finished
+ */
 void Transaction::set_finished() {
     this->finished = true;
 }
 
+/**
+ * Transaction::get_start_energy_wh - get start energy wh
+ *
+ * 返回 std::shared_ptr<StampedEnergyWh>。
+ */
 std::shared_ptr<StampedEnergyWh> Transaction::get_start_energy_wh() {
     return this->start_energy_wh;
 }
 
+/**
+ * Transaction::add_stop_energy_wh - add stop energy wh
+ * @stop_energy_wh: 传入的 stop_energy_wh
+ */
 void Transaction::add_stop_energy_wh(std::shared_ptr<StampedEnergyWh> stop_energy_wh) {
     this->stop_energy_wh = stop_energy_wh;
     this->stop();
 }
 
+/**
+ * Transaction::set_has_signed_meter_values - set has signed meter values
+ */
 void Transaction::set_has_signed_meter_values() {
     this->has_signed_meter_values = true;
 }
 
+/**
+ * Transaction::get_has_signed_meter_values - get has signed meter values
+ *
+ * 返回 bool。
+ */
 bool Transaction::get_has_signed_meter_values() {
     const std::lock_guard<std::mutex> lock(this->meter_values_mutex);
     return this->has_signed_meter_values;
 }
 
+/**
+ * Transaction::get_stop_energy_wh - get stop energy wh
+ *
+ * 返回 std::shared_ptr<StampedEnergyWh>。
+ */
 std::shared_ptr<StampedEnergyWh> Transaction::get_stop_energy_wh() {
     return this->stop_energy_wh;
 }
 
+/**
+ * Transaction::get_reservation_id - get reservation id
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> Transaction::get_reservation_id() {
     return this->reservation_id;
 }
@@ -154,19 +264,38 @@ TransactionHandler::TransactionHandler(std::int32_t number_of_connectors) :
     }
 }
 
+/**
+ * TransactionHandler::get_negative_random_transaction_id - get negative random transaction id
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t TransactionHandler::get_negative_random_transaction_id() {
     return distr(this->gen);
 }
 
+/**
+ * TransactionHandler::add_transaction - add transaction
+ * @transaction: 传入的 transaction
+ */
 void TransactionHandler::add_transaction(std::shared_ptr<Transaction> transaction) {
     const std::lock_guard<std::mutex> lk(this->active_transactions_mutex);
     this->active_transactions.at(transaction->get_connector()) = std::move(transaction);
 }
 
+/**
+ * TransactionHandler::add_stopped_transaction - add stopped transaction
+ * @connector: 传入的 connector
+ */
 void TransactionHandler::add_stopped_transaction(std::int32_t connector) {
     this->stopped_transactions.push_back(std::move(this->active_transactions.at(connector)));
 }
 
+/**
+ * TransactionHandler::remove_active_transaction - remove active transaction
+ * @connector: 传入的 connector
+ *
+ * 返回 bool。
+ */
 bool TransactionHandler::remove_active_transaction(std::int32_t connector) {
     if (connector == 0) {
         EVLOG_warning << "Attempting to remove a transaction on connector 0, this is not supported.";
@@ -179,6 +308,10 @@ bool TransactionHandler::remove_active_transaction(std::int32_t connector) {
     return true;
 }
 
+/**
+ * TransactionHandler::erase_stopped_transaction - erase stopped transaction
+ * @stop_transaction_message_id: 传入的 stop_transaction_message_id
+ */
 void TransactionHandler::erase_stopped_transaction(std::string stop_transaction_message_id) {
     this->stopped_transactions.erase(
         std::remove_if(this->stopped_transactions.begin(), this->stopped_transactions.end(),
@@ -188,6 +321,12 @@ void TransactionHandler::erase_stopped_transaction(std::string stop_transaction_
         this->stopped_transactions.end());
 }
 
+/**
+ * TransactionHandler::get_transaction - get transaction
+ * @connector: 传入的 connector
+ *
+ * 返回 std::shared_ptr<Transaction>。
+ */
 std::shared_ptr<Transaction> TransactionHandler::get_transaction(std::int32_t connector) {
     const std::lock_guard<std::mutex> lock(this->active_transactions_mutex);
     if (this->active_transactions.at(connector) == nullptr) {
@@ -196,6 +335,12 @@ std::shared_ptr<Transaction> TransactionHandler::get_transaction(std::int32_t co
     return this->active_transactions.at(connector);
 }
 
+/**
+ * TransactionHandler::get_transaction - get transaction
+ * @transaction_message_id: 传入的 transaction_message_id
+ *
+ * 返回 std::shared_ptr<Transaction>。
+ */
 std::shared_ptr<Transaction> TransactionHandler::get_transaction(const std::string& transaction_message_id) {
     const std::lock_guard<std::mutex> lock(this->active_transactions_mutex);
     for (const auto& transaction : this->active_transactions) {
@@ -213,6 +358,12 @@ std::shared_ptr<Transaction> TransactionHandler::get_transaction(const std::stri
     return nullptr;
 }
 
+/**
+ * TransactionHandler::get_transaction_from_id_tag - get transaction from id tag
+ * @id_tag: 传入的 id_tag
+ *
+ * 返回 std::shared_ptr<Transaction>。
+ */
 std::shared_ptr<Transaction> TransactionHandler::get_transaction_from_id_tag(const std::string& id_tag) {
     const std::lock_guard<std::mutex> lock(this->active_transactions_mutex);
     for (const auto& transaction : this->active_transactions) {
@@ -228,6 +379,12 @@ std::shared_ptr<Transaction> TransactionHandler::get_transaction_from_id_tag(con
     return nullptr;
 }
 
+/**
+ * TransactionHandler::get_connector_from_transaction_id - get connector from transaction id
+ * @transaction_id: 传入的 transaction_id
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t TransactionHandler::get_connector_from_transaction_id(std::int32_t transaction_id) {
     const std::lock_guard<std::mutex> lock(this->active_transactions_mutex);
     std::int32_t index = 0;
@@ -242,6 +399,11 @@ std::int32_t TransactionHandler::get_connector_from_transaction_id(std::int32_t 
     return -1;
 }
 
+/**
+ * TransactionHandler::add_meter_value - add meter value
+ * @connector: 传入的 connector
+ * @meter_value: 传入的 meter_value
+ */
 void TransactionHandler::add_meter_value(std::int32_t connector, const MeterValue& meter_value) {
     const std::lock_guard<std::mutex> lock(this->active_transactions_mutex);
     if (this->active_transactions.at(connector) == nullptr) {
@@ -250,6 +412,10 @@ void TransactionHandler::add_meter_value(std::int32_t connector, const MeterValu
     this->active_transactions.at(connector)->add_meter_value(meter_value);
 }
 
+/**
+ * TransactionHandler::change_meter_values_sample_intervals - change meter values sample intervals
+ * @interval: 传入的 interval
+ */
 void TransactionHandler::change_meter_values_sample_intervals(std::int32_t interval) {
     const std::lock_guard<std::mutex> lock(this->active_transactions_mutex);
     for (auto& transaction : this->active_transactions) {
@@ -259,6 +425,12 @@ void TransactionHandler::change_meter_values_sample_intervals(std::int32_t inter
     }
 }
 
+/**
+ * TransactionHandler::get_authorized_id_tag - get authorized id tag
+ * @stop_transaction_message_id: 传入的 stop_transaction_message_id
+ *
+ * 返回 std::optional<CiString<20>>。
+ */
 std::optional<CiString<20>> TransactionHandler::get_authorized_id_tag(const std::string& stop_transaction_message_id) {
     for (const auto& transaction : this->stopped_transactions) {
         if (transaction->get_stop_transaction_message_id() == stop_transaction_message_id) {
@@ -268,6 +440,12 @@ std::optional<CiString<20>> TransactionHandler::get_authorized_id_tag(const std:
     return std::nullopt;
 }
 
+/**
+ * TransactionHandler::transaction_active - transaction active
+ * @connector: 传入的 connector
+ *
+ * 返回 bool。
+ */
 bool TransactionHandler::transaction_active(std::int32_t connector) {
     return this->get_transaction(connector) != nullptr && this->get_transaction(connector)->is_active();
 }

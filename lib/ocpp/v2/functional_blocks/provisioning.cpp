@@ -33,6 +33,7 @@ const auto DEFAULT_BOOT_NOTIFICATION_RETRY_INTERVAL = std::chrono::seconds(30);
 namespace ocpp::v2 {
 
 namespace {
+/* component variable change requires websocket option update without reconnect */
 bool component_variable_change_requires_websocket_option_update_without_reconnect(
     const ComponentVariable& component_variable);
 }
@@ -66,6 +67,10 @@ Provisioning::Provisioning(const FunctionalBlockContext& functional_block_contex
     registration_status(registration_status) {
 }
 
+/**
+ * Provisioning::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void Provisioning::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -88,6 +93,11 @@ void Provisioning::handle_message(const ocpp::EnhancedMessage<MessageType>& mess
     }
 }
 
+/**
+ * Provisioning::boot_notification_req - boot notification req
+ * @reason: 传入的 reason
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void Provisioning::boot_notification_req(const BootReasonEnum& reason, const bool initiated_by_trigger_message) {
     EVLOG_debug << "Sending BootNotification";
     BootNotificationRequest req;
@@ -109,10 +119,17 @@ void Provisioning::boot_notification_req(const BootReasonEnum& reason, const boo
     this->context.message_dispatcher.dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * Provisioning::stop_bootnotification_timer - stop bootnotification timer
+ */
 void Provisioning::stop_bootnotification_timer() {
     this->boot_notification_timer.stop();
 }
 
+/**
+ * Provisioning::on_variable_changed - on variable changed
+ * @set_variable_data: 传入的 set_variable_data
+ */
 void Provisioning::on_variable_changed(const SetVariableData& set_variable_data) {
     this->handle_variable_changed(set_variable_data);
 }
@@ -146,6 +163,11 @@ Provisioning::set_variables(const std::vector<SetVariableData>& set_variable_dat
     return response;
 }
 
+/**
+ * Provisioning::notify_report_req - notify report req
+ * @request_id: 传入的 request_id
+ * @report_data: 传入的 report_data
+ */
 void Provisioning::notify_report_req(const int request_id, const std::vector<ReportData>& report_data) {
     NotifyReportRequest req;
     req.requestId = request_id;
@@ -169,6 +191,10 @@ void Provisioning::notify_report_req(const int request_id, const std::vector<Rep
     }
 }
 
+/**
+ * Provisioning::handle_boot_notification_response - handle boot notification response
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void Provisioning::handle_boot_notification_response(CallResult<BootNotificationResponse> call_result) {
     EVLOG_info << "Received BootNotificationResponse: " << call_result.msg
                << "\nwith messageId: " << call_result.uniqueId;
@@ -224,6 +250,10 @@ void Provisioning::handle_boot_notification_response(CallResult<BootNotification
     }
 }
 
+/**
+ * Provisioning::handle_set_variables_req - handle set variables req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Provisioning::handle_set_variables_req(Call<SetVariablesRequest> call) {
     const auto msg = call.msg;
 
@@ -243,6 +273,10 @@ void Provisioning::handle_set_variables_req(Call<SetVariablesRequest> call) {
     this->handle_variables_changed(set_variables_response);
 }
 
+/**
+ * Provisioning::handle_get_variables_req - handle get variables req
+ * @message: 已经组好的 JSON 报文
+ */
 void Provisioning::handle_get_variables_req(const EnhancedMessage<MessageType>& message) {
     const Call<GetVariablesRequest> call = message.call_message;
     const auto msg = call.msg;
@@ -275,6 +309,10 @@ void Provisioning::handle_get_variables_req(const EnhancedMessage<MessageType>& 
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Provisioning::handle_get_base_report_req - handle get base report req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Provisioning::handle_get_base_report_req(Call<GetBaseReportRequest> call) {
     const auto msg = call.msg;
     GetBaseReportResponse response;
@@ -289,6 +327,10 @@ void Provisioning::handle_get_base_report_req(Call<GetBaseReportRequest> call) {
     }
 }
 
+/**
+ * Provisioning::handle_get_report_req - handle get report req
+ * @message: 已经组好的 JSON 报文
+ */
 void Provisioning::handle_get_report_req(const EnhancedMessage<MessageType>& message) {
     const Call<GetReportRequest> call = message.call_message;
     const auto msg = call.msg;
@@ -351,6 +393,10 @@ void Provisioning::handle_get_report_req(const EnhancedMessage<MessageType>& mes
     }
 }
 
+/**
+ * Provisioning::handle_set_network_profile_req - handle set network profile req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Provisioning::handle_set_network_profile_req(Call<SetNetworkProfileRequest> call) {
     const auto msg = call.msg;
 
@@ -452,6 +498,10 @@ void Provisioning::handle_set_network_profile_req(Call<SetNetworkProfileRequest>
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Provisioning::handle_reset_req - handle reset req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Provisioning::handle_reset_req(Call<ResetRequest> call) {
     EVLOG_debug << "Received ResetRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     const auto msg = call.msg;
@@ -536,6 +586,10 @@ void Provisioning::handle_reset_req(Call<ResetRequest> call) {
     }
 }
 
+/**
+ * Provisioning::handle_variable_changed - handle variable changed
+ * @set_variable_data: 传入的 set_variable_data
+ */
 void Provisioning::handle_variable_changed(const SetVariableData& set_variable_data) {
     const ComponentVariable component_variable = {set_variable_data.component, set_variable_data.variable,
                                                   std::nullopt};
@@ -595,6 +649,10 @@ void Provisioning::handle_variable_changed(const SetVariableData& set_variable_d
     // TODO(piet): other special handling of changed variables can be added here...
 }
 
+/**
+ * Provisioning::handle_variables_changed - handle variables changed
+ * @set_variable_results: 传入的 set_variable_results
+ */
 void Provisioning::handle_variables_changed(const std::map<SetVariableData, SetVariableResult>& set_variable_results) {
     // iterate over set_variable_results
     for (const auto& [set_variable_data, set_variable_result] : set_variable_results) {
@@ -624,6 +682,12 @@ void Provisioning::handle_variables_changed(const std::map<SetVariableData, SetV
     this->diagnostics.process_triggered_monitors();
 }
 
+/**
+ * Provisioning::validate_set_variable - validate set variable
+ * @set_variable_data: 传入的 set_variable_data
+ *
+ * 返回 bool。
+ */
 bool Provisioning::validate_set_variable(const SetVariableData& set_variable_data) {
     const ComponentVariable cv = {set_variable_data.component, set_variable_data.variable, std::nullopt};
     if (cv == ControllerComponentVariables::NetworkConfigurationPriority) {

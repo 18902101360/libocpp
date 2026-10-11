@@ -91,41 +91,246 @@ typedef struct ocpp201_session {
     ocpp_link_t link;                 /* 本路 send / 心跳槽 / accept_control */
     ocpp201_handlers_t handlers;
     unsigned seq;                     /* 发出 CALL 的 uniqueId 计数，从 1 起 */
-    int registered;                   /* 收到 BootNotification.conf 后置 1 */
-    int heartbeat_interval_s;         /* 来自 Boot conf.interval，默认 300 */
+    int registered;                   /* 仅 Boot status 为 Accepted 时置 1 */
+    int heartbeat_interval_s;         /* Accepted 时是心跳秒数；Pending/Rejected 时是重试秒数 */
+    int has_boot_req;                 /* 保存过 Boot 请求，Pending/Rejected 到点后重发 */
+    ocpp201_boot_notification_req_t boot_req;
     struct { int used; char uid[37]; char action[48]; } pending[OCPP201_PENDING_MAX];
     char payload[OCPP_PAYLOAD_MAX];
     char frame[OCPP_FRAME_MAX];
 } ocpp201_session_t; /* 放 BSS；payload+frame 约数 KiB */
 /** link 可为 NULL：send 走全局 ocpp_port_send，心跳槽 0，accept_control=1。 */
 void ocpp201_session_init(ocpp201_session_t *s, const ocpp201_handlers_t *h, const ocpp_link_t *link);
+/** 运行时换链路或改 accept_control。link 为 NULL 时保持原样。 */
 void ocpp201_session_bind(ocpp201_session_t *s, const ocpp_link_t *link);
-ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len); /* 完整 WS text 帧 */
+/** 喂入完整一帧。返回前释放 unpack 摘出的 payload。不要传半包。 */
+ocpp_err_t ocpp201_session_rx(ocpp201_session_t *s, const char *frame, size_t len);
+/** 发任意 action 的 CALL。uniqueId 由本路 seq 生成并记入 pending。 */
 ocpp_err_t ocpp201_session_call(ocpp201_session_t *s, const char *action, const char *payload_json);
+/**
+ * ocpp201_session_send_authorize - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_authorize(ocpp201_session_t *s, const ocpp201_authorize_req_t *req);
+/**
+ * ocpp201_session_send_boot_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_boot_notification(ocpp201_session_t *s, const ocpp201_boot_notification_req_t *req);
+/**
+ * ocpp201_session_send_cleared_charging_limit - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_cleared_charging_limit(ocpp201_session_t *s, const ocpp201_cleared_charging_limit_req_t *req);
+/**
+ * ocpp201_session_send_data_transfer - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_data_transfer(ocpp201_session_t *s, const ocpp201_data_transfer_req_t *req);
+/**
+ * ocpp201_session_send_firmware_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_firmware_status_notification(ocpp201_session_t *s, const ocpp201_firmware_status_notification_req_t *req);
+/**
+ * ocpp201_session_send_get15118_ev_certificate - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_get15118_ev_certificate(ocpp201_session_t *s, const ocpp201_get15118_ev_certificate_req_t *req);
+/**
+ * ocpp201_session_send_get_certificate_status - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_get_certificate_status(ocpp201_session_t *s, const ocpp201_get_certificate_status_req_t *req);
+/**
+ * ocpp201_session_send_heartbeat - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_heartbeat(ocpp201_session_t *s, const ocpp201_heartbeat_req_t *req);
+/**
+ * ocpp201_session_send_log_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_log_status_notification(ocpp201_session_t *s, const ocpp201_log_status_notification_req_t *req);
+/**
+ * ocpp201_session_send_meter_values - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_meter_values(ocpp201_session_t *s, const ocpp201_meter_values_req_t *req);
+/**
+ * ocpp201_session_send_notify_charging_limit - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_charging_limit(ocpp201_session_t *s, const ocpp201_notify_charging_limit_req_t *req);
+/**
+ * ocpp201_session_send_notify_customer_information - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_customer_information(ocpp201_session_t *s, const ocpp201_notify_customer_information_req_t *req);
+/**
+ * ocpp201_session_send_notify_display_messages - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_display_messages(ocpp201_session_t *s, const ocpp201_notify_display_messages_req_t *req);
+/**
+ * ocpp201_session_send_notify_ev_charging_needs - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_ev_charging_needs(ocpp201_session_t *s, const ocpp201_notify_ev_charging_needs_req_t *req);
+/**
+ * ocpp201_session_send_notify_ev_charging_schedule - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_ev_charging_schedule(ocpp201_session_t *s, const ocpp201_notify_ev_charging_schedule_req_t *req);
+/**
+ * ocpp201_session_send_notify_event - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_event(ocpp201_session_t *s, const ocpp201_notify_event_req_t *req);
+/**
+ * ocpp201_session_send_notify_monitoring_report - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_monitoring_report(ocpp201_session_t *s, const ocpp201_notify_monitoring_report_req_t *req);
+/**
+ * ocpp201_session_send_notify_report - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_notify_report(ocpp201_session_t *s, const ocpp201_notify_report_req_t *req);
+/**
+ * ocpp201_session_send_publish_firmware_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_publish_firmware_status_notification(ocpp201_session_t *s, const ocpp201_publish_firmware_status_notification_req_t *req);
+/**
+ * ocpp201_session_send_report_charging_profiles - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_report_charging_profiles(ocpp201_session_t *s, const ocpp201_report_charging_profiles_req_t *req);
+/**
+ * ocpp201_session_send_reservation_status_update - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_reservation_status_update(ocpp201_session_t *s, const ocpp201_reservation_status_update_req_t *req);
+/**
+ * ocpp201_session_send_security_event_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_security_event_notification(ocpp201_session_t *s, const ocpp201_security_event_notification_req_t *req);
+/**
+ * ocpp201_session_send_sign_certificate - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_sign_certificate(ocpp201_session_t *s, const ocpp201_sign_certificate_req_t *req);
+/**
+ * ocpp201_session_send_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_status_notification(ocpp201_session_t *s, const ocpp201_status_notification_req_t *req);
+/**
+ * ocpp201_session_send_transaction_event - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp201_session_send_transaction_event(ocpp201_session_t *s, const ocpp201_transaction_event_req_t *req);
 #ifdef __cplusplus
 }

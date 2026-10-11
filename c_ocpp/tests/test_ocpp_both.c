@@ -9,6 +9,7 @@
 static char g_tx16[OCPP_FRAME_MAX];
 static char g_tx201[OCPP_FRAME_MAX];
 
+/* 1.6 那一路的假发送，只保留最后一帧。 */
 static int send16(const void *data, size_t len, void *user) {
     (void)user;
     if (len >= sizeof(g_tx16)) {
@@ -19,6 +20,7 @@ static int send16(const void *data, size_t len, void *user) {
     return 0;
 }
 
+/* 2.0.1 那一路的假发送，只保留最后一帧。 */
 static int send201(const void *data, size_t len, void *user) {
     (void)user;
     if (len >= sizeof(g_tx201)) {
@@ -29,6 +31,11 @@ static int send201(const void *data, size_t len, void *user) {
     return 0;
 }
 
+/**
+ * main - 本文件的测试入口
+ *
+ * 返回 0 表示全部检查通过。失败时向 stderr 打 FAIL，并返回非 0。
+ */
 int main(void) {
     ocpp_port_init();
 

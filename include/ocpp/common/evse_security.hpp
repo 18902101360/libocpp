@@ -137,26 +137,134 @@ namespace evse_security_conversions {
 /** Conversions for Plug&Charge Data Transfer **/
 
 ocpp::v2::GetCertificateIdUseEnum to_ocpp_v2(ocpp::CertificateType other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::InstallCertificateUseEnum。
+ */
 ocpp::v2::InstallCertificateUseEnum to_ocpp_v2(ocpp::CaCertificateType other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::HashAlgorithmEnum。
+ */
 ocpp::v2::HashAlgorithmEnum to_ocpp_v2(ocpp::HashAlgorithmEnumType other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::InstallCertificateStatusEnum。
+ */
 ocpp::v2::InstallCertificateStatusEnum to_ocpp_v2(ocpp::InstallCertificateResult other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::DeleteCertificateStatusEnum。
+ */
 ocpp::v2::DeleteCertificateStatusEnum to_ocpp_v2(ocpp::DeleteCertificateResult other);
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::CertificateHashDataType。
+ */
 ocpp::v2::CertificateHashDataType to_ocpp_v2(ocpp::CertificateHashDataType other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::CertificateHashDataChain。
+ */
 ocpp::v2::CertificateHashDataChain to_ocpp_v2(ocpp::CertificateHashDataChain other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::OCSPRequestData。
+ */
 ocpp::v2::OCSPRequestData to_ocpp_v2(ocpp::OCSPRequestData other);
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @ocsp_request_data: 传入的 ocsp_request_data
+ *
+ * 返回 std::vector<ocpp::v2::OCSPRequestData>。
+ */
 std::vector<ocpp::v2::OCSPRequestData> to_ocpp_v2(const std::vector<ocpp::OCSPRequestData>& ocsp_request_data);
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateType。
+ */
 ocpp::CertificateType from_ocpp_v2(ocpp::v2::GetCertificateIdUseEnum other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 std::vector<ocpp::CertificateType>。
+ */
 std::vector<ocpp::CertificateType> from_ocpp_v2(const std::vector<ocpp::v2::GetCertificateIdUseEnum>& other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CaCertificateType。
+ */
 ocpp::CaCertificateType from_ocpp_v2(ocpp::v2::InstallCertificateUseEnum other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateSigningUseEnum。
+ */
 ocpp::CertificateSigningUseEnum from_ocpp_v2(ocpp::v2::CertificateSigningUseEnum other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::HashAlgorithmEnumType。
+ */
 ocpp::HashAlgorithmEnumType from_ocpp_v2(ocpp::v2::HashAlgorithmEnum other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::InstallCertificateResult。
+ */
 ocpp::InstallCertificateResult from_ocpp_v2(ocpp::v2::InstallCertificateStatusEnum other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::DeleteCertificateResult。
+ */
 ocpp::DeleteCertificateResult from_ocpp_v2(ocpp::v2::DeleteCertificateStatusEnum other);
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateHashDataType。
+ */
 ocpp::CertificateHashDataType from_ocpp_v2(ocpp::v2::CertificateHashDataType other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateHashDataChain。
+ */
 ocpp::CertificateHashDataChain from_ocpp_v2(ocpp::v2::CertificateHashDataChain other);
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::OCSPRequestData。
+ */
 ocpp::OCSPRequestData from_ocpp_v2(ocpp::v2::OCSPRequestData other);
 
 } // namespace evse_security_conversions

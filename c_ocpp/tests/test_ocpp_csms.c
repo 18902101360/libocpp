@@ -17,11 +17,13 @@
 #define EXPECT_CSMS201 40
 
 static int g_fail;
+/* 记一次失败。测试结束时用 g_fail 决定退出码。 */
 static void fail(const char *w) {
     fprintf(stderr, "FAIL %s\n", w);
     g_fail++;
 }
 
+/* 把 session 发出的 JSON 写成 WebSocket 文本帧。 */
 static int send_ws(const void *data, size_t len, void *user) {
     return ws_send_text((ws_conn_t *)user, data, len);
 }
@@ -32,12 +34,14 @@ static char g_seen_csms[64][48];
 static int g_n_csms;
 static int g_done;
 
+/* 清空本轮已经见过的 action，开始下一次协议覆盖。 */
 static void reset_counts(void) {
     memset(g_seen_cp, 0, sizeof g_seen_cp);
     memset(g_seen_csms, 0, sizeof g_seen_csms);
     g_n_cp = g_n_csms = g_done = 0;
 }
 
+/* 同一个 action 只记一次。重复的 CALLRESULT 不抬高计数。 */
 static void mark(char tab[][48], int *n, const char *a) {
     for (int i = 0; i < *n; i++) {
         if (strcmp(tab[i], a) == 0) {
@@ -50,6 +54,7 @@ static void mark(char tab[][48], int *n, const char *a) {
     }
 }
 
+/* 1.6 还有未完成的 CALL 时返回 1。 */
 static int pending16(const ocpp16_session_t *s) {
     for (int i = 0; i < OCPP16_PENDING_MAX; i++) {
         if (s->pending[i].used) {
@@ -58,6 +63,7 @@ static int pending16(const ocpp16_session_t *s) {
     }
     return 0;
 }
+/* 2.0.1 还有未完成的 CALL 时返回 1。 */
 static int pending201(const ocpp201_session_t *s) {
     for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
         if (s->pending[i].used) {
@@ -67,6 +73,7 @@ static int pending201(const ocpp201_session_t *s) {
     return 0;
 }
 
+/* 用 uniqueId 找回 1.6 pending 里的 action 名。找不到则 out 为空串。 */
 static void pending_action16(const ocpp16_session_t *s, const char *uid, char *out, size_t n) {
     out[0] = 0;
     for (int i = 0; i < OCPP16_PENDING_MAX; i++) {
@@ -76,6 +83,7 @@ static void pending_action16(const ocpp16_session_t *s, const char *uid, char *o
         }
     }
 }
+/* 用 uniqueId 找回 2.0.1 pending 里的 action 名。 */
 static void pending_action201(const ocpp201_session_t *s, const char *uid, char *out, size_t n) {
     out[0] = 0;
     for (int i = 0; i < OCPP201_PENDING_MAX; i++) {
@@ -107,6 +115,7 @@ static void pending_action201(const ocpp201_session_t *s, const char *uid, char 
         return ocpp201_##name##_req_decode(json, &r) == OCPP_OK ? 0 : -1;                                          \
     }
 
+/* 把 1.6 Confirmation JSON 解回结构体。失败返回非 0。 */
 static int decode_conf16(const char *action, const char *json) {
     DEC16_CONF(authorize, Authorize)
     DEC16_CONF(boot_notification, BootNotification)
@@ -124,6 +133,7 @@ static int decode_conf16(const char *action, const char *json) {
     DEC16_CONF(signed_firmware_status_notification, SignedFirmwareStatusNotification)
     return -1;
 }
+/* 把 1.6 Request JSON 解回结构体。失败返回非 0。 */
 static int decode_req16(const char *action, const char *json) {
     DEC16_REQ(cancel_reservation, CancelReservation)
     DEC16_REQ(change_availability, ChangeAvailability)
@@ -153,6 +163,7 @@ static int decode_req16(const char *action, const char *json) {
     DEC16_REQ(data_transfer, DataTransfer)
     return -1;
 }
+/* 把 2.0.1 Confirmation JSON 解回结构体。失败返回非 0。 */
 static int decode_conf201(const char *action, const char *json) {
     DEC201_CONF(authorize, Authorize)
     DEC201_CONF(boot_notification, BootNotification)
@@ -181,6 +192,7 @@ static int decode_conf201(const char *action, const char *json) {
     DEC201_CONF(transaction_event, TransactionEvent)
     return -1;
 }
+/* 把 2.0.1 Request JSON 解回结构体。失败返回非 0。 */
 static int decode_req201(const char *action, const char *json) {
     DEC201_REQ(cancel_reservation, CancelReservation)
     DEC201_REQ(certificate_signed, CertificateSigned)
@@ -225,10 +237,12 @@ static int decode_req201(const char *action, const char *json) {
     return -1;
 }
 
+/* DataTransfer 的 vendorId 是否等于期望值。用来识别探测结束帧。 */
 static int vendor_is(const char *json, const char *vendor) {
     return json && strstr(json, vendor) != NULL;
 }
 
+/* 收下一帧 1.6：CSMS 的 CALL 要回 conf，本端的 CALLRESULT 要记入覆盖表。 */
 static int handle_frame16(ocpp16_session_t *s, const char *frame, size_t len) {
     ocpp_rpc_msg_t msg;
     if (ocpp_rpc_unpack(frame, len, &msg) != OCPP_OK) {
@@ -274,6 +288,7 @@ static int handle_frame16(ocpp16_session_t *s, const char *frame, size_t len) {
     return 0;
 }
 
+/* 收下一帧 2.0.1，规则与 handle_frame16 相同。 */
 static int handle_frame201(ocpp201_session_t *s, const char *frame, size_t len) {
     ocpp_rpc_msg_t msg;
     if (ocpp_rpc_unpack(frame, len, &msg) != OCPP_OK) {
@@ -319,6 +334,7 @@ static int handle_frame201(ocpp201_session_t *s, const char *frame, size_t len) 
     return 0;
 }
 
+/* 在超时前反复读 1.6 帧，直到 pred 成立。 */
 static int pump16(ocpp16_session_t *s, ws_conn_t *ws, int (*pred)(void), int timeout_ms) {
     char buf[OCPP_FRAME_MAX];
     int waited = 0;
@@ -341,6 +357,7 @@ static int pump16(ocpp16_session_t *s, ws_conn_t *ws, int (*pred)(void), int tim
     }
     return 0;
 }
+/* 在超时前反复读 2.0.1 帧，直到 pred 成立。 */
 static int pump201(ocpp201_session_t *s, ws_conn_t *ws, int (*pred)(void), int timeout_ms) {
     char buf[OCPP_FRAME_MAX];
     int waited = 0;
@@ -366,10 +383,14 @@ static int pump201(ocpp201_session_t *s, ws_conn_t *ws, int (*pred)(void), int t
 
 static ocpp16_session_t *g_s16;
 static ocpp201_session_t *g_s201;
+/* 1.6 没有未完成 CALL 时返回 1。 */
 static int idle16(void) { return !pending16(g_s16); }
+/* 2.0.1 没有未完成 CALL 时返回 1。 */
 static int idle201(void) { return !pending201(g_s201); }
+/* CSMS 发完 ALL_CSMS_DONE 后返回 1。 */
 static int done_flag(void) { return g_done; }
 
+/* 连上 CSMS。子协议必须是 ocpp1.6 或 ocpp2.0.1。 */
 static int ws_open(ws_conn_t *ws, const char *host, int port, const char *path, const char *proto) {
     int tries = 0;
     while (ws_connect(ws, host, port, path, proto) != 0) {
@@ -405,6 +426,7 @@ static int ws_open(ws_conn_t *ws, const char *host, int port, const char *path, 
         }                                                                                                          \
     } while (0)
 
+/* 走完 1.6 的全部桩侧 CALL 和全部 CSMS 侧 CALL。失败返回非 0。 */
 static int run16(const char *host, int port) {
     reset_counts();
     ws_conn_t ws;
@@ -456,6 +478,7 @@ static int run16(const char *host, int port) {
     return 0;
 }
 
+/* 走完 2.0.1 的全部桩侧 CALL 和全部 CSMS 侧 CALL。失败返回非 0。 */
 static int run201(const char *host, int port) {
     reset_counts();
     ws_conn_t ws;
@@ -518,6 +541,11 @@ static int run201(const char *host, int port) {
     return 0;
 }
 
+/**
+ * main - 本文件的测试入口
+ *
+ * 返回 0 表示全部检查通过。失败时向 stderr 打 FAIL，并返回非 0。
+ */
 int main(int argc, char **argv) {
     const char *host = argc > 1 ? argv[1] : "127.0.0.1";
     int port = argc > 2 ? atoi(argv[2]) : 9000;

@@ -7,6 +7,12 @@ namespace ocpp {
 
 namespace evse_security_conversions {
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::GetCertificateIdUseEnum。
+ */
 ocpp::v2::GetCertificateIdUseEnum to_ocpp_v2(ocpp::CertificateType other) {
     switch (other) {
     case ocpp::CertificateType::V2GRootCertificate:
@@ -26,6 +32,12 @@ ocpp::v2::GetCertificateIdUseEnum to_ocpp_v2(ocpp::CertificateType other) {
     throw EnumConversionException("Could not convert CertificateType to GetCertificateIdUseEnum");
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::InstallCertificateUseEnum。
+ */
 ocpp::v2::InstallCertificateUseEnum to_ocpp_v2(ocpp::CaCertificateType other) {
     switch (other) {
     case ocpp::CaCertificateType::V2G:
@@ -43,6 +55,12 @@ ocpp::v2::InstallCertificateUseEnum to_ocpp_v2(ocpp::CaCertificateType other) {
     throw EnumConversionException("Could not convert CaCertificateType to InstallCertificateUseEnum");
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::HashAlgorithmEnum。
+ */
 ocpp::v2::HashAlgorithmEnum to_ocpp_v2(ocpp::HashAlgorithmEnumType other) {
     switch (other) {
     case ocpp::HashAlgorithmEnumType::SHA256:
@@ -56,6 +74,12 @@ ocpp::v2::HashAlgorithmEnum to_ocpp_v2(ocpp::HashAlgorithmEnumType other) {
     throw EnumConversionException("Could not convert HashAlgorithmEnumType to HashAlgorithmEnum");
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::InstallCertificateStatusEnum。
+ */
 ocpp::v2::InstallCertificateStatusEnum to_ocpp_v2(ocpp::InstallCertificateResult other) {
     switch (other) {
     case ocpp::InstallCertificateResult::InvalidSignature:
@@ -75,6 +99,12 @@ ocpp::v2::InstallCertificateStatusEnum to_ocpp_v2(ocpp::InstallCertificateResult
     throw EnumConversionException("Could not convert InstallCertificateResult to InstallCertificateStatusEnum");
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::DeleteCertificateStatusEnum。
+ */
 ocpp::v2::DeleteCertificateStatusEnum to_ocpp_v2(ocpp::DeleteCertificateResult other) {
     switch (other) {
     case ocpp::DeleteCertificateResult::Accepted:
@@ -88,6 +118,12 @@ ocpp::v2::DeleteCertificateStatusEnum to_ocpp_v2(ocpp::DeleteCertificateResult o
     throw EnumConversionException("Could not convert DeleteCertificateResult to DeleteCertificateResult");
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::CertificateHashDataType。
+ */
 ocpp::v2::CertificateHashDataType to_ocpp_v2(ocpp::CertificateHashDataType other) {
     ocpp::v2::CertificateHashDataType lhs;
     lhs.hashAlgorithm = to_ocpp_v2(other.hashAlgorithm);
@@ -97,6 +133,12 @@ ocpp::v2::CertificateHashDataType to_ocpp_v2(ocpp::CertificateHashDataType other
     return lhs;
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::CertificateHashDataChain。
+ */
 ocpp::v2::CertificateHashDataChain to_ocpp_v2(ocpp::CertificateHashDataChain other) {
     ocpp::v2::CertificateHashDataChain lhs;
     lhs.certificateType = to_ocpp_v2(other.certificateType);
@@ -111,6 +153,12 @@ ocpp::v2::CertificateHashDataChain to_ocpp_v2(ocpp::CertificateHashDataChain oth
     return lhs;
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::v2::OCSPRequestData。
+ */
 ocpp::v2::OCSPRequestData to_ocpp_v2(ocpp::OCSPRequestData other) {
     ocpp::v2::OCSPRequestData lhs;
     lhs.issuerNameHash = other.issuerNameHash;
@@ -121,6 +169,12 @@ ocpp::v2::OCSPRequestData to_ocpp_v2(ocpp::OCSPRequestData other) {
     return lhs;
 }
 
+/**
+ * to_ocpp_v2 - to ocpp v2
+ * @ocsp_request_data: 传入的 ocsp_request_data
+ *
+ * 返回 std::vector<ocpp::v2::OCSPRequestData>。
+ */
 std::vector<ocpp::v2::OCSPRequestData> to_ocpp_v2(const std::vector<ocpp::OCSPRequestData>& ocsp_request_data) {
     std::vector<ocpp::v2::OCSPRequestData> ocsp_request_data_list;
     for (const auto& ocsp_data : ocsp_request_data) {
@@ -130,6 +184,12 @@ std::vector<ocpp::v2::OCSPRequestData> to_ocpp_v2(const std::vector<ocpp::OCSPRe
     return ocsp_request_data_list;
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateType。
+ */
 ocpp::CertificateType from_ocpp_v2(ocpp::v2::GetCertificateIdUseEnum other) {
     switch (other) {
     case ocpp::v2::GetCertificateIdUseEnum::V2GRootCertificate:
@@ -149,6 +209,12 @@ ocpp::CertificateType from_ocpp_v2(ocpp::v2::GetCertificateIdUseEnum other) {
     throw EnumConversionException("Could not convert GetCertificateIdUseEnum to CertificateType");
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 std::vector<ocpp::CertificateType>。
+ */
 std::vector<ocpp::CertificateType> from_ocpp_v2(const std::vector<ocpp::v2::GetCertificateIdUseEnum>& other) {
     std::vector<ocpp::CertificateType> certificate_types;
     certificate_types.reserve(other.size());
@@ -158,6 +224,12 @@ std::vector<ocpp::CertificateType> from_ocpp_v2(const std::vector<ocpp::v2::GetC
     return certificate_types;
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CaCertificateType。
+ */
 ocpp::CaCertificateType from_ocpp_v2(ocpp::v2::InstallCertificateUseEnum other) {
     switch (other) {
     case ocpp::v2::InstallCertificateUseEnum::V2GRootCertificate:
@@ -175,6 +247,12 @@ ocpp::CaCertificateType from_ocpp_v2(ocpp::v2::InstallCertificateUseEnum other) 
     throw EnumConversionException("Could not convert CaCertificateType to InstallCertificateUseEnum");
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateSigningUseEnum。
+ */
 ocpp::CertificateSigningUseEnum from_ocpp_v2(ocpp::v2::CertificateSigningUseEnum other) {
     switch (other) {
     case ocpp::v2::CertificateSigningUseEnum::ChargingStationCertificate:
@@ -188,6 +266,12 @@ ocpp::CertificateSigningUseEnum from_ocpp_v2(ocpp::v2::CertificateSigningUseEnum
     throw EnumConversionException("Could not convert CertificateSigningUseEnum to CertificateSigningUseEnum");
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::HashAlgorithmEnumType。
+ */
 ocpp::HashAlgorithmEnumType from_ocpp_v2(ocpp::v2::HashAlgorithmEnum other) {
     switch (other) {
     case ocpp::v2::HashAlgorithmEnum::SHA256:
@@ -201,6 +285,12 @@ ocpp::HashAlgorithmEnumType from_ocpp_v2(ocpp::v2::HashAlgorithmEnum other) {
     throw EnumConversionException("Could not convert HashAlgorithmEnum to HashAlgorithmEnumType");
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::InstallCertificateResult。
+ */
 ocpp::InstallCertificateResult from_ocpp_v2(ocpp::v2::InstallCertificateStatusEnum other) {
     switch (other) {
     case ocpp::v2::InstallCertificateStatusEnum::Rejected:
@@ -215,6 +305,12 @@ ocpp::InstallCertificateResult from_ocpp_v2(ocpp::v2::InstallCertificateStatusEn
         "Could not convert InstallCertificateResult to evse_security::InstallCertificateResult");
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::DeleteCertificateResult。
+ */
 ocpp::DeleteCertificateResult from_ocpp_v2(ocpp::v2::DeleteCertificateStatusEnum other) {
     switch (other) {
     case ocpp::v2::DeleteCertificateStatusEnum::Accepted:
@@ -229,6 +325,12 @@ ocpp::DeleteCertificateResult from_ocpp_v2(ocpp::v2::DeleteCertificateStatusEnum
         "Could not convert DeleteCertificateResult to evse_security::DeleteCertificateResult");
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateHashDataType。
+ */
 ocpp::CertificateHashDataType from_ocpp_v2(ocpp::v2::CertificateHashDataType other) {
     ocpp::CertificateHashDataType lhs;
     lhs.hashAlgorithm = from_ocpp_v2(other.hashAlgorithm);
@@ -238,6 +340,12 @@ ocpp::CertificateHashDataType from_ocpp_v2(ocpp::v2::CertificateHashDataType oth
     return lhs;
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::CertificateHashDataChain。
+ */
 ocpp::CertificateHashDataChain from_ocpp_v2(ocpp::v2::CertificateHashDataChain other) {
     ocpp::CertificateHashDataChain lhs;
     lhs.certificateType = from_ocpp_v2(other.certificateType);
@@ -252,6 +360,12 @@ ocpp::CertificateHashDataChain from_ocpp_v2(ocpp::v2::CertificateHashDataChain o
     return lhs;
 }
 
+/**
+ * from_ocpp_v2 - from ocpp v2
+ * @other: 传入的 other
+ *
+ * 返回 ocpp::OCSPRequestData。
+ */
 ocpp::OCSPRequestData from_ocpp_v2(ocpp::v2::OCSPRequestData other) {
     ocpp::OCSPRequestData lhs;
     lhs.issuerNameHash = other.issuerNameHash;

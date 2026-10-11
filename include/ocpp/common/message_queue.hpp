@@ -150,6 +150,14 @@ bool is_boot_notification_message(const ocpp::v16::MessageType message_type);
 bool is_boot_notification_message(const ocpp::v2::MessageType message_type);
 
 template <typename M>
+/**
+ * allowed_to_send_message - allowed to send message
+ * @message: 已经组好的 JSON 报文
+ * @time: 传入的 time
+ * @is_registration_status_accepted: 传入的 is_registration_status_accepted
+ *
+ * 返回 bool。
+ */
 bool allowed_to_send_message(const ControlMessage<M>& message, const DateTime& time,
                              const bool is_registration_status_accepted) {
     if (message.stall_until_accepted and !is_registration_status_accepted) {

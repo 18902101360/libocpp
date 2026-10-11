@@ -156,6 +156,11 @@ ChargePointFSM::ChargePointFSM(const StatusNotificationCallback& status_notifica
     status_notification_callback(status_notification_callback_), state(initial_state) {
 }
 
+/**
+ * ChargePointFSM::get_state - get state
+ *
+ * 返回 FSMState。
+ */
 FSMState ChargePointFSM::get_state() {
     if (this->is_faulted()) {
         return FSMState::Faulted;
@@ -163,6 +168,11 @@ FSMState ChargePointFSM::get_state() {
     return state;
 }
 
+/**
+ * ChargePointFSM::is_faulted - is faulted
+ *
+ * 返回 bool。
+ */
 bool ChargePointFSM::is_faulted() {
     // check if there is any active fault
     return std::find_if(this->active_errors.begin(), this->active_errors.end(),
@@ -170,6 +180,11 @@ bool ChargePointFSM::is_faulted() {
            this->active_errors.end();
 }
 
+/**
+ * ChargePointFSM::get_latest_error - get latest error
+ *
+ * 返回 std::optional<ErrorInfo>。
+ */
 std::optional<ErrorInfo> ChargePointFSM::get_latest_error() {
     if (this->active_errors.empty()) {
         return std::nullopt;
@@ -184,6 +199,14 @@ std::optional<ErrorInfo> ChargePointFSM::get_latest_error() {
     return latest_error;
 }
 
+/**
+ * ChargePointFSM::handle_event - handle event
+ * @event: 传入的 event
+ * @timestamp: 传入的 timestamp
+ * @info: 传入的 info
+ *
+ * 返回 bool。
+ */
 bool ChargePointFSM::handle_event(FSMEvent event, const ocpp::DateTime timestamp,
                                   const std::optional<CiString<50>>& info) {
     const auto& transitions = FSM_DEF.at(state);
@@ -208,6 +231,12 @@ bool ChargePointFSM::handle_event(FSMEvent event, const ocpp::DateTime timestamp
     return true;
 }
 
+/**
+ * ChargePointFSM::handle_error - handle error
+ * @error_info: 传入的 error_info
+ *
+ * 返回 bool。
+ */
 bool ChargePointFSM::handle_error(const ErrorInfo& error_info) {
     if (this->active_errors.count(error_info.uuid) != 0) {
         // has already been handled and reported
@@ -226,6 +255,12 @@ bool ChargePointFSM::handle_error(const ErrorInfo& error_info) {
     return true;
 }
 
+/**
+ * ChargePointFSM::handle_error_cleared - handle error cleared
+ * @uuid: 传入的 uuid
+ *
+ * 返回 bool。
+ */
 bool ChargePointFSM::handle_error_cleared(const std::string uuid) {
     // dont do anything if the error is unknown
     if (this->active_errors.find(uuid) == this->active_errors.end()) {
@@ -264,6 +299,11 @@ bool ChargePointFSM::handle_error_cleared(const std::string uuid) {
     return true;
 }
 
+/**
+ * ChargePointFSM::handle_all_errors_cleared - handle all errors cleared
+ *
+ * 返回 bool。
+ */
 bool ChargePointFSM::handle_all_errors_cleared() {
     this->active_errors.clear();
     status_notification_callback(this->state, ChargePointErrorCode::NoError, DateTime(), std::nullopt, std::nullopt,
@@ -271,6 +311,9 @@ bool ChargePointFSM::handle_all_errors_cleared() {
     return true;
 }
 
+/**
+ * ChargePointFSM::trigger_status_notification - trigger status notification
+ */
 void ChargePointFSM::trigger_status_notification() {
     // get latest error or report NoError
     const auto error_info = this->get_latest_error().value_or(ErrorInfo("", ChargePointErrorCode::NoError, false));
@@ -286,6 +329,10 @@ void ChargePointFSM::trigger_status_notification() {
 ChargePointStates::ChargePointStates(const ConnectorStatusCallback& callback) : connector_status_callback(callback) {
 }
 
+/**
+ * ChargePointStates::reset - reset
+ * @connector_status_map: 传入的 connector_status_map
+ */
 void ChargePointStates::reset(std::map<int, ChargePointStatus> connector_status_map) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     state_machines.clear();
@@ -322,6 +369,13 @@ void ChargePointStates::reset(std::map<int, ChargePointStatus> connector_status_
     }
 }
 
+/**
+ * ChargePointStates::submit_event - submit event
+ * @connector_id: 传入的 connector_id
+ * @event: 传入的 event
+ * @timestamp: 传入的 timestamp
+ * @info: 传入的 info
+ */
 void ChargePointStates::submit_event(const int connector_id, FSMEvent event, const ocpp::DateTime& timestamp,
                                      const std::optional<CiString<50>>& info) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
@@ -332,6 +386,11 @@ void ChargePointStates::submit_event(const int connector_id, FSMEvent event, con
     }
 }
 
+/**
+ * ChargePointStates::submit_error - submit error
+ * @connector_id: 传入的 connector_id
+ * @error_info: 传入的 error_info
+ */
 void ChargePointStates::submit_error(const int connector_id, const ErrorInfo& error_info) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     if (connector_id == 0) {
@@ -341,6 +400,11 @@ void ChargePointStates::submit_error(const int connector_id, const ErrorInfo& er
     }
 }
 
+/**
+ * ChargePointStates::submit_error_cleared - submit error cleared
+ * @connector_id: 传入的 connector_id
+ * @uuid: 传入的 uuid
+ */
 void ChargePointStates::submit_error_cleared(const int connector_id, const std::string uuid) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     if (connector_id == 0) {
@@ -350,6 +414,10 @@ void ChargePointStates::submit_error_cleared(const int connector_id, const std::
     }
 }
 
+/**
+ * ChargePointStates::submit_all_errors_cleared - submit all errors cleared
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePointStates::submit_all_errors_cleared(const std::int32_t connector_id) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     if (connector_id == 0) {
@@ -359,6 +427,10 @@ void ChargePointStates::submit_all_errors_cleared(const std::int32_t connector_i
     }
 }
 
+/**
+ * ChargePointStates::trigger_status_notification - trigger status notification
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePointStates::trigger_status_notification(const int connector_id) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     if (connector_id == 0) {
@@ -368,6 +440,9 @@ void ChargePointStates::trigger_status_notification(const int connector_id) {
     }
 }
 
+/**
+ * ChargePointStates::trigger_status_notifications - trigger status notifications
+ */
 void ChargePointStates::trigger_status_notifications() {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     this->state_machine_connector_zero->trigger_status_notification();
@@ -376,6 +451,12 @@ void ChargePointStates::trigger_status_notifications() {
     }
 }
 
+/**
+ * ChargePointStates::get_state - get state
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 ChargePointStatus。
+ */
 ChargePointStatus ChargePointStates::get_state(int connector_id) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     if (connector_id > 0 && static_cast<size_t>(connector_id) <= this->state_machines.size()) {
@@ -389,6 +470,12 @@ ChargePointStatus ChargePointStates::get_state(int connector_id) {
     return ChargePointStatus::Unavailable;
 }
 
+/**
+ * ChargePointStates::get_latest_error - get latest error
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 std::optional<ErrorInfo>。
+ */
 std::optional<ErrorInfo> ChargePointStates::get_latest_error(int connector_id) {
     const std::lock_guard<std::mutex> lck(state_machines_mutex);
     if (connector_id > 0 && static_cast<size_t>(connector_id) <= this->state_machines.size()) {

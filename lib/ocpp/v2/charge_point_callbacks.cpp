@@ -4,6 +4,13 @@
 
 namespace ocpp::v2 {
 
+/**
+ * Callbacks::all_callbacks_valid - all callbacks valid
+ * @device_model: 传入的 device_model
+ * @evse_connector_structure: 传入的 evse_connector_structure
+ *
+ * 返回 bool。
+ */
 bool Callbacks::all_callbacks_valid(std::shared_ptr<DeviceModel> device_model,
                                     const std::map<std::int32_t, std::int32_t>& evse_connector_structure) const {
     bool valid =

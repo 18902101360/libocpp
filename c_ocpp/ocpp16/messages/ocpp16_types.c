@@ -3,6 +3,12 @@
 #include "ocpp_json.h"
 #include <string.h>
 
+/**
+ * ocpp16_id_tag_info_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_id_tag_info_to_json(const ocpp16_id_tag_info_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -12,6 +18,13 @@ cJSON *ocpp16_id_tag_info_to_json(const ocpp16_id_tag_info_t *in) {
     if (in->has_parentIdTag) ocpp_json_add_str(obj, "parentIdTag", in->parentIdTag);
     return obj;
 }
+/**
+ * ocpp16_id_tag_info_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_id_tag_info_from_json(const cJSON *obj, ocpp16_id_tag_info_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -20,11 +33,23 @@ ocpp_err_t ocpp16_id_tag_info_from_json(const cJSON *obj, ocpp16_id_tag_info_t *
     out->has_parentIdTag = ocpp_json_get_str(obj, "parentIdTag", out->parentIdTag, sizeof(out->parentIdTag), 0) > 0;
     return OCPP_OK;
 }
+/**
+ * ocpp16_id_tag_info_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_id_tag_info_example(ocpp16_id_tag_info_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->status, sizeof(out->status), "Accepted");
 }
 
+/**
+ * ocpp16_sampled_value_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_sampled_value_to_json(const ocpp16_sampled_value_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -34,6 +59,13 @@ cJSON *ocpp16_sampled_value_to_json(const ocpp16_sampled_value_t *in) {
     if (in->has_unit) ocpp_json_add_str(obj, "unit", in->unit);
     return obj;
 }
+/**
+ * ocpp16_sampled_value_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_sampled_value_from_json(const cJSON *obj, ocpp16_sampled_value_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -42,11 +74,23 @@ ocpp_err_t ocpp16_sampled_value_from_json(const cJSON *obj, ocpp16_sampled_value
     out->has_unit = ocpp_json_get_str(obj, "unit", out->unit, sizeof(out->unit), 0) > 0;
     return OCPP_OK;
 }
+/**
+ * ocpp16_sampled_value_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_sampled_value_example(ocpp16_sampled_value_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->value, sizeof(out->value), "1234");
 }
 
+/**
+ * ocpp16_meter_value_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_meter_value_to_json(const ocpp16_meter_value_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -60,6 +104,13 @@ cJSON *ocpp16_meter_value_to_json(const ocpp16_meter_value_t *in) {
       cJSON_AddItemToObject(obj, "sampledValue", arr); }
     return obj;
 }
+/**
+ * ocpp16_meter_value_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_meter_value_from_json(const cJSON *obj, ocpp16_meter_value_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -76,6 +127,12 @@ ocpp_err_t ocpp16_meter_value_from_json(const cJSON *obj, ocpp16_meter_value_t *
     }
     return OCPP_OK;
 }
+/**
+ * ocpp16_meter_value_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_meter_value_example(ocpp16_meter_value_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->timestamp, sizeof(out->timestamp), "2024-01-01T00:00:00Z");
@@ -83,6 +140,12 @@ void ocpp16_meter_value_example(ocpp16_meter_value_t *out) {
     ocpp16_sampled_value_example(&out->sampledValue[0]);
 }
 
+/**
+ * ocpp16_cs_period_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_cs_period_to_json(const ocpp16_cs_period_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -92,6 +155,13 @@ cJSON *ocpp16_cs_period_to_json(const ocpp16_cs_period_t *in) {
     if (in->has_numberPhases) ocpp_json_add_int(obj, "numberPhases", in->numberPhases);
     return obj;
 }
+/**
+ * ocpp16_cs_period_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_cs_period_from_json(const cJSON *obj, ocpp16_cs_period_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -100,12 +170,24 @@ ocpp_err_t ocpp16_cs_period_from_json(const cJSON *obj, ocpp16_cs_period_t *out)
     out->has_numberPhases = ocpp_json_get_int(obj, "numberPhases", &out->numberPhases, 0) > 0;
     return OCPP_OK;
 }
+/**
+ * ocpp16_cs_period_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_cs_period_example(ocpp16_cs_period_t *out) {
     memset(out, 0, sizeof(*out));
     out->startPeriod = 0;
     out->limit = 16.0;
 }
 
+/**
+ * ocpp16_charging_schedule_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_charging_schedule_to_json(const ocpp16_charging_schedule_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -120,6 +202,13 @@ cJSON *ocpp16_charging_schedule_to_json(const ocpp16_charging_schedule_t *in) {
     if (in->has_duration) ocpp_json_add_int(obj, "duration", in->duration);
     return obj;
 }
+/**
+ * ocpp16_charging_schedule_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_charging_schedule_from_json(const cJSON *obj, ocpp16_charging_schedule_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -137,6 +226,12 @@ ocpp_err_t ocpp16_charging_schedule_from_json(const cJSON *obj, ocpp16_charging_
     out->has_duration = ocpp_json_get_int(obj, "duration", &out->duration, 0) > 0;
     return OCPP_OK;
 }
+/**
+ * ocpp16_charging_schedule_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_charging_schedule_example(ocpp16_charging_schedule_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->chargingRateUnit, sizeof(out->chargingRateUnit), "A");
@@ -144,6 +239,12 @@ void ocpp16_charging_schedule_example(ocpp16_charging_schedule_t *out) {
     ocpp16_cs_period_example(&out->chargingSchedulePeriod[0]);
 }
 
+/**
+ * ocpp16_charging_profile_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_charging_profile_to_json(const ocpp16_charging_profile_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -156,6 +257,13 @@ cJSON *ocpp16_charging_profile_to_json(const ocpp16_charging_profile_t *in) {
     if (in->has_transactionId) ocpp_json_add_int(obj, "transactionId", in->transactionId);
     return obj;
 }
+/**
+ * ocpp16_charging_profile_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_charging_profile_from_json(const cJSON *obj, ocpp16_charging_profile_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -170,6 +278,12 @@ ocpp_err_t ocpp16_charging_profile_from_json(const cJSON *obj, ocpp16_charging_p
     out->has_transactionId = ocpp_json_get_int(obj, "transactionId", &out->transactionId, 0) > 0;
     return OCPP_OK;
 }
+/**
+ * ocpp16_charging_profile_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_charging_profile_example(ocpp16_charging_profile_t *out) {
     memset(out, 0, sizeof(*out));
     out->chargingProfileId = 1;
@@ -179,6 +293,12 @@ void ocpp16_charging_profile_example(ocpp16_charging_profile_t *out) {
     ocpp16_charging_schedule_example(&out->chargingSchedule);
 }
 
+/**
+ * ocpp16_key_value_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_key_value_to_json(const ocpp16_key_value_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -188,6 +308,13 @@ cJSON *ocpp16_key_value_to_json(const ocpp16_key_value_t *in) {
     if (in->has_value) ocpp_json_add_str(obj, "value", in->value);
     return obj;
 }
+/**
+ * ocpp16_key_value_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_key_value_from_json(const cJSON *obj, ocpp16_key_value_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -196,6 +323,12 @@ ocpp_err_t ocpp16_key_value_from_json(const cJSON *obj, ocpp16_key_value_t *out)
     out->has_value = ocpp_json_get_str(obj, "value", out->value, sizeof(out->value), 0) > 0;
     return OCPP_OK;
 }
+/**
+ * ocpp16_key_value_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_key_value_example(ocpp16_key_value_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->key, sizeof(out->key), "HeartbeatInterval");
@@ -204,6 +337,12 @@ void ocpp16_key_value_example(ocpp16_key_value_t *out) {
     ocpp_str_copy(out->value, sizeof(out->value), "300");
 }
 
+/**
+ * ocpp16_auth_data_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_auth_data_to_json(const ocpp16_auth_data_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -212,6 +351,13 @@ cJSON *ocpp16_auth_data_to_json(const ocpp16_auth_data_t *in) {
     if (in->has_idTagInfo) { cJSON *ch = ocpp16_id_tag_info_to_json(&in->idTagInfo); if (ch) cJSON_AddItemToObject(obj, "idTagInfo", ch); }
     return obj;
 }
+/**
+ * ocpp16_auth_data_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_auth_data_from_json(const cJSON *obj, ocpp16_auth_data_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -222,11 +368,23 @@ ocpp_err_t ocpp16_auth_data_from_json(const cJSON *obj, ocpp16_auth_data_t *out)
     }
     return OCPP_OK;
 }
+/**
+ * ocpp16_auth_data_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_auth_data_example(ocpp16_auth_data_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->idTag, sizeof(out->idTag), "TAG001");
 }
 
+/**
+ * ocpp16_cert_hash_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_cert_hash_to_json(const ocpp16_cert_hash_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -237,6 +395,13 @@ cJSON *ocpp16_cert_hash_to_json(const ocpp16_cert_hash_t *in) {
     if (ocpp_json_add_str(obj, "serialNumber", in->serialNumber) < 0) { cJSON_Delete(obj); return NULL; }
     return obj;
 }
+/**
+ * ocpp16_cert_hash_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_cert_hash_from_json(const cJSON *obj, ocpp16_cert_hash_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -246,6 +411,12 @@ ocpp_err_t ocpp16_cert_hash_from_json(const cJSON *obj, ocpp16_cert_hash_t *out)
     if (ocpp_json_get_str(obj, "serialNumber", out->serialNumber, sizeof(out->serialNumber), 1) < 0) return OCPP_ERR_PARSE;
     return OCPP_OK;
 }
+/**
+ * ocpp16_cert_hash_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_cert_hash_example(ocpp16_cert_hash_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->hashAlgorithm, sizeof(out->hashAlgorithm), "SHA256");
@@ -254,6 +425,12 @@ void ocpp16_cert_hash_example(ocpp16_cert_hash_t *out) {
     ocpp_str_copy(out->serialNumber, sizeof(out->serialNumber), "1");
 }
 
+/**
+ * ocpp16_log_params_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_log_params_to_json(const ocpp16_log_params_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -261,17 +438,36 @@ cJSON *ocpp16_log_params_to_json(const ocpp16_log_params_t *in) {
     if (ocpp_json_add_str(obj, "remoteLocation", in->remoteLocation) < 0) { cJSON_Delete(obj); return NULL; }
     return obj;
 }
+/**
+ * ocpp16_log_params_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_log_params_from_json(const cJSON *obj, ocpp16_log_params_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
     if (ocpp_json_get_str(obj, "remoteLocation", out->remoteLocation, sizeof(out->remoteLocation), 1) < 0) return OCPP_ERR_PARSE;
     return OCPP_OK;
 }
+/**
+ * ocpp16_log_params_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_log_params_example(ocpp16_log_params_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->remoteLocation, sizeof(out->remoteLocation), "ftp://example/log");
 }
 
+/**
+ * ocpp16_firmware_signed_to_json - 结构体编成 cJSON 对象
+ * @in: 源结构，不能为 NULL
+ *
+ * 失败返回 NULL。调用方负责 cJSON_Delete。空的可选字段不会写进去。
+ */
 cJSON *ocpp16_firmware_signed_to_json(const ocpp16_firmware_signed_t *in) {
     if (in == NULL) return NULL;
     cJSON *obj = cJSON_CreateObject();
@@ -282,6 +478,13 @@ cJSON *ocpp16_firmware_signed_to_json(const ocpp16_firmware_signed_t *in) {
     if (ocpp_json_add_str(obj, "signature", in->signature) < 0) { cJSON_Delete(obj); return NULL; }
     return obj;
 }
+/**
+ * ocpp16_firmware_signed_from_json - 从 cJSON 对象填结构体
+ * @obj: JSON 对象
+ * @out: 输出结构，函数内会先清零
+ *
+ * 成功返回 OCPP_OK。缺必填字段返回 OCPP_ERR_PARSE。
+ */
 ocpp_err_t ocpp16_firmware_signed_from_json(const cJSON *obj, ocpp16_firmware_signed_t *out) {
     if (obj == NULL || out == NULL) return OCPP_ERR_ARG;
     memset(out, 0, sizeof(*out));
@@ -291,6 +494,12 @@ ocpp_err_t ocpp16_firmware_signed_from_json(const cJSON *obj, ocpp16_firmware_si
     if (ocpp_json_get_str(obj, "signature", out->signature, sizeof(out->signature), 1) < 0) return OCPP_ERR_PARSE;
     return OCPP_OK;
 }
+/**
+ * ocpp16_firmware_signed_example - 填一份可直接发出去的示例
+ * @out: 输出，函数内会先清零
+ *
+ * 测试和未实现的 CSMS 回调用这份默认值。正式桩应换成自己的数据。
+ */
 void ocpp16_firmware_signed_example(ocpp16_firmware_signed_t *out) {
     memset(out, 0, sizeof(*out));
     ocpp_str_copy(out->location, sizeof(out->location), "https://example/fw.bin");

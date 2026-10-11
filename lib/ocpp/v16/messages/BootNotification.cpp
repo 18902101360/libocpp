@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v16 {
 
+/**
+ * BootNotificationRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string BootNotificationRequest::get_type() const {
     return "BootNotification";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const BootNotificationRequest& k) {
     // the required parts of the message
     j = json{
@@ -47,6 +57,11 @@ void to_json(json& j, const BootNotificationRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, BootNotificationRequest& k) {
     // the required parts of the message
     k.chargePointVendor = j.at("chargePointVendor");
@@ -83,10 +98,20 @@ std::ostream& operator<<(std::ostream& os, const BootNotificationRequest& k) {
     return os;
 }
 
+/**
+ * BootNotificationResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string BootNotificationResponse::get_type() const {
     return "BootNotificationResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const BootNotificationResponse& k) {
     // the required parts of the message
     j = json{
@@ -97,6 +122,11 @@ void to_json(json& j, const BootNotificationResponse& k) {
     // the optional parts of the message
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, BootNotificationResponse& k) {
     // the required parts of the message
     k.status = conversions::string_to_registration_status(j.at("status"));

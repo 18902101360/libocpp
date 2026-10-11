@@ -17,20 +17,29 @@ namespace {
 void set_setpoint_limit_phase_values(PeriodLimit& current_limit, PeriodLimit& power_limit,
                                      const float& no_limit_specified, const std::optional<std::int32_t> number_phases,
                                      const OcppProtocolVersion ocpp_version);
+/* get max limit */
 float get_max_limit(const float limit1, const float limit2, const std::optional<float> cap_max = std::nullopt);
+/* get max limit */
 PeriodLimit get_max_limit(const PeriodLimit& limit1, const PeriodLimit& limit2,
                           const std::optional<PeriodLimit>& cap = std::nullopt);
+/* get min limit */
 float get_min_limit(const float limit1, const float limit2, const std::optional<float> cap_min = std::nullopt);
+/* get min limit */
 PeriodLimit get_min_limit(const PeriodLimit& limit1, const PeriodLimit& limit2,
                           const std::optional<PeriodLimit>& cap = std::nullopt);
+/* get set setpoint limit */
 void get_set_setpoint_limit(PeriodLimit& setpoint1, const PeriodLimit& setpoint2, const PeriodLimit& cap_limit,
                             const PeriodLimit& cap_discharge_limit);
+/* uses three phase values */
 bool uses_three_phase_values(const IntermediatePeriod& period);
+/* store limit to phase limits */
 void store_limit_to_phase_limits(const PeriodLimit& input_limit, const float& not_specified,
                                  std::optional<float>& value, std::optional<float>& value_L2,
                                  std::optional<float>& value_L3);
+/* convert and transform limit value */
 void convert_and_transform_limit_value(const float& input, const float& not_specified, const float& transform_value,
                                        std::optional<float>& value, const bool use_min, const bool use_divide);
+/* convert and transform limit to period schedule */
 void convert_and_transform_limit_to_period_schedule(const PeriodLimit& input_limit, const float& not_specified,
                                                     const float& transform_value, const std::int32_t number_phases,
                                                     std::optional<float>& value, std::optional<float>& value_L2,
@@ -38,15 +47,29 @@ void convert_and_transform_limit_to_period_schedule(const PeriodLimit& input_lim
                                                     const bool use_divide);
 } // namespace
 
+/**
+ * elapsed_seconds - elapsed seconds
+ * @to: 传入的 to
+ * @from: 传入的 from
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t elapsed_seconds(const ocpp::DateTime& to, const ocpp::DateTime& from) {
     return clamp_to<std::int32_t>(duration_cast<seconds>(to.to_time_point() - from.to_time_point()).count());
 }
 
+/**
+ * floor_seconds - floor seconds
+ * @dt: 传入的 dt
+ *
+ * 返回 ocpp::DateTime。
+ */
 ocpp::DateTime floor_seconds(const ocpp::DateTime& dt) {
     return ocpp::DateTime(std::chrono::floor<seconds>(dt.to_time_point()));
 }
 
 namespace {
+/* default intermediate period */
 IntermediatePeriod default_intermediate_period() {
     IntermediatePeriod empty;
     empty.startPeriod = 0;
@@ -63,6 +86,7 @@ IntermediatePeriod default_intermediate_period() {
     return empty;
 }
 
+/* default intermediate period */
 IntermediatePeriod default_intermediate_period(const std::int32_t start_period) {
     IntermediatePeriod empty = default_intermediate_period();
     empty.startPeriod = start_period;
@@ -115,6 +139,13 @@ void period_entry_t::init(const DateTime& in_start, int in_duration, const Charg
     min_charging_rate = in_profile.chargingSchedule.front().minChargingRate;
 }
 
+/**
+ * period_entry_t::validate - validate
+ * @profile: 传入的 profile
+ * @now: 计算充电曲线时的当前时间
+ *
+ * 返回 bool。
+ */
 bool period_entry_t::validate(const ChargingProfile& profile, const ocpp::DateTime& now) {
     bool b_valid{true};
 
@@ -240,6 +271,16 @@ std::vector<DateTime> calculate_start(const DateTime& in_now, const DateTime& in
     return start_times;
 }
 
+/**
+ * calculate_profile_entry - calculate profile entry
+ * @in_now: 传入的 in_now
+ * @in_end: 传入的 in_end
+ * @in_session_start: 传入的 in_session_start
+ * @in_profile: 传入的 in_profile
+ * @in_period_index: 传入的 in_period_index
+ *
+ * 返回 std::vector<period_entry_t>。
+ */
 std::vector<period_entry_t> calculate_profile_entry(const DateTime& in_now, const DateTime& in_end,
                                                     const std::optional<DateTime>& in_session_start,
                                                     const ChargingProfile& in_profile, std::size_t in_period_index) {
@@ -331,6 +372,7 @@ std::vector<period_entry_t> calculate_profile_entry(const DateTime& in_now, cons
 }
 
 namespace {
+/* calculate profile unsorted */
 std::vector<period_entry_t> calculate_profile_unsorted(const DateTime& now, const DateTime& end,
                                                        const std::optional<DateTime>& session_start,
                                                        const ChargingProfile& profile) {
@@ -349,6 +391,7 @@ std::vector<period_entry_t> calculate_profile_unsorted(const DateTime& now, cons
     return entries;
 }
 
+/* sort periods into date order */
 void sort_periods_into_date_order(std::vector<period_entry_t>& periods) {
     // sort into date order
     const struct {
@@ -361,6 +404,15 @@ void sort_periods_into_date_order(std::vector<period_entry_t>& periods) {
 }
 } // namespace
 
+/**
+ * calculate_profile - calculate profile
+ * @now: 计算充电曲线时的当前时间
+ * @end: 计算充电曲线时的结束时间
+ * @session_start: 传入的 session_start
+ * @profile: 传入的 profile
+ *
+ * 返回 std::vector<period_entry_t>。
+ */
 std::vector<period_entry_t> calculate_profile(const DateTime& now, const DateTime& end,
                                               const std::optional<DateTime>& session_start,
                                               const ChargingProfile& profile) {
@@ -370,6 +422,16 @@ std::vector<period_entry_t> calculate_profile(const DateTime& now, const DateTim
     return entries;
 }
 
+/**
+ * calculate_all_profiles - calculate all profiles
+ * @now: 计算充电曲线时的当前时间
+ * @end: 计算充电曲线时的结束时间
+ * @session_start: 传入的 session_start
+ * @profiles: 传入的 profiles
+ * @purpose: 传入的 purpose
+ *
+ * 返回 std::vector<period_entry_t>。
+ */
 std::vector<period_entry_t> calculate_all_profiles(const DateTime& now, const DateTime& end,
                                                    const std::optional<DateTime>& session_start,
                                                    const std::vector<ChargingProfile>& profiles,
@@ -386,6 +448,14 @@ std::vector<period_entry_t> calculate_all_profiles(const DateTime& now, const Da
     return output;
 }
 
+/**
+ * generate_profile_from_periods - generate profile from periods
+ * @periods: 传入的 periods
+ * @in_now: 传入的 in_now
+ * @in_end: 传入的 in_end
+ *
+ * 返回 IntermediateProfile。
+ */
 IntermediateProfile generate_profile_from_periods(std::vector<period_entry_t>& periods, const DateTime& in_now,
                                                   const DateTime& in_end) {
 
@@ -488,6 +558,7 @@ using period_iterator = IntermediateProfile::const_iterator;
 using period_pair_vector = std::vector<std::pair<period_iterator, period_iterator>>;
 using IntermediateProfileRef = std::reference_wrapper<const IntermediateProfile>;
 
+/* convert to ref vector */
 inline std::vector<IntermediateProfileRef> convert_to_ref_vector(const std::vector<IntermediateProfile>& profiles) {
     std::vector<IntermediateProfileRef> references{};
     references.reserve(profiles.size());
@@ -497,6 +568,7 @@ inline std::vector<IntermediateProfileRef> convert_to_ref_vector(const std::vect
     return references;
 }
 
+/* combine list of profiles */
 IntermediateProfile combine_list_of_profiles(const std::vector<IntermediateProfileRef>& profiles,
                                              std::function<IntermediatePeriod(const period_pair_vector&)> combinator) {
     if (profiles.empty()) {
@@ -566,6 +638,13 @@ IntermediateProfile combine_list_of_profiles(const std::vector<IntermediateProfi
 
 } // namespace
 
+/**
+ * merge_tx_profile_with_tx_default_profile - merge tx profile with tx default profile
+ * @tx_profile: 传入的 tx_profile
+ * @tx_default_profile: 传入的 tx_default_profile
+ *
+ * 返回 IntermediateProfile。
+ */
 IntermediateProfile merge_tx_profile_with_tx_default_profile(const IntermediateProfile& tx_profile,
                                                              const IntermediateProfile& tx_default_profile) {
     auto combinator = [](const period_pair_vector& periods) {
@@ -606,6 +685,13 @@ IntermediateProfile merge_tx_profile_with_tx_default_profile(const IntermediateP
     return combine_list_of_profiles(profiles, combinator);
 }
 
+/**
+ * merge_profiles_by_lowest_limit - merge profiles by lowest limit
+ * @profiles: 传入的 profiles
+ * @ocpp_version: 传入的 ocpp_version
+ *
+ * 返回 IntermediateProfile。
+ */
 IntermediateProfile merge_profiles_by_lowest_limit(const std::vector<IntermediateProfile>& profiles,
                                                    const OcppProtocolVersion ocpp_version) {
     auto combinator = [ocpp_version](const period_pair_vector& periods) {
@@ -687,6 +773,15 @@ IntermediateProfile merge_profiles_by_lowest_limit(const std::vector<Intermediat
     return combine_list_of_profiles(convert_to_ref_vector(profiles), combinator);
 }
 
+/**
+ * merge_profiles_by_summing_limits - merge profiles by summing limits
+ * @profiles: 传入的 profiles
+ * @current_default: 传入的 current_default
+ * @power_default: 传入的 power_default
+ * @ocpp_version: 传入的 ocpp_version
+ *
+ * 返回 IntermediateProfile。
+ */
 IntermediateProfile merge_profiles_by_summing_limits(const std::vector<IntermediateProfile>& profiles,
                                                      float current_default, float power_default,
                                                      const OcppProtocolVersion ocpp_version) {

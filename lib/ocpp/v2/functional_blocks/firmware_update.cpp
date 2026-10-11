@@ -34,6 +34,10 @@ FirmwareUpdate::FirmwareUpdate(const FunctionalBlockContext& functional_block_co
     firmware_status(FirmwareStatusEnum::Idle) {
 }
 
+/**
+ * FirmwareUpdate::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void FirmwareUpdate::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     if (message.messageType == MessageType::UpdateFirmware) {
         this->handle_firmware_update_req(message.message);
@@ -42,6 +46,11 @@ void FirmwareUpdate::handle_message(const ocpp::EnhancedMessage<MessageType>& me
     }
 }
 
+/**
+ * FirmwareUpdate::on_firmware_update_status_notification - on firmware update status notification
+ * @request_id: 传入的 request_id
+ * @firmware_update_status: 传入的 firmware_update_status
+ */
 void FirmwareUpdate::on_firmware_update_status_notification(std::int32_t request_id,
                                                             const FirmwareStatusEnum& firmware_update_status) {
     if (this->firmware_status == firmware_update_status) {
@@ -100,6 +109,9 @@ void FirmwareUpdate::on_firmware_update_status_notification(std::int32_t request
     }
 }
 
+/**
+ * FirmwareUpdate::on_firmware_status_notification_request - on firmware status notification request
+ */
 void FirmwareUpdate::on_firmware_status_notification_request() {
     FirmwareStatusNotificationRequest request;
 
@@ -117,6 +129,10 @@ void FirmwareUpdate::on_firmware_status_notification_request() {
     this->context.message_dispatcher.dispatch_call(call, true);
 }
 
+/**
+ * FirmwareUpdate::handle_firmware_update_req - handle firmware update req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void FirmwareUpdate::handle_firmware_update_req(Call<UpdateFirmwareRequest> call) {
     EVLOG_debug << "Received UpdateFirmwareRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     if (call.msg.firmware.signingCertificate.has_value() or call.msg.firmware.signature.has_value()) {
@@ -156,6 +172,9 @@ void FirmwareUpdate::handle_firmware_update_req(Call<UpdateFirmwareRequest> call
     }
 }
 
+/**
+ * FirmwareUpdate::change_all_connectors_to_unavailable_for_firmware_update - change all connectors to unavailable for firmware update
+ */
 void FirmwareUpdate::change_all_connectors_to_unavailable_for_firmware_update() {
     ChangeAvailabilityResponse response;
     response.status = ChangeAvailabilityStatusEnum::Scheduled;
@@ -192,6 +211,9 @@ void FirmwareUpdate::change_all_connectors_to_unavailable_for_firmware_update() 
     }
 }
 
+/**
+ * FirmwareUpdate::restore_all_connector_states - restore all connector states
+ */
 void FirmwareUpdate::restore_all_connector_states() {
     for (auto& evse : this->context.evse_manager) {
         const std::uint32_t number_of_connectors = evse.get_number_of_connectors();

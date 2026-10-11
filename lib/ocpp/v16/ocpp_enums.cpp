@@ -13,6 +13,12 @@ namespace v16 {
 
 // from: AuthorizeResponse
 namespace conversions {
+/**
+ * authorization_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string authorization_status_to_string(AuthorizationStatus e) {
     switch (e) {
     case AuthorizationStatus::Accepted:
@@ -30,6 +36,12 @@ std::string authorization_status_to_string(AuthorizationStatus e) {
     throw EnumToStringException{e, "AuthorizationStatus"};
 }
 
+/**
+ * string_to_authorization_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 AuthorizationStatus。
+ */
 AuthorizationStatus string_to_authorization_status(const std::string& s) {
     if (s == "Accepted") {
         return AuthorizationStatus::Accepted;
@@ -51,6 +63,13 @@ AuthorizationStatus string_to_authorization_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @authorization_status: 传入的 authorization_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const AuthorizationStatus& authorization_status) {
     os << conversions::authorization_status_to_string(authorization_status);
     return os;
@@ -58,6 +77,12 @@ std::ostream& operator<<(std::ostream& os, const AuthorizationStatus& authorizat
 
 // from: BootNotificationResponse
 namespace conversions {
+/**
+ * registration_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string registration_status_to_string(RegistrationStatus e) {
     switch (e) {
     case RegistrationStatus::Accepted:
@@ -71,6 +96,12 @@ std::string registration_status_to_string(RegistrationStatus e) {
     throw EnumToStringException{e, "RegistrationStatus"};
 }
 
+/**
+ * string_to_registration_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 RegistrationStatus。
+ */
 RegistrationStatus string_to_registration_status(const std::string& s) {
     if (s == "Accepted") {
         return RegistrationStatus::Accepted;
@@ -86,6 +117,13 @@ RegistrationStatus string_to_registration_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @registration_status: 传入的 registration_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const RegistrationStatus& registration_status) {
     os << conversions::registration_status_to_string(registration_status);
     return os;
@@ -93,6 +131,12 @@ std::ostream& operator<<(std::ostream& os, const RegistrationStatus& registratio
 
 // from: CancelReservationResponse
 namespace conversions {
+/**
+ * cancel_reservation_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string cancel_reservation_status_to_string(CancelReservationStatus e) {
     switch (e) {
     case CancelReservationStatus::Accepted:
@@ -104,6 +148,12 @@ std::string cancel_reservation_status_to_string(CancelReservationStatus e) {
     throw EnumToStringException{e, "CancelReservationStatus"};
 }
 
+/**
+ * string_to_cancel_reservation_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CancelReservationStatus。
+ */
 CancelReservationStatus string_to_cancel_reservation_status(const std::string& s) {
     if (s == "Accepted") {
         return CancelReservationStatus::Accepted;
@@ -116,6 +166,13 @@ CancelReservationStatus string_to_cancel_reservation_status(const std::string& s
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @cancel_reservation_status: 传入的 cancel_reservation_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CancelReservationStatus& cancel_reservation_status) {
     os << conversions::cancel_reservation_status_to_string(cancel_reservation_status);
     return os;
@@ -123,6 +180,12 @@ std::ostream& operator<<(std::ostream& os, const CancelReservationStatus& cancel
 
 // from: CertificateSignedResponse
 namespace conversions {
+/**
+ * certificate_signed_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string certificate_signed_status_enum_type_to_string(CertificateSignedStatusEnumType e) {
     switch (e) {
     case CertificateSignedStatusEnumType::Accepted:
@@ -134,6 +197,12 @@ std::string certificate_signed_status_enum_type_to_string(CertificateSignedStatu
     throw EnumToStringException{e, "CertificateSignedStatusEnumType"};
 }
 
+/**
+ * string_to_certificate_signed_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CertificateSignedStatusEnumType。
+ */
 CertificateSignedStatusEnumType string_to_certificate_signed_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return CertificateSignedStatusEnumType::Accepted;
@@ -146,6 +215,13 @@ CertificateSignedStatusEnumType string_to_certificate_signed_status_enum_type(co
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @certificate_signed_status_enum_type: 传入的 certificate_signed_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CertificateSignedStatusEnumType& certificate_signed_status_enum_type) {
     os << conversions::certificate_signed_status_enum_type_to_string(certificate_signed_status_enum_type);
     return os;
@@ -153,6 +229,12 @@ std::ostream& operator<<(std::ostream& os, const CertificateSignedStatusEnumType
 
 // from: ChangeAvailabilityRequest
 namespace conversions {
+/**
+ * availability_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string availability_type_to_string(AvailabilityType e) {
     switch (e) {
     case AvailabilityType::Inoperative:
@@ -164,6 +246,12 @@ std::string availability_type_to_string(AvailabilityType e) {
     throw EnumToStringException{e, "AvailabilityType"};
 }
 
+/**
+ * string_to_availability_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 AvailabilityType。
+ */
 AvailabilityType string_to_availability_type(const std::string& s) {
     if (s == "Inoperative") {
         return AvailabilityType::Inoperative;
@@ -176,6 +264,13 @@ AvailabilityType string_to_availability_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @availability_type: 传入的 availability_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const AvailabilityType& availability_type) {
     os << conversions::availability_type_to_string(availability_type);
     return os;
@@ -183,6 +278,12 @@ std::ostream& operator<<(std::ostream& os, const AvailabilityType& availability_
 
 // from: ChangeAvailabilityResponse
 namespace conversions {
+/**
+ * availability_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string availability_status_to_string(AvailabilityStatus e) {
     switch (e) {
     case AvailabilityStatus::Accepted:
@@ -196,6 +297,12 @@ std::string availability_status_to_string(AvailabilityStatus e) {
     throw EnumToStringException{e, "AvailabilityStatus"};
 }
 
+/**
+ * string_to_availability_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 AvailabilityStatus。
+ */
 AvailabilityStatus string_to_availability_status(const std::string& s) {
     if (s == "Accepted") {
         return AvailabilityStatus::Accepted;
@@ -211,6 +318,13 @@ AvailabilityStatus string_to_availability_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @availability_status: 传入的 availability_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const AvailabilityStatus& availability_status) {
     os << conversions::availability_status_to_string(availability_status);
     return os;
@@ -218,6 +332,12 @@ std::ostream& operator<<(std::ostream& os, const AvailabilityStatus& availabilit
 
 // from: ChangeConfigurationResponse
 namespace conversions {
+/**
+ * configuration_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string configuration_status_to_string(ConfigurationStatus e) {
     switch (e) {
     case ConfigurationStatus::Accepted:
@@ -233,6 +353,12 @@ std::string configuration_status_to_string(ConfigurationStatus e) {
     throw EnumToStringException{e, "ConfigurationStatus"};
 }
 
+/**
+ * string_to_configuration_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus string_to_configuration_status(const std::string& s) {
     if (s == "Accepted") {
         return ConfigurationStatus::Accepted;
@@ -251,6 +377,13 @@ ConfigurationStatus string_to_configuration_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @configuration_status: 传入的 configuration_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ConfigurationStatus& configuration_status) {
     os << conversions::configuration_status_to_string(configuration_status);
     return os;
@@ -258,6 +391,12 @@ std::ostream& operator<<(std::ostream& os, const ConfigurationStatus& configurat
 
 // from: ClearCacheResponse
 namespace conversions {
+/**
+ * clear_cache_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string clear_cache_status_to_string(ClearCacheStatus e) {
     switch (e) {
     case ClearCacheStatus::Accepted:
@@ -269,6 +408,12 @@ std::string clear_cache_status_to_string(ClearCacheStatus e) {
     throw EnumToStringException{e, "ClearCacheStatus"};
 }
 
+/**
+ * string_to_clear_cache_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ClearCacheStatus。
+ */
 ClearCacheStatus string_to_clear_cache_status(const std::string& s) {
     if (s == "Accepted") {
         return ClearCacheStatus::Accepted;
@@ -281,6 +426,13 @@ ClearCacheStatus string_to_clear_cache_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @clear_cache_status: 传入的 clear_cache_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ClearCacheStatus& clear_cache_status) {
     os << conversions::clear_cache_status_to_string(clear_cache_status);
     return os;
@@ -288,6 +440,12 @@ std::ostream& operator<<(std::ostream& os, const ClearCacheStatus& clear_cache_s
 
 // from: ClearChargingProfileRequest
 namespace conversions {
+/**
+ * charging_profile_purpose_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charging_profile_purpose_type_to_string(ChargingProfilePurposeType e) {
     switch (e) {
     case ChargingProfilePurposeType::ChargePointMaxProfile:
@@ -301,6 +459,12 @@ std::string charging_profile_purpose_type_to_string(ChargingProfilePurposeType e
     throw EnumToStringException{e, "ChargingProfilePurposeType"};
 }
 
+/**
+ * string_to_charging_profile_purpose_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargingProfilePurposeType。
+ */
 ChargingProfilePurposeType string_to_charging_profile_purpose_type(const std::string& s) {
     if (s == "ChargePointMaxProfile") {
         return ChargingProfilePurposeType::ChargePointMaxProfile;
@@ -316,6 +480,13 @@ ChargingProfilePurposeType string_to_charging_profile_purpose_type(const std::st
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charging_profile_purpose_type: 传入的 charging_profile_purpose_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargingProfilePurposeType& charging_profile_purpose_type) {
     os << conversions::charging_profile_purpose_type_to_string(charging_profile_purpose_type);
     return os;
@@ -323,6 +494,12 @@ std::ostream& operator<<(std::ostream& os, const ChargingProfilePurposeType& cha
 
 // from: ClearChargingProfileResponse
 namespace conversions {
+/**
+ * clear_charging_profile_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string clear_charging_profile_status_to_string(ClearChargingProfileStatus e) {
     switch (e) {
     case ClearChargingProfileStatus::Accepted:
@@ -334,6 +511,12 @@ std::string clear_charging_profile_status_to_string(ClearChargingProfileStatus e
     throw EnumToStringException{e, "ClearChargingProfileStatus"};
 }
 
+/**
+ * string_to_clear_charging_profile_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ClearChargingProfileStatus。
+ */
 ClearChargingProfileStatus string_to_clear_charging_profile_status(const std::string& s) {
     if (s == "Accepted") {
         return ClearChargingProfileStatus::Accepted;
@@ -346,6 +529,13 @@ ClearChargingProfileStatus string_to_clear_charging_profile_status(const std::st
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @clear_charging_profile_status: 传入的 clear_charging_profile_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ClearChargingProfileStatus& clear_charging_profile_status) {
     os << conversions::clear_charging_profile_status_to_string(clear_charging_profile_status);
     return os;
@@ -353,6 +543,12 @@ std::ostream& operator<<(std::ostream& os, const ClearChargingProfileStatus& cle
 
 // from: DataTransferResponse
 namespace conversions {
+/**
+ * data_transfer_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string data_transfer_status_to_string(DataTransferStatus e) {
     switch (e) {
     case DataTransferStatus::Accepted:
@@ -368,6 +564,12 @@ std::string data_transfer_status_to_string(DataTransferStatus e) {
     throw EnumToStringException{e, "DataTransferStatus"};
 }
 
+/**
+ * string_to_data_transfer_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 DataTransferStatus。
+ */
 DataTransferStatus string_to_data_transfer_status(const std::string& s) {
     if (s == "Accepted") {
         return DataTransferStatus::Accepted;
@@ -386,6 +588,13 @@ DataTransferStatus string_to_data_transfer_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @data_transfer_status: 传入的 data_transfer_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const DataTransferStatus& data_transfer_status) {
     os << conversions::data_transfer_status_to_string(data_transfer_status);
     return os;
@@ -393,6 +602,12 @@ std::ostream& operator<<(std::ostream& os, const DataTransferStatus& data_transf
 
 // from: DeleteCertificateRequest
 namespace conversions {
+/**
+ * hash_algorithm_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string hash_algorithm_enum_type_to_string(HashAlgorithmEnumType e) {
     switch (e) {
     case HashAlgorithmEnumType::SHA256:
@@ -406,6 +621,12 @@ std::string hash_algorithm_enum_type_to_string(HashAlgorithmEnumType e) {
     throw EnumToStringException{e, "HashAlgorithmEnumType"};
 }
 
+/**
+ * string_to_hash_algorithm_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 HashAlgorithmEnumType。
+ */
 HashAlgorithmEnumType string_to_hash_algorithm_enum_type(const std::string& s) {
     if (s == "SHA256") {
         return HashAlgorithmEnumType::SHA256;
@@ -421,6 +642,13 @@ HashAlgorithmEnumType string_to_hash_algorithm_enum_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @hash_algorithm_enum_type: 传入的 hash_algorithm_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const HashAlgorithmEnumType& hash_algorithm_enum_type) {
     os << conversions::hash_algorithm_enum_type_to_string(hash_algorithm_enum_type);
     return os;
@@ -428,6 +656,12 @@ std::ostream& operator<<(std::ostream& os, const HashAlgorithmEnumType& hash_alg
 
 // from: DeleteCertificateResponse
 namespace conversions {
+/**
+ * delete_certificate_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string delete_certificate_status_enum_type_to_string(DeleteCertificateStatusEnumType e) {
     switch (e) {
     case DeleteCertificateStatusEnumType::Accepted:
@@ -441,6 +675,12 @@ std::string delete_certificate_status_enum_type_to_string(DeleteCertificateStatu
     throw EnumToStringException{e, "DeleteCertificateStatusEnumType"};
 }
 
+/**
+ * string_to_delete_certificate_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 DeleteCertificateStatusEnumType。
+ */
 DeleteCertificateStatusEnumType string_to_delete_certificate_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return DeleteCertificateStatusEnumType::Accepted;
@@ -456,6 +696,13 @@ DeleteCertificateStatusEnumType string_to_delete_certificate_status_enum_type(co
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @delete_certificate_status_enum_type: 传入的 delete_certificate_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const DeleteCertificateStatusEnumType& delete_certificate_status_enum_type) {
     os << conversions::delete_certificate_status_enum_type_to_string(delete_certificate_status_enum_type);
     return os;
@@ -463,6 +710,12 @@ std::ostream& operator<<(std::ostream& os, const DeleteCertificateStatusEnumType
 
 // from: DiagnosticsStatusNotificationRequest
 namespace conversions {
+/**
+ * diagnostics_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string diagnostics_status_to_string(DiagnosticsStatus e) {
     switch (e) {
     case DiagnosticsStatus::Idle:
@@ -478,6 +731,12 @@ std::string diagnostics_status_to_string(DiagnosticsStatus e) {
     throw EnumToStringException{e, "DiagnosticsStatus"};
 }
 
+/**
+ * string_to_diagnostics_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 DiagnosticsStatus。
+ */
 DiagnosticsStatus string_to_diagnostics_status(const std::string& s) {
     if (s == "Idle") {
         return DiagnosticsStatus::Idle;
@@ -496,6 +755,13 @@ DiagnosticsStatus string_to_diagnostics_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @diagnostics_status: 传入的 diagnostics_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const DiagnosticsStatus& diagnostics_status) {
     os << conversions::diagnostics_status_to_string(diagnostics_status);
     return os;
@@ -503,6 +769,12 @@ std::ostream& operator<<(std::ostream& os, const DiagnosticsStatus& diagnostics_
 
 // from: ExtendedTriggerMessageRequest
 namespace conversions {
+/**
+ * message_trigger_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string message_trigger_enum_type_to_string(MessageTriggerEnumType e) {
     switch (e) {
     case MessageTriggerEnumType::BootNotification:
@@ -524,6 +796,12 @@ std::string message_trigger_enum_type_to_string(MessageTriggerEnumType e) {
     throw EnumToStringException{e, "MessageTriggerEnumType"};
 }
 
+/**
+ * string_to_message_trigger_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 MessageTriggerEnumType。
+ */
 MessageTriggerEnumType string_to_message_trigger_enum_type(const std::string& s) {
     if (s == "BootNotification") {
         return MessageTriggerEnumType::BootNotification;
@@ -551,6 +829,13 @@ MessageTriggerEnumType string_to_message_trigger_enum_type(const std::string& s)
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @message_trigger_enum_type: 传入的 message_trigger_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const MessageTriggerEnumType& message_trigger_enum_type) {
     os << conversions::message_trigger_enum_type_to_string(message_trigger_enum_type);
     return os;
@@ -558,6 +843,12 @@ std::ostream& operator<<(std::ostream& os, const MessageTriggerEnumType& message
 
 // from: ExtendedTriggerMessageResponse
 namespace conversions {
+/**
+ * trigger_message_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string trigger_message_status_enum_type_to_string(TriggerMessageStatusEnumType e) {
     switch (e) {
     case TriggerMessageStatusEnumType::Accepted:
@@ -571,6 +862,12 @@ std::string trigger_message_status_enum_type_to_string(TriggerMessageStatusEnumT
     throw EnumToStringException{e, "TriggerMessageStatusEnumType"};
 }
 
+/**
+ * string_to_trigger_message_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 TriggerMessageStatusEnumType。
+ */
 TriggerMessageStatusEnumType string_to_trigger_message_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return TriggerMessageStatusEnumType::Accepted;
@@ -586,6 +883,13 @@ TriggerMessageStatusEnumType string_to_trigger_message_status_enum_type(const st
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @trigger_message_status_enum_type: 传入的 trigger_message_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const TriggerMessageStatusEnumType& trigger_message_status_enum_type) {
     os << conversions::trigger_message_status_enum_type_to_string(trigger_message_status_enum_type);
     return os;
@@ -593,6 +897,12 @@ std::ostream& operator<<(std::ostream& os, const TriggerMessageStatusEnumType& t
 
 // from: FirmwareStatusNotificationRequest
 namespace conversions {
+/**
+ * firmware_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string firmware_status_to_string(FirmwareStatus e) {
     switch (e) {
     case FirmwareStatus::Downloaded:
@@ -614,6 +924,12 @@ std::string firmware_status_to_string(FirmwareStatus e) {
     throw EnumToStringException{e, "FirmwareStatus"};
 }
 
+/**
+ * string_to_firmware_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 FirmwareStatus。
+ */
 FirmwareStatus string_to_firmware_status(const std::string& s) {
     if (s == "Downloaded") {
         return FirmwareStatus::Downloaded;
@@ -641,6 +957,13 @@ FirmwareStatus string_to_firmware_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @firmware_status: 传入的 firmware_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const FirmwareStatus& firmware_status) {
     os << conversions::firmware_status_to_string(firmware_status);
     return os;
@@ -648,6 +971,12 @@ std::ostream& operator<<(std::ostream& os, const FirmwareStatus& firmware_status
 
 // from: GetCompositeScheduleRequest
 namespace conversions {
+/**
+ * charging_rate_unit_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charging_rate_unit_to_string(ChargingRateUnit e) {
     switch (e) {
     case ChargingRateUnit::A:
@@ -659,6 +988,12 @@ std::string charging_rate_unit_to_string(ChargingRateUnit e) {
     throw EnumToStringException{e, "ChargingRateUnit"};
 }
 
+/**
+ * string_to_charging_rate_unit - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargingRateUnit。
+ */
 ChargingRateUnit string_to_charging_rate_unit(const std::string& s) {
     if (s == "A") {
         return ChargingRateUnit::A;
@@ -671,6 +1006,13 @@ ChargingRateUnit string_to_charging_rate_unit(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charging_rate_unit: 传入的 charging_rate_unit
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargingRateUnit& charging_rate_unit) {
     os << conversions::charging_rate_unit_to_string(charging_rate_unit);
     return os;
@@ -678,6 +1020,12 @@ std::ostream& operator<<(std::ostream& os, const ChargingRateUnit& charging_rate
 
 // from: GetCompositeScheduleResponse
 namespace conversions {
+/**
+ * get_composite_schedule_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string get_composite_schedule_status_to_string(GetCompositeScheduleStatus e) {
     switch (e) {
     case GetCompositeScheduleStatus::Accepted:
@@ -689,6 +1037,12 @@ std::string get_composite_schedule_status_to_string(GetCompositeScheduleStatus e
     throw EnumToStringException{e, "GetCompositeScheduleStatus"};
 }
 
+/**
+ * string_to_get_composite_schedule_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 GetCompositeScheduleStatus。
+ */
 GetCompositeScheduleStatus string_to_get_composite_schedule_status(const std::string& s) {
     if (s == "Accepted") {
         return GetCompositeScheduleStatus::Accepted;
@@ -701,6 +1055,13 @@ GetCompositeScheduleStatus string_to_get_composite_schedule_status(const std::st
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @get_composite_schedule_status: 传入的 get_composite_schedule_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const GetCompositeScheduleStatus& get_composite_schedule_status) {
     os << conversions::get_composite_schedule_status_to_string(get_composite_schedule_status);
     return os;
@@ -708,6 +1069,12 @@ std::ostream& operator<<(std::ostream& os, const GetCompositeScheduleStatus& get
 
 // from: GetInstalledCertificateIdsRequest
 namespace conversions {
+/**
+ * certificate_use_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string certificate_use_enum_type_to_string(CertificateUseEnumType e) {
     switch (e) {
     case CertificateUseEnumType::CentralSystemRootCertificate:
@@ -719,6 +1086,12 @@ std::string certificate_use_enum_type_to_string(CertificateUseEnumType e) {
     throw EnumToStringException{e, "CertificateUseEnumType"};
 }
 
+/**
+ * string_to_certificate_use_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CertificateUseEnumType。
+ */
 CertificateUseEnumType string_to_certificate_use_enum_type(const std::string& s) {
     if (s == "CentralSystemRootCertificate") {
         return CertificateUseEnumType::CentralSystemRootCertificate;
@@ -731,6 +1104,13 @@ CertificateUseEnumType string_to_certificate_use_enum_type(const std::string& s)
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @certificate_use_enum_type: 传入的 certificate_use_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CertificateUseEnumType& certificate_use_enum_type) {
     os << conversions::certificate_use_enum_type_to_string(certificate_use_enum_type);
     return os;
@@ -738,6 +1118,12 @@ std::ostream& operator<<(std::ostream& os, const CertificateUseEnumType& certifi
 
 // from: GetInstalledCertificateIdsResponse
 namespace conversions {
+/**
+ * get_installed_certificate_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string get_installed_certificate_status_enum_type_to_string(GetInstalledCertificateStatusEnumType e) {
     switch (e) {
     case GetInstalledCertificateStatusEnumType::Accepted:
@@ -749,6 +1135,12 @@ std::string get_installed_certificate_status_enum_type_to_string(GetInstalledCer
     throw EnumToStringException{e, "GetInstalledCertificateStatusEnumType"};
 }
 
+/**
+ * string_to_get_installed_certificate_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 GetInstalledCertificateStatusEnumType。
+ */
 GetInstalledCertificateStatusEnumType string_to_get_installed_certificate_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return GetInstalledCertificateStatusEnumType::Accepted;
@@ -761,6 +1153,13 @@ GetInstalledCertificateStatusEnumType string_to_get_installed_certificate_status
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @get_installed_certificate_status_enum_type: 传入的 get_installed_certificate_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os,
                          const GetInstalledCertificateStatusEnumType& get_installed_certificate_status_enum_type) {
     os << conversions::get_installed_certificate_status_enum_type_to_string(get_installed_certificate_status_enum_type);
@@ -769,6 +1168,12 @@ std::ostream& operator<<(std::ostream& os,
 
 // from: GetLogRequest
 namespace conversions {
+/**
+ * log_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string log_enum_type_to_string(LogEnumType e) {
     switch (e) {
     case LogEnumType::DiagnosticsLog:
@@ -780,6 +1185,12 @@ std::string log_enum_type_to_string(LogEnumType e) {
     throw EnumToStringException{e, "LogEnumType"};
 }
 
+/**
+ * string_to_log_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 LogEnumType。
+ */
 LogEnumType string_to_log_enum_type(const std::string& s) {
     if (s == "DiagnosticsLog") {
         return LogEnumType::DiagnosticsLog;
@@ -792,6 +1203,13 @@ LogEnumType string_to_log_enum_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @log_enum_type: 传入的 log_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const LogEnumType& log_enum_type) {
     os << conversions::log_enum_type_to_string(log_enum_type);
     return os;
@@ -799,6 +1217,12 @@ std::ostream& operator<<(std::ostream& os, const LogEnumType& log_enum_type) {
 
 // from: GetLogResponse
 namespace conversions {
+/**
+ * log_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string log_status_enum_type_to_string(LogStatusEnumType e) {
     switch (e) {
     case LogStatusEnumType::Accepted:
@@ -812,6 +1236,12 @@ std::string log_status_enum_type_to_string(LogStatusEnumType e) {
     throw EnumToStringException{e, "LogStatusEnumType"};
 }
 
+/**
+ * string_to_log_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 LogStatusEnumType。
+ */
 LogStatusEnumType string_to_log_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return LogStatusEnumType::Accepted;
@@ -827,6 +1257,13 @@ LogStatusEnumType string_to_log_status_enum_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @log_status_enum_type: 传入的 log_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const LogStatusEnumType& log_status_enum_type) {
     os << conversions::log_status_enum_type_to_string(log_status_enum_type);
     return os;
@@ -834,6 +1271,12 @@ std::ostream& operator<<(std::ostream& os, const LogStatusEnumType& log_status_e
 
 // from: InstallCertificateResponse
 namespace conversions {
+/**
+ * install_certificate_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string install_certificate_status_enum_type_to_string(InstallCertificateStatusEnumType e) {
     switch (e) {
     case InstallCertificateStatusEnumType::Accepted:
@@ -847,6 +1290,12 @@ std::string install_certificate_status_enum_type_to_string(InstallCertificateSta
     throw EnumToStringException{e, "InstallCertificateStatusEnumType"};
 }
 
+/**
+ * string_to_install_certificate_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 InstallCertificateStatusEnumType。
+ */
 InstallCertificateStatusEnumType string_to_install_certificate_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return InstallCertificateStatusEnumType::Accepted;
@@ -862,6 +1311,13 @@ InstallCertificateStatusEnumType string_to_install_certificate_status_enum_type(
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @install_certificate_status_enum_type: 传入的 install_certificate_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os,
                          const InstallCertificateStatusEnumType& install_certificate_status_enum_type) {
     os << conversions::install_certificate_status_enum_type_to_string(install_certificate_status_enum_type);
@@ -870,6 +1326,12 @@ std::ostream& operator<<(std::ostream& os,
 
 // from: LogStatusNotificationRequest
 namespace conversions {
+/**
+ * upload_log_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string upload_log_status_enum_type_to_string(UploadLogStatusEnumType e) {
     switch (e) {
     case UploadLogStatusEnumType::BadMessage:
@@ -891,6 +1353,12 @@ std::string upload_log_status_enum_type_to_string(UploadLogStatusEnumType e) {
     throw EnumToStringException{e, "UploadLogStatusEnumType"};
 }
 
+/**
+ * string_to_upload_log_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 UploadLogStatusEnumType。
+ */
 UploadLogStatusEnumType string_to_upload_log_status_enum_type(const std::string& s) {
     if (s == "BadMessage") {
         return UploadLogStatusEnumType::BadMessage;
@@ -918,6 +1386,13 @@ UploadLogStatusEnumType string_to_upload_log_status_enum_type(const std::string&
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @upload_log_status_enum_type: 传入的 upload_log_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const UploadLogStatusEnumType& upload_log_status_enum_type) {
     os << conversions::upload_log_status_enum_type_to_string(upload_log_status_enum_type);
     return os;
@@ -925,6 +1400,12 @@ std::ostream& operator<<(std::ostream& os, const UploadLogStatusEnumType& upload
 
 // from: MeterValuesRequest
 namespace conversions {
+/**
+ * reading_context_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string reading_context_to_string(ReadingContext e) {
     switch (e) {
     case ReadingContext::Interruption_Begin:
@@ -948,6 +1429,12 @@ std::string reading_context_to_string(ReadingContext e) {
     throw EnumToStringException{e, "ReadingContext"};
 }
 
+/**
+ * string_to_reading_context - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ReadingContext。
+ */
 ReadingContext string_to_reading_context(const std::string& s) {
     if (s == "Interruption.Begin") {
         return ReadingContext::Interruption_Begin;
@@ -978,6 +1465,13 @@ ReadingContext string_to_reading_context(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @reading_context: 传入的 reading_context
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ReadingContext& reading_context) {
     os << conversions::reading_context_to_string(reading_context);
     return os;
@@ -985,6 +1479,12 @@ std::ostream& operator<<(std::ostream& os, const ReadingContext& reading_context
 
 // from: MeterValuesRequest
 namespace conversions {
+/**
+ * value_format_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string value_format_to_string(ValueFormat e) {
     switch (e) {
     case ValueFormat::Raw:
@@ -996,6 +1496,12 @@ std::string value_format_to_string(ValueFormat e) {
     throw EnumToStringException{e, "ValueFormat"};
 }
 
+/**
+ * string_to_value_format - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ValueFormat。
+ */
 ValueFormat string_to_value_format(const std::string& s) {
     if (s == "Raw") {
         return ValueFormat::Raw;
@@ -1008,6 +1514,13 @@ ValueFormat string_to_value_format(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @value_format: 传入的 value_format
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ValueFormat& value_format) {
     os << conversions::value_format_to_string(value_format);
     return os;
@@ -1015,6 +1528,12 @@ std::ostream& operator<<(std::ostream& os, const ValueFormat& value_format) {
 
 // from: MeterValuesRequest
 namespace conversions {
+/**
+ * measurand_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string measurand_to_string(Measurand e) {
     switch (e) {
     case Measurand::Energy_Active_Export_Register:
@@ -1066,6 +1585,12 @@ std::string measurand_to_string(Measurand e) {
     throw EnumToStringException{e, "Measurand"};
 }
 
+/**
+ * string_to_measurand - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 Measurand。
+ */
 Measurand string_to_measurand(const std::string& s) {
     if (s == "Energy.Active.Export.Register") {
         return Measurand::Energy_Active_Export_Register;
@@ -1138,6 +1663,13 @@ Measurand string_to_measurand(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @measurand: 传入的 measurand
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Measurand& measurand) {
     os << conversions::measurand_to_string(measurand);
     return os;
@@ -1145,6 +1677,12 @@ std::ostream& operator<<(std::ostream& os, const Measurand& measurand) {
 
 // from: MeterValuesRequest
 namespace conversions {
+/**
+ * phase_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string phase_to_string(Phase e) {
     switch (e) {
     case Phase::L1:
@@ -1172,6 +1710,12 @@ std::string phase_to_string(Phase e) {
     throw EnumToStringException{e, "Phase"};
 }
 
+/**
+ * string_to_phase - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 Phase。
+ */
 Phase string_to_phase(const std::string& s) {
     if (s == "L1") {
         return Phase::L1;
@@ -1208,6 +1752,13 @@ Phase string_to_phase(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @phase: 传入的 phase
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Phase& phase) {
     os << conversions::phase_to_string(phase);
     return os;
@@ -1215,6 +1766,12 @@ std::ostream& operator<<(std::ostream& os, const Phase& phase) {
 
 // from: MeterValuesRequest
 namespace conversions {
+/**
+ * location_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string location_to_string(Location e) {
     switch (e) {
     case Location::Cable:
@@ -1232,6 +1789,12 @@ std::string location_to_string(Location e) {
     throw EnumToStringException{e, "Location"};
 }
 
+/**
+ * string_to_location - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 Location。
+ */
 Location string_to_location(const std::string& s) {
     if (s == "Cable") {
         return Location::Cable;
@@ -1253,6 +1816,13 @@ Location string_to_location(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @location: 传入的 location
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Location& location) {
     os << conversions::location_to_string(location);
     return os;
@@ -1260,6 +1830,12 @@ std::ostream& operator<<(std::ostream& os, const Location& location) {
 
 // from: MeterValuesRequest
 namespace conversions {
+/**
+ * unit_of_measure_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string unit_of_measure_to_string(UnitOfMeasure e) {
     switch (e) {
     case UnitOfMeasure::Wh:
@@ -1301,6 +1877,12 @@ std::string unit_of_measure_to_string(UnitOfMeasure e) {
     throw EnumToStringException{e, "UnitOfMeasure"};
 }
 
+/**
+ * string_to_unit_of_measure - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 UnitOfMeasure。
+ */
 UnitOfMeasure string_to_unit_of_measure(const std::string& s) {
     if (s == "Wh") {
         return UnitOfMeasure::Wh;
@@ -1358,6 +1940,13 @@ UnitOfMeasure string_to_unit_of_measure(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @unit_of_measure: 传入的 unit_of_measure
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const UnitOfMeasure& unit_of_measure) {
     os << conversions::unit_of_measure_to_string(unit_of_measure);
     return os;
@@ -1365,6 +1954,12 @@ std::ostream& operator<<(std::ostream& os, const UnitOfMeasure& unit_of_measure)
 
 // from: RemoteStartTransactionRequest
 namespace conversions {
+/**
+ * charging_profile_kind_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charging_profile_kind_type_to_string(ChargingProfileKindType e) {
     switch (e) {
     case ChargingProfileKindType::Absolute:
@@ -1378,6 +1973,12 @@ std::string charging_profile_kind_type_to_string(ChargingProfileKindType e) {
     throw EnumToStringException{e, "ChargingProfileKindType"};
 }
 
+/**
+ * string_to_charging_profile_kind_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargingProfileKindType。
+ */
 ChargingProfileKindType string_to_charging_profile_kind_type(const std::string& s) {
     if (s == "Absolute") {
         return ChargingProfileKindType::Absolute;
@@ -1393,6 +1994,13 @@ ChargingProfileKindType string_to_charging_profile_kind_type(const std::string& 
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charging_profile_kind_type: 传入的 charging_profile_kind_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargingProfileKindType& charging_profile_kind_type) {
     os << conversions::charging_profile_kind_type_to_string(charging_profile_kind_type);
     return os;
@@ -1400,6 +2008,12 @@ std::ostream& operator<<(std::ostream& os, const ChargingProfileKindType& chargi
 
 // from: RemoteStartTransactionRequest
 namespace conversions {
+/**
+ * recurrency_kind_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string recurrency_kind_type_to_string(RecurrencyKindType e) {
     switch (e) {
     case RecurrencyKindType::Daily:
@@ -1411,6 +2025,12 @@ std::string recurrency_kind_type_to_string(RecurrencyKindType e) {
     throw EnumToStringException{e, "RecurrencyKindType"};
 }
 
+/**
+ * string_to_recurrency_kind_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 RecurrencyKindType。
+ */
 RecurrencyKindType string_to_recurrency_kind_type(const std::string& s) {
     if (s == "Daily") {
         return RecurrencyKindType::Daily;
@@ -1423,6 +2043,13 @@ RecurrencyKindType string_to_recurrency_kind_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @recurrency_kind_type: 传入的 recurrency_kind_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const RecurrencyKindType& recurrency_kind_type) {
     os << conversions::recurrency_kind_type_to_string(recurrency_kind_type);
     return os;
@@ -1430,6 +2057,12 @@ std::ostream& operator<<(std::ostream& os, const RecurrencyKindType& recurrency_
 
 // from: RemoteStartTransactionResponse
 namespace conversions {
+/**
+ * remote_start_stop_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string remote_start_stop_status_to_string(RemoteStartStopStatus e) {
     switch (e) {
     case RemoteStartStopStatus::Accepted:
@@ -1441,6 +2074,12 @@ std::string remote_start_stop_status_to_string(RemoteStartStopStatus e) {
     throw EnumToStringException{e, "RemoteStartStopStatus"};
 }
 
+/**
+ * string_to_remote_start_stop_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 RemoteStartStopStatus。
+ */
 RemoteStartStopStatus string_to_remote_start_stop_status(const std::string& s) {
     if (s == "Accepted") {
         return RemoteStartStopStatus::Accepted;
@@ -1453,6 +2092,13 @@ RemoteStartStopStatus string_to_remote_start_stop_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @remote_start_stop_status: 传入的 remote_start_stop_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const RemoteStartStopStatus& remote_start_stop_status) {
     os << conversions::remote_start_stop_status_to_string(remote_start_stop_status);
     return os;
@@ -1460,6 +2106,12 @@ std::ostream& operator<<(std::ostream& os, const RemoteStartStopStatus& remote_s
 
 // from: ReserveNowResponse
 namespace conversions {
+/**
+ * reservation_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string reservation_status_to_string(ReservationStatus e) {
     switch (e) {
     case ReservationStatus::Accepted:
@@ -1477,6 +2129,12 @@ std::string reservation_status_to_string(ReservationStatus e) {
     throw EnumToStringException{e, "ReservationStatus"};
 }
 
+/**
+ * string_to_reservation_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ReservationStatus。
+ */
 ReservationStatus string_to_reservation_status(const std::string& s) {
     if (s == "Accepted") {
         return ReservationStatus::Accepted;
@@ -1498,6 +2156,13 @@ ReservationStatus string_to_reservation_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @reservation_status: 传入的 reservation_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ReservationStatus& reservation_status) {
     os << conversions::reservation_status_to_string(reservation_status);
     return os;
@@ -1505,6 +2170,12 @@ std::ostream& operator<<(std::ostream& os, const ReservationStatus& reservation_
 
 // from: ResetRequest
 namespace conversions {
+/**
+ * reset_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string reset_type_to_string(ResetType e) {
     switch (e) {
     case ResetType::Hard:
@@ -1516,6 +2187,12 @@ std::string reset_type_to_string(ResetType e) {
     throw EnumToStringException{e, "ResetType"};
 }
 
+/**
+ * string_to_reset_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ResetType。
+ */
 ResetType string_to_reset_type(const std::string& s) {
     if (s == "Hard") {
         return ResetType::Hard;
@@ -1528,6 +2205,13 @@ ResetType string_to_reset_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @reset_type: 传入的 reset_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ResetType& reset_type) {
     os << conversions::reset_type_to_string(reset_type);
     return os;
@@ -1535,6 +2219,12 @@ std::ostream& operator<<(std::ostream& os, const ResetType& reset_type) {
 
 // from: ResetResponse
 namespace conversions {
+/**
+ * reset_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string reset_status_to_string(ResetStatus e) {
     switch (e) {
     case ResetStatus::Accepted:
@@ -1546,6 +2236,12 @@ std::string reset_status_to_string(ResetStatus e) {
     throw EnumToStringException{e, "ResetStatus"};
 }
 
+/**
+ * string_to_reset_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ResetStatus。
+ */
 ResetStatus string_to_reset_status(const std::string& s) {
     if (s == "Accepted") {
         return ResetStatus::Accepted;
@@ -1558,6 +2254,13 @@ ResetStatus string_to_reset_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @reset_status: 传入的 reset_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ResetStatus& reset_status) {
     os << conversions::reset_status_to_string(reset_status);
     return os;
@@ -1565,6 +2268,12 @@ std::ostream& operator<<(std::ostream& os, const ResetStatus& reset_status) {
 
 // from: SendLocalListRequest
 namespace conversions {
+/**
+ * update_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string update_type_to_string(UpdateType e) {
     switch (e) {
     case UpdateType::Differential:
@@ -1576,6 +2285,12 @@ std::string update_type_to_string(UpdateType e) {
     throw EnumToStringException{e, "UpdateType"};
 }
 
+/**
+ * string_to_update_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 UpdateType。
+ */
 UpdateType string_to_update_type(const std::string& s) {
     if (s == "Differential") {
         return UpdateType::Differential;
@@ -1588,6 +2303,13 @@ UpdateType string_to_update_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @update_type: 传入的 update_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const UpdateType& update_type) {
     os << conversions::update_type_to_string(update_type);
     return os;
@@ -1595,6 +2317,12 @@ std::ostream& operator<<(std::ostream& os, const UpdateType& update_type) {
 
 // from: SendLocalListResponse
 namespace conversions {
+/**
+ * update_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string update_status_to_string(UpdateStatus e) {
     switch (e) {
     case UpdateStatus::Accepted:
@@ -1610,6 +2338,12 @@ std::string update_status_to_string(UpdateStatus e) {
     throw EnumToStringException{e, "UpdateStatus"};
 }
 
+/**
+ * string_to_update_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 UpdateStatus。
+ */
 UpdateStatus string_to_update_status(const std::string& s) {
     if (s == "Accepted") {
         return UpdateStatus::Accepted;
@@ -1628,6 +2362,13 @@ UpdateStatus string_to_update_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @update_status: 传入的 update_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const UpdateStatus& update_status) {
     os << conversions::update_status_to_string(update_status);
     return os;
@@ -1635,6 +2376,12 @@ std::ostream& operator<<(std::ostream& os, const UpdateStatus& update_status) {
 
 // from: SetChargingProfileResponse
 namespace conversions {
+/**
+ * charging_profile_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charging_profile_status_to_string(ChargingProfileStatus e) {
     switch (e) {
     case ChargingProfileStatus::Accepted:
@@ -1648,6 +2395,12 @@ std::string charging_profile_status_to_string(ChargingProfileStatus e) {
     throw EnumToStringException{e, "ChargingProfileStatus"};
 }
 
+/**
+ * string_to_charging_profile_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargingProfileStatus。
+ */
 ChargingProfileStatus string_to_charging_profile_status(const std::string& s) {
     if (s == "Accepted") {
         return ChargingProfileStatus::Accepted;
@@ -1663,6 +2416,13 @@ ChargingProfileStatus string_to_charging_profile_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charging_profile_status: 传入的 charging_profile_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargingProfileStatus& charging_profile_status) {
     os << conversions::charging_profile_status_to_string(charging_profile_status);
     return os;
@@ -1670,6 +2430,12 @@ std::ostream& operator<<(std::ostream& os, const ChargingProfileStatus& charging
 
 // from: SignCertificateResponse
 namespace conversions {
+/**
+ * generic_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string generic_status_enum_type_to_string(GenericStatusEnumType e) {
     switch (e) {
     case GenericStatusEnumType::Accepted:
@@ -1681,6 +2447,12 @@ std::string generic_status_enum_type_to_string(GenericStatusEnumType e) {
     throw EnumToStringException{e, "GenericStatusEnumType"};
 }
 
+/**
+ * string_to_generic_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 GenericStatusEnumType。
+ */
 GenericStatusEnumType string_to_generic_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return GenericStatusEnumType::Accepted;
@@ -1693,6 +2465,13 @@ GenericStatusEnumType string_to_generic_status_enum_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @generic_status_enum_type: 传入的 generic_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const GenericStatusEnumType& generic_status_enum_type) {
     os << conversions::generic_status_enum_type_to_string(generic_status_enum_type);
     return os;
@@ -1700,6 +2479,12 @@ std::ostream& operator<<(std::ostream& os, const GenericStatusEnumType& generic_
 
 // from: SignedFirmwareStatusNotificationRequest
 namespace conversions {
+/**
+ * firmware_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string firmware_status_enum_type_to_string(FirmwareStatusEnumType e) {
     switch (e) {
     case FirmwareStatusEnumType::Downloaded:
@@ -1735,6 +2520,12 @@ std::string firmware_status_enum_type_to_string(FirmwareStatusEnumType e) {
     throw EnumToStringException{e, "FirmwareStatusEnumType"};
 }
 
+/**
+ * string_to_firmware_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 FirmwareStatusEnumType。
+ */
 FirmwareStatusEnumType string_to_firmware_status_enum_type(const std::string& s) {
     if (s == "Downloaded") {
         return FirmwareStatusEnumType::Downloaded;
@@ -1783,6 +2574,13 @@ FirmwareStatusEnumType string_to_firmware_status_enum_type(const std::string& s)
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @firmware_status_enum_type: 传入的 firmware_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const FirmwareStatusEnumType& firmware_status_enum_type) {
     os << conversions::firmware_status_enum_type_to_string(firmware_status_enum_type);
     return os;
@@ -1790,6 +2588,12 @@ std::ostream& operator<<(std::ostream& os, const FirmwareStatusEnumType& firmwar
 
 // from: SignedUpdateFirmwareResponse
 namespace conversions {
+/**
+ * update_firmware_status_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string update_firmware_status_enum_type_to_string(UpdateFirmwareStatusEnumType e) {
     switch (e) {
     case UpdateFirmwareStatusEnumType::Accepted:
@@ -1807,6 +2611,12 @@ std::string update_firmware_status_enum_type_to_string(UpdateFirmwareStatusEnumT
     throw EnumToStringException{e, "UpdateFirmwareStatusEnumType"};
 }
 
+/**
+ * string_to_update_firmware_status_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 UpdateFirmwareStatusEnumType。
+ */
 UpdateFirmwareStatusEnumType string_to_update_firmware_status_enum_type(const std::string& s) {
     if (s == "Accepted") {
         return UpdateFirmwareStatusEnumType::Accepted;
@@ -1828,6 +2638,13 @@ UpdateFirmwareStatusEnumType string_to_update_firmware_status_enum_type(const st
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @update_firmware_status_enum_type: 传入的 update_firmware_status_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const UpdateFirmwareStatusEnumType& update_firmware_status_enum_type) {
     os << conversions::update_firmware_status_enum_type_to_string(update_firmware_status_enum_type);
     return os;
@@ -1835,6 +2652,12 @@ std::ostream& operator<<(std::ostream& os, const UpdateFirmwareStatusEnumType& u
 
 // from: StatusNotificationRequest
 namespace conversions {
+/**
+ * charge_point_error_code_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charge_point_error_code_to_string(ChargePointErrorCode e) {
     switch (e) {
     case ChargePointErrorCode::ConnectorLockFailure:
@@ -1874,6 +2697,12 @@ std::string charge_point_error_code_to_string(ChargePointErrorCode e) {
     throw EnumToStringException{e, "ChargePointErrorCode"};
 }
 
+/**
+ * string_to_charge_point_error_code - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargePointErrorCode。
+ */
 ChargePointErrorCode string_to_charge_point_error_code(const std::string& s) {
     if (s == "ConnectorLockFailure") {
         return ChargePointErrorCode::ConnectorLockFailure;
@@ -1928,6 +2757,13 @@ ChargePointErrorCode string_to_charge_point_error_code(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charge_point_error_code: 传入的 charge_point_error_code
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargePointErrorCode& charge_point_error_code) {
     os << conversions::charge_point_error_code_to_string(charge_point_error_code);
     return os;
@@ -1935,6 +2771,12 @@ std::ostream& operator<<(std::ostream& os, const ChargePointErrorCode& charge_po
 
 // from: StatusNotificationRequest
 namespace conversions {
+/**
+ * charge_point_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string charge_point_status_to_string(ChargePointStatus e) {
     switch (e) {
     case ChargePointStatus::Available:
@@ -1960,6 +2802,12 @@ std::string charge_point_status_to_string(ChargePointStatus e) {
     throw EnumToStringException{e, "ChargePointStatus"};
 }
 
+/**
+ * string_to_charge_point_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 ChargePointStatus。
+ */
 ChargePointStatus string_to_charge_point_status(const std::string& s) {
     if (s == "Available") {
         return ChargePointStatus::Available;
@@ -1993,6 +2841,13 @@ ChargePointStatus string_to_charge_point_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @charge_point_status: 传入的 charge_point_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ChargePointStatus& charge_point_status) {
     os << conversions::charge_point_status_to_string(charge_point_status);
     return os;
@@ -2000,6 +2855,12 @@ std::ostream& operator<<(std::ostream& os, const ChargePointStatus& charge_point
 
 // from: StopTransactionRequest
 namespace conversions {
+/**
+ * reason_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string reason_to_string(Reason e) {
     switch (e) {
     case Reason::EmergencyStop:
@@ -2029,6 +2890,12 @@ std::string reason_to_string(Reason e) {
     throw EnumToStringException{e, "Reason"};
 }
 
+/**
+ * string_to_reason - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 Reason。
+ */
 Reason string_to_reason(const std::string& s) {
     if (s == "EmergencyStop") {
         return Reason::EmergencyStop;
@@ -2068,6 +2935,13 @@ Reason string_to_reason(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @reason: 传入的 reason
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Reason& reason) {
     os << conversions::reason_to_string(reason);
     return os;
@@ -2075,6 +2949,12 @@ std::ostream& operator<<(std::ostream& os, const Reason& reason) {
 
 // from: TriggerMessageRequest
 namespace conversions {
+/**
+ * message_trigger_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string message_trigger_to_string(MessageTrigger e) {
     switch (e) {
     case MessageTrigger::BootNotification:
@@ -2094,6 +2974,12 @@ std::string message_trigger_to_string(MessageTrigger e) {
     throw EnumToStringException{e, "MessageTrigger"};
 }
 
+/**
+ * string_to_message_trigger - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 MessageTrigger。
+ */
 MessageTrigger string_to_message_trigger(const std::string& s) {
     if (s == "BootNotification") {
         return MessageTrigger::BootNotification;
@@ -2118,6 +3004,13 @@ MessageTrigger string_to_message_trigger(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @message_trigger: 传入的 message_trigger
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const MessageTrigger& message_trigger) {
     os << conversions::message_trigger_to_string(message_trigger);
     return os;
@@ -2125,6 +3018,12 @@ std::ostream& operator<<(std::ostream& os, const MessageTrigger& message_trigger
 
 // from: TriggerMessageResponse
 namespace conversions {
+/**
+ * trigger_message_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string trigger_message_status_to_string(TriggerMessageStatus e) {
     switch (e) {
     case TriggerMessageStatus::Accepted:
@@ -2138,6 +3037,12 @@ std::string trigger_message_status_to_string(TriggerMessageStatus e) {
     throw EnumToStringException{e, "TriggerMessageStatus"};
 }
 
+/**
+ * string_to_trigger_message_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 TriggerMessageStatus。
+ */
 TriggerMessageStatus string_to_trigger_message_status(const std::string& s) {
     if (s == "Accepted") {
         return TriggerMessageStatus::Accepted;
@@ -2153,6 +3058,13 @@ TriggerMessageStatus string_to_trigger_message_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @trigger_message_status: 传入的 trigger_message_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const TriggerMessageStatus& trigger_message_status) {
     os << conversions::trigger_message_status_to_string(trigger_message_status);
     return os;
@@ -2160,6 +3072,12 @@ std::ostream& operator<<(std::ostream& os, const TriggerMessageStatus& trigger_m
 
 // from: UnlockConnectorResponse
 namespace conversions {
+/**
+ * unlock_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string unlock_status_to_string(UnlockStatus e) {
     switch (e) {
     case UnlockStatus::Unlocked:
@@ -2173,6 +3091,12 @@ std::string unlock_status_to_string(UnlockStatus e) {
     throw EnumToStringException{e, "UnlockStatus"};
 }
 
+/**
+ * string_to_unlock_status - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 UnlockStatus。
+ */
 UnlockStatus string_to_unlock_status(const std::string& s) {
     if (s == "Unlocked") {
         return UnlockStatus::Unlocked;
@@ -2188,6 +3112,13 @@ UnlockStatus string_to_unlock_status(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @unlock_status: 传入的 unlock_status
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const UnlockStatus& unlock_status) {
     os << conversions::unlock_status_to_string(unlock_status);
     return os;

@@ -6,6 +6,11 @@
 namespace ocpp {
 namespace v16 {
 
+/**
+ * MessageDispatcher::dispatch_call - dispatch call
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ * @triggered: 真表示这条报文由 TriggerMessage 触发
+ */
 void MessageDispatcher::dispatch_call(const json& call, bool triggered) {
     const auto message_type = conversions::string_to_messagetype(call.at(CALL_ACTION));
     const auto message_transmission_priority = get_message_transmission_priority(
@@ -25,6 +30,13 @@ void MessageDispatcher::dispatch_call(const json& call, bool triggered) {
     throw std::runtime_error("Missing handling for MessageTransmissionPriority");
 }
 
+/**
+ * MessageDispatcher::dispatch_call_async - dispatch call async
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ * @triggered: 真表示这条报文由 TriggerMessage 触发
+ *
+ * 返回 std::future<ocpp::EnhancedMessage<MessageType>>。
+ */
 std::future<ocpp::EnhancedMessage<MessageType>> MessageDispatcher::dispatch_call_async(const json& call,
                                                                                        bool triggered) {
     const auto message_type = conversions::string_to_messagetype(call.at(CALL_ACTION));
@@ -47,10 +59,18 @@ std::future<ocpp::EnhancedMessage<MessageType>> MessageDispatcher::dispatch_call
     throw std::runtime_error("Missing handling for MessageTransmissionPriority");
 }
 
+/**
+ * MessageDispatcher::dispatch_call_result - dispatch call result
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void MessageDispatcher::dispatch_call_result(const json& call_result) {
     this->message_queue.push_call_result(call_result);
 }
 
+/**
+ * MessageDispatcher::dispatch_call_error - dispatch call error
+ * @call_error: OCPP CALLERROR 帧
+ */
 void MessageDispatcher::dispatch_call_error(const json& call_error) {
     this->message_queue.push_call_error(call_error);
 }

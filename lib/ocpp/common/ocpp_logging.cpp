@@ -74,6 +74,9 @@ MessageLogging::MessageLogging(
     this->initialize();
 }
 
+/**
+ * MessageLogging::initialize - initialize
+ */
 void MessageLogging::initialize() {
     if (this->log_messages) {
         if (this->rotate_logs) {
@@ -148,6 +151,7 @@ void MessageLogging::initialize() {
 }
 
 namespace {
+/* open html tags */
 void open_html_tags(std::ofstream& os) {
     os << "<html><head><title>EVerest OCPP log session</title>\n";
     os << "<style>"
@@ -177,15 +181,18 @@ void open_html_tags(std::ofstream& os) {
     os.flush();
 }
 
+/* close html tags */
 void close_html_tags(std::ofstream& os) {
     os << "</table></body></html>\n";
     os.flush();
 }
 
+/* get datetime string */
 std::string get_datetime_string() {
     return date::format("%Y%m%d%H%M%S", std::chrono::time_point_cast<std::chrono::seconds>(date::utc_clock::now()));
 }
 
+/* safe file size */
 std::uintmax_t safe_file_size(const std::filesystem::path& path) {
     try {
         return std::filesystem::file_size(path);
@@ -195,6 +202,12 @@ std::uintmax_t safe_file_size(const std::filesystem::path& path) {
 }
 } // namespace
 
+/**
+ * MessageLogging::rotate_log - rotate log
+ * @file_basename: 传入的 file_basename
+ *
+ * 返回 LogRotationStatus。
+ */
 LogRotationStatus MessageLogging::rotate_log(const std::string& file_basename) {
     LogRotationStatus status = LogRotationStatus::NotRotated;
     auto path = std::filesystem::path(this->message_log_path);
@@ -262,10 +275,25 @@ LogRotationStatus MessageLogging::rotate_log(const std::string& file_basename) {
     return status;
 }
 
+/**
+ * MessageLogging::rotate_log_if_needed - rotate log if needed
+ * @path: 传入的 path
+ * @os: 输出流，用于日志
+ *
+ * 返回 LogRotationStatus。
+ */
 LogRotationStatus MessageLogging::rotate_log_if_needed(const std::filesystem::path& path, std::ofstream& os) {
     return rotate_log_if_needed(path, os, nullptr, nullptr);
 }
 
+/**
+ * MessageLogging::rotate_log_if_needed - rotate log if needed
+ * @path: 传入的 path
+ * @os: 输出流，用于日志
+ * @os: 输出流，用于日志
+ *
+ * 返回 LogRotationStatus。
+ */
 LogRotationStatus MessageLogging::rotate_log_if_needed(const std::filesystem::path& path, std::ofstream& os,
                                                        std::function<void(std::ofstream& os)> before_close_of_os,
                                                        std::function<void(std::ofstream& os)> after_open_of_os) {
@@ -313,6 +341,11 @@ MessageLogging::~MessageLogging() {
     }
 }
 
+/**
+ * MessageLogging::charge_point - charge point
+ * @message_type: OCPP 报文类型
+ * @json_str: 传入的 json_str
+ */
 void MessageLogging::charge_point(const std::string& message_type, const std::string& json_str) {
     if (this->message_callback != nullptr) {
         this->message_callback(json_str, MessageDirection::ChargingStationToCSMS);
@@ -327,6 +360,11 @@ void MessageLogging::charge_point(const std::string& message_type, const std::st
     }
 }
 
+/**
+ * MessageLogging::central_system - central system
+ * @message_type: OCPP 报文类型
+ * @json_str: 传入的 json_str
+ */
 void MessageLogging::central_system(const std::string& message_type, const std::string& json_str) {
     if (this->message_callback != nullptr) {
         this->message_callback(json_str, MessageDirection::CSMSToChargingStation);
@@ -341,6 +379,10 @@ void MessageLogging::central_system(const std::string& message_type, const std::
     }
 }
 
+/**
+ * MessageLogging::sys - sys
+ * @msg: 传入的 msg
+ */
 void MessageLogging::sys(const std::string& msg) {
     log_output(LogType::System, msg, "");
     if (this->session_logging) {
@@ -351,6 +393,10 @@ void MessageLogging::sys(const std::string& msg) {
     }
 }
 
+/**
+ * MessageLogging::security - security
+ * @msg: 传入的 msg
+ */
 void MessageLogging::security(const std::string& msg) {
     const std::lock_guard<std::mutex> lock(this->output_file_mutex);
     auto status = this->rotate_log_if_needed(this->security_log_file, this->security_log_os);
@@ -361,6 +407,11 @@ void MessageLogging::security(const std::string& msg) {
     this->security_log_os.flush();
 }
 
+/**
+ * MessageLogging::raw - raw
+ * @msg: 传入的 msg
+ * @log_type: 传入的 log_type
+ */
 void MessageLogging::raw(const std::string& msg, LogType log_type) {
     if (this->log_raw) {
         log_output(log_type, msg, "", true);
@@ -374,6 +425,7 @@ void MessageLogging::raw(const std::string& msg, LogType log_type) {
 }
 
 namespace {
+/* html encode */
 std::string html_encode(const std::string& msg) {
     std::string out = msg;
     boost::replace_all(out, "<", "&lt;");
@@ -381,6 +433,7 @@ std::string html_encode(const std::string& msg) {
     return out;
 }
 
+/* write log to file */
 void write_log_to_file(std::ofstream& log_os, LogType typ, const std::string& ts, const std::string& origin,
                        const std::string& target, const std::string& message_type, const std::string& json_str) {
     log_os << ts << ": " << origin + ">" + target << " "
@@ -390,6 +443,7 @@ void write_log_to_file(std::ofstream& log_os, LogType typ, const std::string& ts
     log_os.flush();
 }
 
+/* write html log to file */
 void write_html_log_to_file(std::ofstream& html_log_os, LogType typ, const std::string& ts, const std::string& origin,
                             const std::string& target, const std::string& message_type, const std::string& json_str) {
     html_log_os << "<tr class=\"" << origin << "\"> <td>" << ts << "</td> <td>" << origin + "&gt;" + target
@@ -400,6 +454,13 @@ void write_html_log_to_file(std::ofstream& html_log_os, LogType typ, const std::
 }
 } // namespace
 
+/**
+ * MessageLogging::log_output - log output
+ * @typ: 传入的 typ
+ * @message_type: OCPP 报文类型
+ * @json_str: 传入的 json_str
+ * @raw: 传入的 raw
+ */
 void MessageLogging::log_output(LogType typ, const std::string& message_type, const std::string& json_str, bool raw) {
     if (this->log_messages) {
         const std::lock_guard<std::mutex> lock(this->output_file_mutex);
@@ -459,6 +520,13 @@ void MessageLogging::log_output(LogType typ, const std::string& message_type, co
     }
 }
 
+/**
+ * MessageLogging::format_message - format message
+ * @message_type: OCPP 报文类型
+ * @json_str: 传入的 json_str
+ *
+ * 返回 FormattedMessageWithType。
+ */
 FormattedMessageWithType MessageLogging::format_message(const std::string& message_type, const std::string& json_str) {
     auto extracted_message_type = message_type;
     auto formatted_message = json_str;
@@ -480,12 +548,21 @@ FormattedMessageWithType MessageLogging::format_message(const std::string& messa
     return {extracted_message_type, formatted_message};
 }
 
+/**
+ * MessageLogging::start_session_logging - start session logging
+ * @session_id: 传入的 session_id
+ * @log_path: 传入的 log_path
+ */
 void MessageLogging::start_session_logging(const std::string& session_id, const std::string& log_path) {
     const std::scoped_lock lock(this->session_id_logging_mutex);
     this->session_id_logging[session_id] = std::make_shared<ocpp::MessageLogging>(
         true, log_path, "incomplete-ocpp", false, false, false, true, true, false, false, nullptr);
 }
 
+/**
+ * MessageLogging::stop_session_logging - stop session logging
+ * @session_id: 传入的 session_id
+ */
 void MessageLogging::stop_session_logging(const std::string& session_id) {
     const std::scoped_lock lock(this->session_id_logging_mutex);
     if (this->session_id_logging.count(session_id) != 0) {
@@ -497,10 +574,20 @@ void MessageLogging::stop_session_logging(const std::string& session_id) {
     }
 }
 
+/**
+ * MessageLogging::get_message_log_path - get message log path
+ *
+ * 返回 std::string。
+ */
 std::string MessageLogging::get_message_log_path() {
     return this->message_log_path;
 }
 
+/**
+ * MessageLogging::session_logging_active - session logging active
+ *
+ * 返回 bool。
+ */
 bool MessageLogging::session_logging_active() const {
     return this->session_logging;
 }

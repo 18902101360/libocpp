@@ -68,6 +68,12 @@ void conform_validity_periods(ChargingProfile& profile) {
 }
 } // namespace
 namespace conversions {
+/**
+ * profile_validation_result_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string profile_validation_result_to_string(ProfileValidationResultEnum e) {
     switch (e) {
     case ProfileValidationResultEnum::Valid:
@@ -159,6 +165,12 @@ std::string profile_validation_result_to_string(ProfileValidationResultEnum e) {
     throw EnumToStringException{e, "ProfileValidationResultEnum"};
 }
 
+/**
+ * profile_validation_result_to_reason_code - profile validation result to reason code
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string profile_validation_result_to_reason_code(ProfileValidationResultEnum e) {
     switch (e) {
     case ProfileValidationResultEnum::Valid:
@@ -225,6 +237,13 @@ std::string profile_validation_result_to_reason_code(ProfileValidationResultEnum
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @validation_result: 传入的 validation_result
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ProfileValidationResultEnum validation_result) {
     os << conversions::profile_validation_result_to_string(validation_result);
     return os;
@@ -277,6 +296,10 @@ SmartCharging::SmartCharging(const FunctionalBlockContext& functional_block_cont
     stop_transaction_callback(stop_transaction_callback) {
 }
 
+/**
+ * SmartCharging::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void SmartCharging::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -295,6 +318,12 @@ void SmartCharging::handle_message(const ocpp::EnhancedMessage<MessageType>& mes
     }
 }
 
+/**
+ * SmartCharging::get_composite_schedule - get composite schedule
+ * @request: 传入的 request
+ *
+ * 返回 GetCompositeScheduleResponse。
+ */
 GetCompositeScheduleResponse SmartCharging::get_composite_schedule(const GetCompositeScheduleRequest& request) {
     return this->get_composite_schedule_internal(request);
 }
@@ -313,6 +342,12 @@ SmartCharging::get_composite_schedule(std::int32_t evse_id, std::chrono::seconds
     return std::nullopt;
 }
 
+/**
+ * SmartCharging::verify_rate_limit - verify rate limit
+ * @profile: 传入的 profile
+ *
+ * 返回 ProfileValidationResultEnum。
+ */
 ProfileValidationResultEnum SmartCharging::verify_rate_limit(const ChargingProfile& profile) {
     auto result = ProfileValidationResultEnum::Valid;
 
@@ -339,6 +374,12 @@ ProfileValidationResultEnum SmartCharging::verify_rate_limit(const ChargingProfi
     return result;
 }
 
+/**
+ * SmartCharging::has_dc_input_phase_control - has dc input phase control
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 bool。
+ */
 bool SmartCharging::has_dc_input_phase_control(const std::int32_t evse_id) const {
     if (evse_id == 0) {
         for (EvseManagerInterface::EvseIterator it = context.evse_manager.begin(); it != context.evse_manager.end();
@@ -354,12 +395,25 @@ bool SmartCharging::has_dc_input_phase_control(const std::int32_t evse_id) const
     return evse_has_dc_input_phase_control(evse_id);
 }
 
+/**
+ * SmartCharging::evse_has_dc_input_phase_control - evse has dc input phase control
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 bool。
+ */
 bool SmartCharging::evse_has_dc_input_phase_control(const std::int32_t evse_id) const {
     const ComponentVariable evse_variable =
         EvseComponentVariables::get_component_variable(evse_id, EvseComponentVariables::DCInputPhaseControl);
     return this->context.device_model.get_optional_value<bool>(evse_variable).value_or(false);
 }
 
+/**
+ * SmartCharging::get_all_composite_schedules - get all composite schedules
+ * @duration_s: 传入的 duration_s
+ * @unit: 传入的 unit
+ *
+ * 返回 std::vector<CompositeSchedule>。
+ */
 std::vector<CompositeSchedule> SmartCharging::get_all_composite_schedules(const std::int32_t duration_s,
                                                                           const ChargingRateUnitEnum& unit) {
     std::vector<CompositeSchedule> composite_schedules;
@@ -384,10 +438,23 @@ std::vector<CompositeSchedule> SmartCharging::get_all_composite_schedules(const 
     return composite_schedules;
 }
 
+/**
+ * SmartCharging::delete_transaction_tx_profiles - delete transaction tx profiles
+ * @transaction_id: 传入的 transaction_id
+ */
 void SmartCharging::delete_transaction_tx_profiles(const std::string& transaction_id) {
     this->context.database_handler.delete_charging_profile_by_transaction_id(transaction_id);
 }
 
+/**
+ * SmartCharging::conform_validate_and_add_profile - conform validate and add profile
+ * @profile: 传入的 profile
+ * @evse_id: 传入的 evse_id
+ * @charging_limit_source: 传入的 charging_limit_source
+ * @source_of_request: 传入的 source_of_request
+ *
+ * 返回 SetChargingProfileResponse。
+ */
 SetChargingProfileResponse SmartCharging::conform_validate_and_add_profile(ChargingProfile& profile,
                                                                            std::int32_t evse_id,
                                                                            CiString<20> charging_limit_source,
@@ -412,6 +479,14 @@ SetChargingProfileResponse SmartCharging::conform_validate_and_add_profile(Charg
     return response;
 }
 
+/**
+ * SmartCharging::conform_and_validate_profile - conform and validate profile
+ * @profile: 传入的 profile
+ * @evse_id: 传入的 evse_id
+ * @source_of_request: 传入的 source_of_request
+ *
+ * 返回 ProfileValidationResultEnum。
+ */
 ProfileValidationResultEnum SmartCharging::conform_and_validate_profile(ChargingProfile& profile, std::int32_t evse_id,
                                                                         AddChargingProfileSource source_of_request) {
     auto result = ProfileValidationResultEnum::Valid;
@@ -514,6 +589,7 @@ struct CompositeScheduleConfig {
     }
 };
 
+/* generate evse intermediates */
 std::vector<IntermediateProfile> generate_evse_intermediates(std::vector<ChargingProfile>&& evse_profiles,
                                                              const std::vector<ChargingProfile>& station_wide_profiles,
                                                              const ocpp::DateTime& start_time,
@@ -550,6 +626,17 @@ std::vector<IntermediateProfile> generate_evse_intermediates(std::vector<Chargin
 }
 } // namespace
 
+/**
+ * SmartCharging::calculate_composite_schedule - calculate composite schedule
+ * @start_time: 传入的 start_time
+ * @end_time: 传入的 end_time
+ * @evse_id: 传入的 evse_id
+ * @charging_rate_unit: 传入的 charging_rate_unit
+ * @is_offline: 传入的 is_offline
+ * @simulate_transaction_active: 传入的 simulate_transaction_active
+ *
+ * 返回 CompositeSchedule。
+ */
 CompositeSchedule SmartCharging::calculate_composite_schedule(const ocpp::DateTime& start_time,
                                                               const ocpp::DateTime& end_time,
                                                               const std::int32_t evse_id,
@@ -626,11 +713,24 @@ CompositeSchedule SmartCharging::calculate_composite_schedule(const ocpp::DateTi
     return composite;
 }
 
+/**
+ * SmartCharging::validate_evse_exists - validate evse exists
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 ProfileValidationResultEnum。
+ */
 ProfileValidationResultEnum SmartCharging::validate_evse_exists(std::int32_t evse_id) const {
     return this->context.evse_manager.does_evse_exist(evse_id) ? ProfileValidationResultEnum::Valid
                                                                : ProfileValidationResultEnum::EvseDoesNotExist;
 }
 
+/**
+ * validate_charging_station_max_profile - validate charging station max profile
+ * @profile: 传入的 profile
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 ProfileValidationResultEnum。
+ */
 ProfileValidationResultEnum validate_charging_station_max_profile(const ChargingProfile& profile,
                                                                   std::int32_t evse_id) {
     if (profile.chargingProfilePurpose != ChargingProfilePurposeEnum::ChargingStationMaxProfile) {
@@ -649,6 +749,13 @@ ProfileValidationResultEnum validate_charging_station_max_profile(const Charging
     return ProfileValidationResultEnum::Valid;
 }
 
+/**
+ * SmartCharging::validate_tx_default_profile - validate tx default profile
+ * @profile: 传入的 profile
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 ProfileValidationResultEnum。
+ */
 ProfileValidationResultEnum SmartCharging::validate_tx_default_profile(const ChargingProfile& profile,
                                                                        std::int32_t evse_id) const {
     auto profiles = evse_id == 0 ? get_evse_specific_tx_default_profiles() : get_station_wide_tx_default_profiles();
@@ -723,6 +830,13 @@ ProfileValidationResultEnum SmartCharging::validate_tx_profile(const ChargingPro
     return ProfileValidationResultEnum::Valid;
 }
 
+/**
+ * SmartCharging::validate_priority_charging_profile - validate priority charging profile
+ * @profile: 传入的 profile
+ * @/: 见函数签名
+ *
+ * 返回 ProfileValidationResultEnum。
+ */
 ProfileValidationResultEnum SmartCharging::validate_priority_charging_profile(const ChargingProfile& profile,
                                                                               std::int32_t /*evse_id*/) const {
     // Charging profile purpose PriorityCharging:
@@ -985,6 +1099,14 @@ SmartCharging::verify_no_conflicting_external_constraints_id(const ChargingProfi
     return result;
 }
 
+/**
+ * SmartCharging::add_profile - add profile
+ * @profile: 传入的 profile
+ * @evse_id: 传入的 evse_id
+ * @charging_limit_source: 传入的 charging_limit_source
+ *
+ * 返回 SetChargingProfileResponse。
+ */
 SetChargingProfileResponse SmartCharging::add_profile(ChargingProfile& profile, std::int32_t evse_id,
                                                       CiString<20> charging_limit_source) {
     SetChargingProfileResponse response;
@@ -1006,6 +1128,12 @@ SetChargingProfileResponse SmartCharging::add_profile(ChargingProfile& profile, 
     return response;
 }
 
+/**
+ * SmartCharging::clear_profiles - clear profiles
+ * @request: 传入的 request
+ *
+ * 返回 ClearChargingProfileResponse。
+ */
 ClearChargingProfileResponse SmartCharging::clear_profiles(const ClearChargingProfileRequest& request) {
     ClearChargingProfileResponse response;
     response.status = ClearChargingProfileStatusEnum::Unknown;
@@ -1037,6 +1165,14 @@ SmartCharging::get_valid_profiles(std::int32_t evse_id,
     return valid_profiles;
 }
 
+/**
+ * SmartCharging::report_charging_profile_req - report charging profile req
+ * @request_id: 传入的 request_id
+ * @evse_id: 传入的 evse_id
+ * @source: 传入的 source
+ * @profiles: 传入的 profiles
+ * @tbc: 传入的 tbc
+ */
 void SmartCharging::report_charging_profile_req(const std::int32_t request_id, const std::int32_t evse_id,
                                                 const CiString<20> source, const std::vector<ChargingProfile>& profiles,
                                                 const bool tbc) {
@@ -1051,11 +1187,19 @@ void SmartCharging::report_charging_profile_req(const std::int32_t request_id, c
     this->context.message_dispatcher.dispatch_call(call);
 }
 
+/**
+ * SmartCharging::report_charging_profile_req - report charging profile req
+ * @req: 传入的 req
+ */
 void SmartCharging::report_charging_profile_req(const ReportChargingProfilesRequest& req) {
     const ocpp::Call<ReportChargingProfilesRequest> call(req);
     this->context.message_dispatcher.dispatch_call(call);
 }
 
+/**
+ * SmartCharging::notify_ev_charging_needs_req - notify ev charging needs req
+ * @req: 传入的 req
+ */
 void SmartCharging::notify_ev_charging_needs_req(const NotifyEVChargingNeedsRequest& req) {
     NotifyEVChargingNeedsRequest request = req;
     if (this->context.ocpp_version != OcppProtocolVersion::v21) {
@@ -1066,6 +1210,10 @@ void SmartCharging::notify_ev_charging_needs_req(const NotifyEVChargingNeedsRequ
     this->context.message_dispatcher.dispatch_call(call);
 }
 
+/**
+ * SmartCharging::handle_set_charging_profile_req - handle set charging profile req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void SmartCharging::handle_set_charging_profile_req(Call<SetChargingProfileRequest> call) {
     EVLOG_debug << "Received SetChargingProfileRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     auto msg = call.msg;
@@ -1123,6 +1271,10 @@ void SmartCharging::handle_set_charging_profile_req(Call<SetChargingProfileReque
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * SmartCharging::handle_clear_charging_profile_req - handle clear charging profile req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void SmartCharging::handle_clear_charging_profile_req(Call<ClearChargingProfileRequest> call) {
     EVLOG_debug << "Received ClearChargingProfileRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     const auto msg = call.msg;
@@ -1151,6 +1303,10 @@ void SmartCharging::handle_clear_charging_profile_req(Call<ClearChargingProfileR
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * SmartCharging::handle_get_charging_profiles_req - handle get charging profiles req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void SmartCharging::handle_get_charging_profiles_req(Call<GetChargingProfilesRequest> call) {
     EVLOG_debug << "Received GetChargingProfilesRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     const auto msg = call.msg;
@@ -1213,6 +1369,10 @@ void SmartCharging::handle_get_charging_profiles_req(Call<GetChargingProfilesReq
     }
 }
 
+/**
+ * SmartCharging::handle_notify_ev_charging_needs_response - handle notify ev charging needs response
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void SmartCharging::handle_notify_ev_charging_needs_response(const EnhancedMessage<MessageType>& call_result) {
     CallResult<NotifyEVChargingNeedsResponse> response = call_result.message;
     const Call<NotifyEVChargingNeedsRequest> request = call_result.call_message;
@@ -1260,6 +1420,10 @@ void SmartCharging::handle_notify_ev_charging_needs_response(const EnhancedMessa
     }
 }
 
+/**
+ * SmartCharging::handle_get_composite_schedule_req - handle get composite schedule req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void SmartCharging::handle_get_composite_schedule_req(Call<GetCompositeScheduleRequest> call) {
     EVLOG_debug << "Received GetCompositeScheduleRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     const auto response = this->get_composite_schedule_internal(call.msg);
@@ -1268,6 +1432,13 @@ void SmartCharging::handle_get_composite_schedule_req(Call<GetCompositeScheduleR
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * SmartCharging::get_composite_schedule_internal - get composite schedule internal
+ * @request: 传入的 request
+ * @simulate_transaction_active: 传入的 simulate_transaction_active
+ *
+ * 返回 GetCompositeScheduleResponse。
+ */
 GetCompositeScheduleResponse SmartCharging::get_composite_schedule_internal(const GetCompositeScheduleRequest& request,
                                                                             bool simulate_transaction_active) {
     GetCompositeScheduleResponse response;
@@ -1316,6 +1487,13 @@ GetCompositeScheduleResponse SmartCharging::get_composite_schedule_internal(cons
     return response;
 }
 
+/**
+ * SmartCharging::is_overlapping_validity_period - is overlapping validity period
+ * @candidate_profile: 传入的 candidate_profile
+ * @candidate_evse_id: 传入的 candidate_evse_id
+ *
+ * 返回 bool。
+ */
 bool SmartCharging::is_overlapping_validity_period(const ChargingProfile& candidate_profile,
                                                    std::int32_t candidate_evse_id) const {
     if (candidate_profile.chargingProfilePurpose == ChargingProfilePurposeEnum::TxProfile) {
@@ -1344,6 +1522,11 @@ bool SmartCharging::is_overlapping_validity_period(const ChargingProfile& candid
     return false;
 }
 
+/**
+ * SmartCharging::get_evse_specific_tx_default_profiles - get evse specific tx default profiles
+ *
+ * 返回 std::vector<ChargingProfile>。
+ */
 std::vector<ChargingProfile> SmartCharging::get_evse_specific_tx_default_profiles() const {
     std::vector<ChargingProfile> evse_specific_tx_default_profiles;
 
@@ -1358,6 +1541,11 @@ std::vector<ChargingProfile> SmartCharging::get_evse_specific_tx_default_profile
     return evse_specific_tx_default_profiles;
 }
 
+/**
+ * SmartCharging::get_station_wide_tx_default_profiles - get station wide tx default profiles
+ *
+ * 返回 std::vector<ChargingProfile>。
+ */
 std::vector<ChargingProfile> SmartCharging::get_station_wide_tx_default_profiles() const {
     std::vector<ChargingProfile> station_wide_tx_default_profiles;
 
@@ -1371,6 +1559,11 @@ std::vector<ChargingProfile> SmartCharging::get_station_wide_tx_default_profiles
     return station_wide_tx_default_profiles;
 }
 
+/**
+ * SmartCharging::get_charging_station_max_profiles - get charging station max profiles
+ *
+ * 返回 std::vector<ChargingProfile>。
+ */
 std::vector<ChargingProfile> SmartCharging::get_charging_station_max_profiles() const {
     std::vector<ChargingProfile> charging_station_max_profiles;
     auto stmt =
@@ -1401,6 +1594,12 @@ SmartCharging::get_valid_profiles_for_evse(std::int32_t evse_id,
     return valid_profiles;
 }
 
+/**
+ * SmartCharging::get_current_phase_type - get current phase type
+ * @evse_opt: 传入的 evse_opt
+ *
+ * 返回 CurrentPhaseType。
+ */
 CurrentPhaseType SmartCharging::get_current_phase_type(const std::optional<EvseInterface*> evse_opt) const {
     if (evse_opt.has_value()) {
         return evse_opt.value()->get_current_phase_type();
@@ -1418,6 +1617,16 @@ CurrentPhaseType SmartCharging::get_current_phase_type(const std::optional<EvseI
     return CurrentPhaseType::Unknown;
 }
 
+/**
+ * are_limits_and_setpoints_of_operation_mode_correct - are limits and setpoints of operation mode correct
+ * @limits_setpoints: 传入的 limits_setpoints
+ * @type: 传入的 type
+ * @limit: 传入的 limit
+ * @limit_L2: 传入的 limit_L2
+ * @limit_L3: 传入的 limit_L3
+ *
+ * 返回 bool。
+ */
 bool are_limits_and_setpoints_of_operation_mode_correct(const LimitsSetpointsForOperationMode& limits_setpoints,
                                                         const LimitSetpointType& type,
                                                         const std::optional<float>& limit,
@@ -1432,6 +1641,12 @@ bool are_limits_and_setpoints_of_operation_mode_correct(const LimitsSetpointsFor
     return true;
 }
 
+/**
+ * check_limits_and_setpoints - check limits and setpoints
+ * @charging_schedule_period: 传入的 charging_schedule_period
+ *
+ * 返回 bool。
+ */
 bool check_limits_and_setpoints(const ChargingSchedulePeriod& charging_schedule_period) {
     // Q08.FR.04, Q10.FR.01, Q10.FR.02 (among others?)
     const OperationModeEnum operation_mode =
@@ -1460,6 +1675,12 @@ bool check_limits_and_setpoints(const ChargingSchedulePeriod& charging_schedule_
     }
 }
 
+/**
+ * all_setpoints_signs_equal - all setpoints signs equal
+ * @charging_schedule_period: 传入的 charging_schedule_period
+ *
+ * 返回 bool。
+ */
 bool all_setpoints_signs_equal(const ChargingSchedulePeriod& charging_schedule_period) {
     if (charging_schedule_period.setpoint != std::nullopt && (charging_schedule_period.setpoint_L2 != std::nullopt ||
                                                               (charging_schedule_period.setpoint_L3 != std::nullopt))) {
@@ -1480,6 +1701,13 @@ bool all_setpoints_signs_equal(const ChargingSchedulePeriod& charging_schedule_p
     return true;
 }
 
+/**
+ * check_operation_modes_for_charging_profile_purposes - check operation modes for charging profile purposes
+ * @operation_mode: 传入的 operation_mode
+ * @purpose: 传入的 purpose
+ *
+ * 返回 bool。
+ */
 bool check_operation_modes_for_charging_profile_purposes(const OperationModeEnum& operation_mode,
                                                          const ChargingProfilePurposeEnum& purpose) {
     try {

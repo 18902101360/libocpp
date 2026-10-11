@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v21 {
 
+/**
+ * AFRRSignalRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string AFRRSignalRequest::get_type() const {
     return "AFRRSignal";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const AFRRSignalRequest& k) {
     // the required parts of the message
     j = json{
@@ -29,6 +39,11 @@ void to_json(json& j, const AFRRSignalRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, AFRRSignalRequest& k) {
     // the required parts of the message
     k.timestamp = ocpp::DateTime(std::string(j.at("timestamp")));
@@ -47,10 +62,20 @@ std::ostream& operator<<(std::ostream& os, const AFRRSignalRequest& k) {
     return os;
 }
 
+/**
+ * AFRRSignalResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string AFRRSignalResponse::get_type() const {
     return "AFRRSignalResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const AFRRSignalResponse& k) {
     // the required parts of the message
     j = json{
@@ -65,6 +90,11 @@ void to_json(json& j, const AFRRSignalResponse& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, AFRRSignalResponse& k) {
     // the required parts of the message
     k.status = ocpp::v2::conversions::string_to_generic_status_enum(j.at("status"));

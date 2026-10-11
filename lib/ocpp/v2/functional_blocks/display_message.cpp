@@ -23,6 +23,10 @@ DisplayMessageBlock::DisplayMessageBlock(const FunctionalBlockContext& functiona
     clear_display_message_callback(clear_display_message_callback) {
 }
 
+/**
+ * DisplayMessageBlock::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void DisplayMessageBlock::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -37,6 +41,10 @@ void DisplayMessageBlock::handle_message(const ocpp::EnhancedMessage<MessageType
     }
 }
 
+/**
+ * DisplayMessageBlock::handle_get_display_message - handle get display message
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void DisplayMessageBlock::handle_get_display_message(const Call<GetDisplayMessagesRequest> call) {
     // Call 'get display message callback' to get all display messages from the charging station.
     const std::vector<DisplayMessage> display_messages = this->get_display_message_callback(call.msg);
@@ -73,6 +81,10 @@ void DisplayMessageBlock::handle_get_display_message(const Call<GetDisplayMessag
     this->context.message_dispatcher.dispatch_call(request);
 }
 
+/**
+ * DisplayMessageBlock::handle_set_display_message - handle set display message
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void DisplayMessageBlock::handle_set_display_message(const Call<SetDisplayMessageRequest> call) {
     SetDisplayMessageResponse response;
 
@@ -147,6 +159,10 @@ void DisplayMessageBlock::handle_set_display_message(const Call<SetDisplayMessag
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * DisplayMessageBlock::handle_clear_display_message - handle clear display message
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void DisplayMessageBlock::handle_clear_display_message(const Call<ClearDisplayMessageRequest> call) {
     ClearDisplayMessageResponse response;
     response = this->clear_display_message_callback(call.msg);

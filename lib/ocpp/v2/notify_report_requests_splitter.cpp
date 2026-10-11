@@ -10,6 +10,11 @@ namespace v2 {
 const std::string NotifyReportRequestsSplitter::MESSAGE_TYPE =
     conversions::messagetype_to_string(MessageType::NotifyReport);
 
+/**
+ * NotifyReportRequestsSplitter::create_call_payloads - create call payloads
+ *
+ * 返回 std::vector<json>。
+ */
 std::vector<json> NotifyReportRequestsSplitter::create_call_payloads() {
 
     // In case there is no report data, fallback to no-splitting call creation
@@ -37,6 +42,14 @@ std::vector<json> NotifyReportRequestsSplitter::create_call_payloads() {
     return payloads;
 }
 
+/**
+ * NotifyReportRequestsSplitter::create_next_report_data_json - create next report data json
+ * @report_data_iterator: 传入的 report_data_iterator
+ * @report_data_end: 传入的 report_data_end
+ * @remaining_size: 传入的 remaining_size
+ *
+ * 返回 json。
+ */
 json NotifyReportRequestsSplitter::create_next_report_data_json(
     std::vector<ocpp::v2::ReportData>::const_iterator& report_data_iterator,
     const std::vector<ocpp::v2::ReportData>::const_iterator& report_data_end, const size_t& remaining_size) {
@@ -68,6 +81,15 @@ json NotifyReportRequestsSplitter::create_next_report_data_json(
     return report_data_json;
 }
 
+/**
+ * NotifyReportRequestsSplitter::create_next_payload - create next payload
+ * @seq_no: 传入的 seq_no
+ * @report_data_iterator: 传入的 report_data_iterator
+ * @report_data_end: 传入的 report_data_end
+ * @message_id: 传入的 message_id
+ *
+ * 返回 json。
+ */
 json NotifyReportRequestsSplitter::create_next_payload(
     const int& seq_no, std::vector<ocpp::v2::ReportData>::const_iterator& report_data_iterator,
     const std::vector<ocpp::v2::ReportData>::const_iterator& report_data_end, const std::string& message_id) {
@@ -95,6 +117,11 @@ NotifyReportRequestsSplitter::NotifyReportRequestsSplitter(const NotifyReportReq
     json_skeleton_size(create_request_template_json_and_return_skeleton_size()) {
 }
 
+/**
+ * NotifyReportRequestsSplitter::create_request_template_json_and_return_skeleton_size - create request template json and return skeleton size
+ *
+ * 返回 size_t。
+ */
 size_t NotifyReportRequestsSplitter::create_request_template_json_and_return_skeleton_size() {
 
     NotifyReportRequest req{};

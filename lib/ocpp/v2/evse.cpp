@@ -83,14 +83,30 @@ Evse::~Evse() {
     }
 }
 
+/**
+ * Evse::get_id - get id
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t Evse::get_id() const {
     return this->evse_id;
 }
 
+/**
+ * Evse::get_number_of_connectors - get number of connectors
+ *
+ * 返回 std::uint32_t。
+ */
 std::uint32_t Evse::get_number_of_connectors() const {
     return static_cast<std::uint32_t>(this->id_connector_map.size());
 }
 
+/**
+ * Evse::does_connector_exist - does connector exist
+ * @connector_type: 传入的 connector_type
+ *
+ * 返回 bool。
+ */
 bool Evse::does_connector_exist(const CiString<20> connector_type) const {
     const std::uint32_t number_of_connectors = this->get_number_of_connectors();
     if (number_of_connectors == 0) {
@@ -124,6 +140,12 @@ bool Evse::does_connector_exist(const CiString<20> connector_type) const {
     return false;
 }
 
+/**
+ * Evse::get_connector_status - get connector status
+ * @connector_type: 传入的 connector_type
+ *
+ * 返回 std::optional<ConnectorStatusEnum>。
+ */
 std::optional<ConnectorStatusEnum> Evse::get_connector_status(std::optional<CiString<20>> connector_type) {
     bool type_found = false;
     ConnectorStatusEnum found_status = ConnectorStatusEnum::Unavailable;
@@ -176,6 +198,9 @@ std::optional<ConnectorStatusEnum> Evse::get_connector_status(std::optional<CiSt
     return found_status;
 }
 
+/**
+ * Evse::try_resume_transaction - try resume transaction
+ */
 void Evse::try_resume_transaction() {
     // Get an open transactions from the database and resume it if there is one
     try {
@@ -204,6 +229,9 @@ void Evse::try_resume_transaction() {
     }
 }
 
+/**
+ * Evse::delete_database_transaction - delete database transaction
+ */
 void Evse::delete_database_transaction() {
     try {
         auto transaction = this->database_handler->transaction_get(evse_id);
@@ -215,6 +243,12 @@ void Evse::delete_database_transaction() {
     }
 }
 
+/**
+ * Evse::get_evse_connector_type - get evse connector type
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 std::optional<CiString<20>>。
+ */
 std::optional<CiString<20>> Evse::get_evse_connector_type(const std::uint32_t connector_id) const {
 
     auto connector = this->get_connector(static_cast<std::int32_t>(connector_id));
@@ -238,6 +272,17 @@ std::optional<CiString<20>> Evse::get_evse_connector_type(const std::uint32_t co
     return connector_type.value();
 }
 
+/**
+ * Evse::open_transaction - open transaction
+ * @transaction_id: 传入的 transaction_id
+ * @connector_id: 传入的 connector_id
+ * @timestamp: 传入的 timestamp
+ * @meter_start: 传入的 meter_start
+ * @id_token: 传入的 id_token
+ * @/: 见函数签名
+ * @/: 见函数签名
+ * @charging_state: 传入的 charging_state
+ */
 void Evse::open_transaction(const std::string& transaction_id, const std::int32_t connector_id,
                             const DateTime& timestamp, const MeterValue& meter_start,
                             const std::optional<IdToken>& id_token, const std::optional<IdToken>& /*group_id_token*/,
@@ -283,6 +328,12 @@ void Evse::open_transaction(const std::string& transaction_id, const std::int32_
     }
 }
 
+/**
+ * Evse::close_transaction - close transaction
+ * @/: 见函数签名
+ * @meter_stop: 传入的 meter_stop
+ * @reason: 传入的 reason
+ */
 void Evse::close_transaction(const DateTime& /*timestamp*/, const MeterValue& meter_stop, const ReasonEnum& reason) {
     if (this->transaction == nullptr) {
         EVLOG_warning << "Received attempt to stop a transaction without an active transaction";
@@ -310,6 +361,9 @@ void Evse::close_transaction(const DateTime& /*timestamp*/, const MeterValue& me
     this->aligned_data_updated.clear_values();
 }
 
+/**
+ * Evse::start_checking_max_energy_on_invalid_id - start checking max energy on invalid id
+ */
 void Evse::start_checking_max_energy_on_invalid_id() {
     if (this->transaction != nullptr) {
         this->transaction->check_max_active_import_energy = true;
@@ -319,10 +373,21 @@ void Evse::start_checking_max_energy_on_invalid_id() {
     }
 }
 
+/**
+ * Evse::has_active_transaction - has active transaction
+ *
+ * 返回 bool。
+ */
 bool Evse::has_active_transaction() const {
     return this->transaction != nullptr;
 }
 
+/**
+ * Evse::has_active_transaction - has active transaction
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 bool。
+ */
 bool Evse::has_active_transaction(std::int32_t connector_id) const {
     if (this->id_connector_map.count(connector_id) == 0) {
         EVLOG_warning << "has_active_transaction called for invalid connector_id";
@@ -336,6 +401,9 @@ bool Evse::has_active_transaction(std::int32_t connector_id) const {
     return this->transaction->connector_id == connector_id;
 }
 
+/**
+ * Evse::release_transaction - release transaction
+ */
 void Evse::release_transaction() {
     try {
         this->database_handler->transaction_metervalues_clear(this->transaction->transactionId);
@@ -348,14 +416,28 @@ void Evse::release_transaction() {
     this->reset_pricing_triggers();
 }
 
+/**
+ * Evse::get_transaction - get transaction
+ *
+ * 返回 std::unique_ptr<EnhancedTransaction>&。
+ */
 std::unique_ptr<EnhancedTransaction>& Evse::get_transaction() {
     return this->transaction;
 }
 
+/**
+ * Evse::submit_event - submit event
+ * @connector_id: 传入的 connector_id
+ * @event: 传入的 event
+ */
 void Evse::submit_event(const std::int32_t connector_id, ConnectorEvent event) {
     this->id_connector_map.at(connector_id)->submit_event(event);
 }
 
+/**
+ * Evse::on_meter_value - on meter value
+ * @meter_value: 传入的 meter_value
+ */
 void Evse::on_meter_value(const MeterValue& meter_value) {
     const std::lock_guard<std::recursive_mutex> lk(this->meter_value_mutex);
     this->meter_value = meter_value;
@@ -365,19 +447,37 @@ void Evse::on_meter_value(const MeterValue& meter_value) {
     this->send_meter_value_on_pricing_trigger(meter_value);
 }
 
+/**
+ * Evse::get_meter_value - get meter value
+ *
+ * 返回 MeterValue。
+ */
 MeterValue Evse::get_meter_value() {
     const std::lock_guard<std::recursive_mutex> lk(this->meter_value_mutex);
     return this->meter_value;
 }
 
+/**
+ * Evse::get_idle_meter_value - get idle meter value
+ *
+ * 返回 MeterValue。
+ */
 MeterValue Evse::get_idle_meter_value() {
     return this->aligned_data_updated.retrieve_processed_values();
 }
 
+/**
+ * Evse::clear_idle_meter_values - clear idle meter values
+ */
 void Evse::clear_idle_meter_values() {
     this->aligned_data_updated.clear_values();
 }
 
+/**
+ * Evse::get_active_import_register_meter_value - get active import register meter value
+ *
+ * 返回 std::optional<float>。
+ */
 std::optional<float> Evse::get_active_import_register_meter_value() {
     const std::lock_guard<std::recursive_mutex> lk(this->meter_value_mutex);
     auto it = std::find_if(
@@ -390,6 +490,9 @@ std::optional<float> Evse::get_active_import_register_meter_value() {
     return std::nullopt;
 }
 
+/**
+ * Evse::check_max_energy_on_invalid_id - check max energy on invalid id
+ */
 void Evse::check_max_energy_on_invalid_id() {
     // Handle E05.02
     auto max_energy_on_invalid_id =
@@ -410,6 +513,10 @@ void Evse::check_max_energy_on_invalid_id() {
     }
 }
 
+/**
+ * Evse::start_metering_timers - start metering timers
+ * @timestamp: 传入的 timestamp
+ */
 void Evse::start_metering_timers(const DateTime& timestamp) {
 
     this->aligned_data_updated.clear_values();
@@ -519,6 +626,13 @@ void Evse::start_metering_timers(const DateTime& timestamp) {
     }
 }
 
+/**
+ * Evse::set_meter_value_pricing_triggers - set meter value pricing triggers
+ * @trigger_metervalue_on_power_kw: 传入的 trigger_metervalue_on_power_kw
+ * @trigger_metervalue_on_energy_kwh: 传入的 trigger_metervalue_on_energy_kwh
+ * @trigger_metervalue_at_time: 传入的 trigger_metervalue_at_time
+ * @meter_values: 传入的 meter_values
+ */
 void Evse::set_meter_value_pricing_triggers(
     std::optional<double> trigger_metervalue_on_power_kw, std::optional<double> trigger_metervalue_on_energy_kwh,
     std::optional<DateTime> trigger_metervalue_at_time,
@@ -574,6 +688,9 @@ void Evse::set_meter_value_pricing_triggers(
     this->trigger_metervalue_at_time_timer->at(trigger_timepoint);
 }
 
+/**
+ * Evse::reset_pricing_triggers - reset pricing triggers
+ */
 void Evse::reset_pricing_triggers() {
     this->last_triggered_metervalue_power_kw = std::nullopt;
     this->trigger_metervalue_on_power_kw = std::nullopt;
@@ -586,6 +703,10 @@ void Evse::reset_pricing_triggers() {
     }
 }
 
+/**
+ * Evse::send_meter_value_on_pricing_trigger - send meter value on pricing trigger
+ * @meter_value: 传入的 meter_value
+ */
 void Evse::send_meter_value_on_pricing_trigger(const MeterValue& meter_value) {
     bool meter_value_sent = false;
     // Check if there is a kwh trigger and if the value is exceeded.
@@ -666,26 +787,58 @@ void Evse::send_meter_value_on_pricing_trigger(const MeterValue& meter_value) {
     }
 }
 
+/**
+ * Evse::set_evse_operative_status - set evse operative status
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void Evse::set_evse_operative_status(OperationalStatusEnum new_status, bool persist) {
     this->component_state_manager->set_evse_individual_operational_status(this->evse_id, new_status, persist);
 }
 
+/**
+ * Evse::set_connector_operative_status - set connector operative status
+ * @connector_id: 传入的 connector_id
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void Evse::set_connector_operative_status(std::int32_t connector_id, OperationalStatusEnum new_status, bool persist) {
     this->id_connector_map.at(connector_id)->set_connector_operative_status(new_status, persist);
 }
 
+/**
+ * Evse::restore_connector_operative_status - restore connector operative status
+ * @connector_id: 传入的 connector_id
+ */
 void Evse::restore_connector_operative_status(std::int32_t connector_id) {
     this->id_connector_map.at(connector_id)->restore_connector_operative_status();
 }
 
+/**
+ * Evse::get_connector_effective_operational_status - get connector effective operational status
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum Evse::get_connector_effective_operational_status(const std::int32_t connector_id) {
     return this->component_state_manager->get_connector_effective_operational_status(this->get_id(), connector_id);
 }
 
+/**
+ * Evse::get_effective_operational_status - get effective operational status
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum Evse::get_effective_operational_status() {
     return this->component_state_manager->get_evse_effective_operational_status(this->evse_id);
 }
 
+/**
+ * Evse::get_connector - get connector
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 Connector*。
+ */
 Connector* Evse::get_connector(std::int32_t connector_id) const {
     if (connector_id <= 0 or connector_id > this->get_number_of_connectors()) {
         std::stringstream err_msg;
@@ -695,6 +848,11 @@ Connector* Evse::get_connector(std::int32_t connector_id) const {
     return this->id_connector_map.at(connector_id).get();
 }
 
+/**
+ * Evse::get_current_phase_type - get current phase type
+ *
+ * 返回 CurrentPhaseType。
+ */
 CurrentPhaseType Evse::get_current_phase_type() {
     const ComponentVariable evse_variable =
         EvseComponentVariables::get_component_variable(this->evse_id, EvseComponentVariables::SupplyPhases);

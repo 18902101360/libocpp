@@ -320,6 +320,13 @@ extern const Variable AllowReset;
 extern const Variable Power;
 extern const Variable DCInputPhaseControl;
 extern const Variable ISO15118EvseId;
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable);
 } // namespace EvseComponentVariables
 
@@ -328,6 +335,14 @@ extern const Variable Available;
 extern const Variable AvailabilityState;
 extern const Variable Type;
 extern const Variable SupplyPhases;
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const std::int32_t connector_id,
                                          const Variable& variable);
 } // namespace ConnectorComponentVariables
@@ -342,11 +357,48 @@ extern const Variable TxEndedMeasurands;
 extern const Variable TxEndedInterval;
 extern const Variable TxUpdatedMeasurands;
 extern const Variable TxUpdatedInterval;
+/**
+ * get_v2x_tx_started_measurands - get v2x tx started measurands
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_started_measurands(const OperationModeEnum& mode);
+/**
+ * get_v2x_tx_ended_measurands - get v2x tx ended measurands
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_ended_measurands(const OperationModeEnum& mode);
+/**
+ * get_v2x_tx_ended_interval - get v2x tx ended interval
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_ended_interval(const OperationModeEnum& mode);
+/**
+ * get_v2x_tx_updated_measurands - get v2x tx updated measurands
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_updated_measurands(const OperationModeEnum& mode);
+/**
+ * get_v2x_tx_updated_interval - get v2x tx updated interval
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_updated_interval(const OperationModeEnum& mode);
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable);
 } // namespace V2xComponentVariables
 
@@ -358,6 +410,13 @@ extern const Variable ProtocolSupported;
 extern const Variable SeccId;
 extern const Variable CountryName;
 extern const Variable OrganizationName;
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable);
 } // namespace ISO15118ComponentVariables
 
@@ -369,7 +428,20 @@ extern const Variable VehicleCertificateLeaf;
 extern const Variable VehicleCertificateSubCa1;
 extern const Variable VehicleCertificateSubCa2;
 extern const Variable VehicleCertificateRoot;
+/**
+ * get_protocol_supported_by_ev - get protocol supported by ev
+ * @priority: 传入的 priority
+ *
+ * 返回 Variable。
+ */
 Variable get_protocol_supported_by_ev(const std::int32_t priority);
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable);
 } // namespace ConnectedEvComponentVariables
 

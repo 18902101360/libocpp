@@ -14,6 +14,12 @@ namespace ocpp {
 namespace v2 {
 namespace utils {
 
+/**
+ * get_measurands_vec - get measurands vec
+ * @measurands_csv: 传入的 measurands_csv
+ *
+ * 返回 std::vector<MeasurandEnum>。
+ */
 std::vector<MeasurandEnum> get_measurands_vec(const std::string& measurands_csv) {
     std::vector<MeasurandEnum> measurands;
     const std::vector<std::string> measurands_strings = ocpp::split_string(measurands_csv, ',');
@@ -28,6 +34,13 @@ std::vector<MeasurandEnum> get_measurands_vec(const std::string& measurands_csv)
     return measurands;
 }
 
+/**
+ * meter_value_has_any_measurand - meter value has any measurand
+ * @_meter_value: 传入的 _meter_value
+ * @measurands: 传入的 measurands
+ *
+ * 返回 bool。
+ */
 bool meter_value_has_any_measurand(const MeterValue& _meter_value, const std::vector<MeasurandEnum>& measurands) {
     auto compare = [](const SampledValue& a, MeasurandEnum b) { return a.measurand == b; };
 
@@ -35,6 +48,14 @@ bool meter_value_has_any_measurand(const MeterValue& _meter_value, const std::ve
                               measurands.end(), compare) != _meter_value.sampledValue.end();
 }
 
+/**
+ * get_meter_value_with_measurands_applied - get meter value with measurands applied
+ * @_meter_value: 传入的 _meter_value
+ * @measurands: 传入的 measurands
+ * @include_signed: 传入的 include_signed
+ *
+ * 返回 MeterValue。
+ */
 MeterValue get_meter_value_with_measurands_applied(const MeterValue& _meter_value,
                                                    const std::vector<MeasurandEnum>& measurands, bool include_signed) {
     auto meter_value = _meter_value;
@@ -57,6 +78,17 @@ MeterValue get_meter_value_with_measurands_applied(const MeterValue& _meter_valu
     return meter_value;
 }
 
+/**
+ * get_meter_values_with_measurands_applied - get meter values with measurands applied
+ * @meter_values: 传入的 meter_values
+ * @sampled_tx_ended_measurands: 传入的 sampled_tx_ended_measurands
+ * @aligned_tx_ended_measurands: 传入的 aligned_tx_ended_measurands
+ * @max_timestamp: 传入的 max_timestamp
+ * @include_sampled_signed: 传入的 include_sampled_signed
+ * @include_aligned_signed: 传入的 include_aligned_signed
+ *
+ * 返回 std::vector<MeterValue>。
+ */
 std::vector<MeterValue> get_meter_values_with_measurands_applied(
     const std::vector<MeterValue>& meter_values, const std::vector<MeasurandEnum>& sampled_tx_ended_measurands,
     const std::vector<MeasurandEnum>& aligned_tx_ended_measurands, ocpp::DateTime max_timestamp,
@@ -102,6 +134,13 @@ std::vector<MeterValue> get_meter_values_with_measurands_applied(
     return meter_values_result;
 }
 
+/**
+ * set_meter_value_reading_context - set meter value reading context
+ * @meter_value: 传入的 meter_value
+ * @reading_context: 传入的 reading_context
+ *
+ * 返回 MeterValue。
+ */
 MeterValue set_meter_value_reading_context(const MeterValue& meter_value, const ReadingContextEnum reading_context) {
     MeterValue return_value = meter_value;
     for (auto& sampled_value : return_value.sampledValue) {
@@ -111,6 +150,12 @@ MeterValue set_meter_value_reading_context(const MeterValue& meter_value, const 
     return return_value;
 }
 
+/**
+ * sha256 - sha256
+ * @str: 传入的 str
+ *
+ * 返回 std::string。
+ */
 std::string sha256(const std::string& str) {
     std::array<unsigned char, SHA256_DIGEST_LENGTH> hash;
     EVP_Digest(str.c_str(), str.size(), hash.data(), nullptr, EVP_sha256(), nullptr);
@@ -122,10 +167,23 @@ std::string sha256(const std::string& str) {
     return ss.str();
 }
 
+/**
+ * generate_token_hash - generate token hash
+ * @token: 传入的 token
+ *
+ * 返回 std::string。
+ */
 std::string generate_token_hash(const IdToken& token) {
     return sha256(token.type.get() + token.idToken.get());
 }
 
+/**
+ * align_timestamp - align timestamp
+ * @timestamp: 传入的 timestamp
+ * @align_interval: 传入的 align_interval
+ *
+ * 返回 ocpp::DateTime。
+ */
 ocpp::DateTime align_timestamp(const DateTime timestamp, std::chrono::seconds align_interval) {
     if (align_interval.count() < 0) {
         EVLOG_warning << "Invalid align interval value";
@@ -147,6 +205,12 @@ ocpp::DateTime align_timestamp(const DateTime timestamp, std::chrono::seconds al
     return rounded_time;
 }
 
+/**
+ * get_total_power_active_import - get total power active import
+ * @meter_value: 传入的 meter_value
+ *
+ * 返回 std::optional<float>。
+ */
 std::optional<float> get_total_power_active_import(const MeterValue& meter_value) {
     for (const auto& sampled_value : meter_value.sampledValue) {
         if (sampled_value.measurand == MeasurandEnum::Power_Active_Import and !sampled_value.phase.has_value()) {
@@ -156,6 +220,12 @@ std::optional<float> get_total_power_active_import(const MeterValue& meter_value
     return std::nullopt;
 }
 
+/**
+ * is_critical - is critical
+ * @security_event: 传入的 security_event
+ *
+ * 返回 bool。
+ */
 bool is_critical(const std::string& security_event) {
     if (security_event == ocpp::security_events::FIRMWARE_UPDATED) {
         return true;
@@ -206,6 +276,12 @@ bool is_critical(const std::string& security_event) {
     return false;
 }
 
+/**
+ * get_charging_profile_purposes - get charging profile purposes
+ * @csl: 传入的 csl
+ *
+ * 返回 std::vector<ChargingProfilePurposeEnum>。
+ */
 std::vector<ChargingProfilePurposeEnum> get_charging_profile_purposes(const std::string& csl) {
     std::vector<ChargingProfilePurposeEnum> purposes;
     const auto purposes_vec = split_string(csl, ',');
@@ -220,6 +296,13 @@ std::vector<ChargingProfilePurposeEnum> get_charging_profile_purposes(const std:
     return purposes;
 }
 
+/**
+ * get_purposes_to_ignore - get purposes to ignore
+ * @csl: 传入的 csl
+ * @is_offline: 传入的 is_offline
+ *
+ * 返回 std::vector<ChargingProfilePurposeEnum>。
+ */
 std::vector<ChargingProfilePurposeEnum> get_purposes_to_ignore(const std::string& csl, const bool is_offline) {
     if (not is_offline or csl.empty()) {
         return {};
@@ -228,6 +311,12 @@ std::vector<ChargingProfilePurposeEnum> get_purposes_to_ignore(const std::string
     return get_charging_profile_purposes(csl);
 }
 
+/**
+ * get_ocpp_protocol_versions - get ocpp protocol versions
+ * @csl: 传入的 csl
+ *
+ * 返回 std::vector<OcppProtocolVersion>。
+ */
 std::vector<OcppProtocolVersion> get_ocpp_protocol_versions(const std::string& csl) {
     if (csl.empty()) {
         return {};

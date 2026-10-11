@@ -8,6 +8,10 @@ namespace ocpp::v2 {
 
 ComponentStateManagerInterface::~ComponentStateManagerInterface() = default;
 
+/**
+ * ComponentStateManager::read_all_states_from_database_or_set_defaults - read all states from database or set defaults
+ * @evse_connector_structure: 传入的 evse_connector_structure
+ */
 void ComponentStateManager::read_all_states_from_database_or_set_defaults(
     const std::map<std::int32_t, std::int32_t>& evse_connector_structure) {
 
@@ -38,6 +42,9 @@ void ComponentStateManager::read_all_states_from_database_or_set_defaults(
     }
 }
 
+/**
+ * ComponentStateManager::initialize_reported_state_cache - initialize reported state cache
+ */
 void ComponentStateManager::initialize_reported_state_cache() {
     // Initialize the cached statuses (after everything else is done)
     this->last_cs_effective_operational_status = this->get_cs_individual_operational_status();
@@ -71,21 +78,41 @@ ComponentStateManager::ComponentStateManager(
     this->initialize_reported_state_cache();
 }
 
+/**
+ * ComponentStateManager::num_evses - num evses
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ComponentStateManager::num_evses() {
     return clamp_to<std::int32_t>(this->evse_and_connector_individual_statuses.size());
 }
 
+/**
+ * ComponentStateManager::check_evse_id - check evse id
+ * @evse_id: 传入的 evse_id
+ */
 void ComponentStateManager::check_evse_id(std::int32_t evse_id) {
     if (evse_id <= 0 || evse_id > this->num_evses()) {
         throw EvseOutOfRangeException(evse_id);
     }
 }
 
+/**
+ * ComponentStateManager::num_connectors - num connectors
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ComponentStateManager::num_connectors(std::int32_t evse_id) {
     check_evse_id(evse_id);
     return clamp_to<std::int32_t>(this->evse_and_connector_individual_statuses[evse_id - 1].second.size());
 }
 
+/**
+ * ComponentStateManager::check_evse_and_connector_id - check evse and connector id
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ComponentStateManager::check_evse_and_connector_id(std::int32_t evse_id, std::int32_t connector_id) {
     this->check_evse_id(evse_id);
     if (connector_id <= 0 || connector_id > this->num_connectors(evse_id)) {
@@ -93,34 +120,71 @@ void ComponentStateManager::check_evse_and_connector_id(std::int32_t evse_id, st
     }
 }
 
+/**
+ * ComponentStateManager::individual_evse_status - individual evse status
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 OperationalStatusEnum&。
+ */
 OperationalStatusEnum& ComponentStateManager::individual_evse_status(std::int32_t evse_id) {
     this->check_evse_id(evse_id);
     return this->evse_and_connector_individual_statuses[evse_id - 1].first;
 }
 
+/**
+ * ComponentStateManager::individual_connector_status - individual connector status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 FullConnectorStatus&。
+ */
 FullConnectorStatus& ComponentStateManager::individual_connector_status(std::int32_t evse_id,
                                                                         std::int32_t connector_id) {
     this->check_evse_and_connector_id(evse_id, connector_id);
     return this->evse_and_connector_individual_statuses[evse_id - 1].second[connector_id - 1];
 }
 
+/**
+ * ComponentStateManager::last_evse_effective_status - last evse effective status
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 OperationalStatusEnum&。
+ */
 OperationalStatusEnum& ComponentStateManager::last_evse_effective_status(std::int32_t evse_id) {
     this->check_evse_id(evse_id);
     return this->last_evse_and_connector_effective_operational_statuses[evse_id - 1].first;
 }
 
+/**
+ * ComponentStateManager::last_connector_effective_status - last connector effective status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum&。
+ */
 OperationalStatusEnum& ComponentStateManager::last_connector_effective_status(std::int32_t evse_id,
                                                                               std::int32_t connector_id) {
     this->check_evse_and_connector_id(evse_id, connector_id);
     return this->last_evse_and_connector_effective_operational_statuses[evse_id - 1].second[connector_id - 1];
 }
 
+/**
+ * ComponentStateManager::last_connector_reported_status - last connector reported status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 ConnectorStatusEnum&。
+ */
 ConnectorStatusEnum& ComponentStateManager::last_connector_reported_status(std::int32_t evse_id,
                                                                            std::int32_t connector_id) {
     this->check_evse_and_connector_id(evse_id, connector_id);
     return this->last_connector_reported_statuses[evse_id - 1][connector_id - 1];
 }
 
+/**
+ * ComponentStateManager::trigger_callbacks_cs - trigger callbacks cs
+ * @only_if_state_changed: 传入的 only_if_state_changed
+ */
 void ComponentStateManager::trigger_callbacks_cs(bool only_if_state_changed) {
     const OperationalStatusEnum current_effective_status = this->get_cs_individual_operational_status();
     if (!only_if_state_changed || this->last_cs_effective_operational_status != current_effective_status) {
@@ -134,6 +198,11 @@ void ComponentStateManager::trigger_callbacks_cs(bool only_if_state_changed) {
     }
 }
 
+/**
+ * ComponentStateManager::trigger_callbacks_evse - trigger callbacks evse
+ * @evse_id: 传入的 evse_id
+ * @only_if_state_changed: 传入的 only_if_state_changed
+ */
 void ComponentStateManager::trigger_callbacks_evse(std::int32_t evse_id, bool only_if_state_changed) {
     const OperationalStatusEnum current_effective_status = this->get_evse_effective_operational_status(evse_id);
     if (!only_if_state_changed || this->last_evse_effective_status(evse_id) != current_effective_status) {
@@ -147,6 +216,12 @@ void ComponentStateManager::trigger_callbacks_evse(std::int32_t evse_id, bool on
     }
 }
 
+/**
+ * ComponentStateManager::trigger_callbacks_connector - trigger callbacks connector
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @only_if_state_changed: 传入的 only_if_state_changed
+ */
 void ComponentStateManager::trigger_callbacks_connector(std::int32_t evse_id, std::int32_t connector_id,
                                                         bool only_if_state_changed) {
     // Operational status callbacks
@@ -162,33 +237,68 @@ void ComponentStateManager::trigger_callbacks_connector(std::int32_t evse_id, st
     }
 }
 
+/**
+ * ComponentStateManager::set_cs_effective_availability_changed_callback - set cs effective availability changed callback
+ * @callback: 传入的 callback
+ */
 void ComponentStateManager::set_cs_effective_availability_changed_callback(
     const std::function<void(const OperationalStatusEnum new_status)>& callback) {
     this->cs_effective_availability_changed_callback = callback;
 }
 
+/**
+ * ComponentStateManager::set_evse_effective_availability_changed_callback - set evse effective availability changed callback
+ * @callback: 传入的 callback
+ */
 void ComponentStateManager::set_evse_effective_availability_changed_callback(
     const std::function<void(const std::int32_t evse_id, const OperationalStatusEnum new_status)>& callback) {
     this->evse_effective_availability_changed_callback = callback;
 }
 
+/**
+ * ComponentStateManager::set_connector_effective_availability_changed_callback - set connector effective availability changed callback
+ * @callback: 传入的 callback
+ */
 void ComponentStateManager::set_connector_effective_availability_changed_callback(
     const std::function<void(const std::int32_t evse_id, const std::int32_t connector_id,
                              const OperationalStatusEnum new_status)>& callback) {
     this->connector_effective_availability_changed_callback = callback;
 }
 
+/**
+ * ComponentStateManager::get_cs_individual_operational_status - get cs individual operational status
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_cs_individual_operational_status() {
     return this->cs_individual_status;
 }
+/**
+ * ComponentStateManager::get_evse_individual_operational_status - get evse individual operational status
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_evse_individual_operational_status(std::int32_t evse_id) {
     return this->individual_evse_status(evse_id);
 }
+/**
+ * ComponentStateManager::get_connector_individual_operational_status - get connector individual operational status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_connector_individual_operational_status(std::int32_t evse_id,
                                                                                          std::int32_t connector_id) {
     return this->individual_connector_status(evse_id, connector_id).individual_operational_status;
 }
 
+/**
+ * ComponentStateManager::set_cs_individual_operational_status - set cs individual operational status
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void ComponentStateManager::set_cs_individual_operational_status(OperationalStatusEnum new_status, bool persist) {
     this->cs_individual_status = new_status;
     if (persist) {
@@ -200,6 +310,12 @@ void ComponentStateManager::set_cs_individual_operational_status(OperationalStat
     }
     this->trigger_callbacks_cs(true);
 }
+/**
+ * ComponentStateManager::set_evse_individual_operational_status - set evse individual operational status
+ * @evse_id: 传入的 evse_id
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void ComponentStateManager::set_evse_individual_operational_status(std::int32_t evse_id,
                                                                    OperationalStatusEnum new_status, bool persist) {
     this->individual_evse_status(evse_id) = new_status;
@@ -213,6 +329,13 @@ void ComponentStateManager::set_evse_individual_operational_status(std::int32_t 
     }
     this->trigger_callbacks_evse(evse_id, true);
 }
+/**
+ * ComponentStateManager::set_connector_individual_operational_status - set connector individual operational status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void ComponentStateManager::set_connector_individual_operational_status(std::int32_t evse_id, std::int32_t connector_id,
                                                                         OperationalStatusEnum new_status,
                                                                         bool persist) {
@@ -228,6 +351,11 @@ void ComponentStateManager::set_connector_individual_operational_status(std::int
     this->trigger_callbacks_connector(evse_id, connector_id, true);
 }
 
+/**
+ * FullConnectorStatus::to_connector_status - to connector status
+ *
+ * 返回 ConnectorStatusEnum。
+ */
 ConnectorStatusEnum FullConnectorStatus::to_connector_status() const {
     // faulted has precedence over unavailable
     if (this->faulted) {
@@ -245,6 +373,12 @@ ConnectorStatusEnum FullConnectorStatus::to_connector_status() const {
     return ConnectorStatusEnum::Available;
 }
 
+/**
+ * ComponentStateManager::get_evse_effective_operational_status - get evse effective operational status
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_evse_effective_operational_status(std::int32_t evse_id) {
     this->check_evse_id(evse_id);
     if (this->cs_individual_status == OperationalStatusEnum::Inoperative) {
@@ -252,6 +386,13 @@ OperationalStatusEnum ComponentStateManager::get_evse_effective_operational_stat
     }
     return this->individual_evse_status(evse_id);
 }
+/**
+ * ComponentStateManager::get_connector_effective_status - get connector effective status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 ConnectorStatusEnum。
+ */
 ConnectorStatusEnum ComponentStateManager::get_connector_effective_status(std::int32_t evse_id,
                                                                           std::int32_t connector_id) {
     this->check_evse_and_connector_id(evse_id, connector_id);
@@ -261,6 +402,13 @@ ConnectorStatusEnum ComponentStateManager::get_connector_effective_status(std::i
 
     return this->individual_connector_status(evse_id, connector_id).to_connector_status();
 }
+/**
+ * ComponentStateManager::get_connector_effective_operational_status - get connector effective operational status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_connector_effective_operational_status(std::int32_t evse_id,
                                                                                         std::int32_t connector_id) {
     if (this->get_evse_effective_operational_status(evse_id) == OperationalStatusEnum::Inoperative) {
@@ -269,19 +417,43 @@ OperationalStatusEnum ComponentStateManager::get_connector_effective_operational
     return this->individual_connector_status(evse_id, connector_id).individual_operational_status;
 }
 
+/**
+ * ComponentStateManager::get_cs_persisted_operational_status - get cs persisted operational status
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_cs_persisted_operational_status() {
     return this->database->get_cs_availability();
 }
+/**
+ * ComponentStateManager::get_evse_persisted_operational_status - get evse persisted operational status
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_evse_persisted_operational_status(std::int32_t evse_id) {
     this->check_evse_id(evse_id);
     return this->database->get_evse_availability(evse_id);
 }
+/**
+ * ComponentStateManager::get_connector_persisted_operational_status - get connector persisted operational status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum ComponentStateManager::get_connector_persisted_operational_status(std::int32_t evse_id,
                                                                                         std::int32_t connector_id) {
     this->check_evse_and_connector_id(evse_id, connector_id);
     return this->database->get_connector_availability(evse_id, connector_id);
 }
 
+/**
+ * ComponentStateManager::set_connector_occupied - set connector occupied
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @is_occupied: 传入的 is_occupied
+ */
 void ComponentStateManager::set_connector_occupied(std::int32_t evse_id, std::int32_t connector_id, bool is_occupied) {
     this->individual_connector_status(evse_id, connector_id).occupied = is_occupied;
     // Check if the connector is set to reserved. Because if it is, it should not go to occupied but stay reserved.
@@ -292,21 +464,42 @@ void ComponentStateManager::set_connector_occupied(std::int32_t evse_id, std::in
         this->send_status_notification_single_connector_internal(evse_id, connector_id, true);
     }
 }
+/**
+ * ComponentStateManager::set_connector_reserved - set connector reserved
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @is_reserved: 传入的 is_reserved
+ */
 void ComponentStateManager::set_connector_reserved(std::int32_t evse_id, std::int32_t connector_id, bool is_reserved) {
     this->individual_connector_status(evse_id, connector_id).reserved = is_reserved;
     this->send_status_notification_single_connector_internal(evse_id, connector_id, true);
 }
+/**
+ * ComponentStateManager::set_connector_faulted - set connector faulted
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @is_faulted: 传入的 is_faulted
+ */
 void ComponentStateManager::set_connector_faulted(std::int32_t evse_id, std::int32_t connector_id, bool is_faulted) {
     this->individual_connector_status(evse_id, connector_id).faulted = is_faulted;
     this->send_status_notification_single_connector_internal(evse_id, connector_id, true);
 }
 
+/**
+ * ComponentStateManager::set_connector_unavailable - set connector unavailable
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @is_unavailable: 传入的 is_unavailable
+ */
 void ComponentStateManager::set_connector_unavailable(std::int32_t evse_id, std::int32_t connector_id,
                                                       bool is_unavailable) {
     this->individual_connector_status(evse_id, connector_id).unavailable = is_unavailable;
     this->send_status_notification_single_connector_internal(evse_id, connector_id, true);
 }
 
+/**
+ * ComponentStateManager::trigger_all_effective_availability_changed_callbacks - trigger all effective availability changed callbacks
+ */
 void ComponentStateManager::trigger_all_effective_availability_changed_callbacks() {
     this->trigger_callbacks_cs(false);
 }
@@ -326,6 +519,9 @@ void ComponentStateManager::send_status_notification_single_connector_internal(s
         }
     }
 }
+/**
+ * ComponentStateManager::send_status_notification_all_connectors - send status notification all connectors
+ */
 void ComponentStateManager::send_status_notification_all_connectors() {
     for (int evse_id = 1; evse_id <= this->num_evses(); evse_id++) {
         for (int connector_id = 1; connector_id <= this->num_connectors(evse_id); connector_id++) {
@@ -333,6 +529,9 @@ void ComponentStateManager::send_status_notification_all_connectors() {
         }
     }
 }
+/**
+ * ComponentStateManager::send_status_notification_changed_connectors - send status notification changed connectors
+ */
 void ComponentStateManager::send_status_notification_changed_connectors() {
     for (int evse_id = 1; evse_id <= this->num_evses(); evse_id++) {
         for (int connector_id = 1; connector_id <= this->num_connectors(evse_id); connector_id++) {
@@ -340,6 +539,11 @@ void ComponentStateManager::send_status_notification_changed_connectors() {
         }
     }
 }
+/**
+ * ComponentStateManager::send_status_notification_single_connector - send status notification single connector
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ComponentStateManager::send_status_notification_single_connector(std::int32_t evse_id, std::int32_t connector_id) {
     this->send_status_notification_single_connector_internal(evse_id, connector_id, false, true);
 }

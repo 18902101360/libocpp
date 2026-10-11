@@ -239,6 +239,11 @@ ChargePointImpl::ChargePointImpl(const std::string& config, const fs::path& shar
     }
 }
 
+/**
+ * ChargePointImpl::create_message_queue - create message queue
+ *
+ * 返回 std::unique_ptr<ocpp::MessageQueue<v16::MessageType>>。
+ */
 std::unique_ptr<ocpp::MessageQueue<v16::MessageType>> ChargePointImpl::create_message_queue() {
 
     // The StartTransaction.conf handler attempts to get the transaction based on the message id. The message id changes
@@ -289,6 +294,9 @@ std::unique_ptr<ocpp::MessageQueue<v16::MessageType>> ChargePointImpl::create_me
         this->external_notify, this->database_handler, start_transaction_message_retry_callback);
 }
 
+/**
+ * ChargePointImpl::init_websocket - init websocket
+ */
 void ChargePointImpl::init_websocket() {
 
     auto connection_options = this->get_ws_connection_options();
@@ -362,6 +370,10 @@ void ChargePointImpl::init_websocket() {
     this->websocket->register_message_callback([this](const std::string& message) { this->message_callback(message); });
 }
 
+/**
+ * ChargePointImpl::init_state_machine - init state machine
+ * @connector_status_map: 传入的 connector_status_map
+ */
 void ChargePointImpl::init_state_machine(const std::map<int, ChargePointStatus>& connector_status_map) {
     // if connector_status_map empty it retrieves the last availablity states from the database
     if (connector_status_map.empty()) {
@@ -395,6 +407,11 @@ void ChargePointImpl::init_state_machine(const std::map<int, ChargePointStatus>&
     }
 }
 
+/**
+ * ChargePointImpl::get_ws_connection_options - get ws connection options
+ *
+ * 返回 WebsocketConnectionOptions。
+ */
 WebsocketConnectionOptions ChargePointImpl::get_ws_connection_options() {
     auto security_profile = this->configuration->getSecurityProfile();
     auto uri = Uri::parse_and_validate(this->configuration->getCentralSystemURI(),
@@ -425,24 +442,37 @@ WebsocketConnectionOptions ChargePointImpl::get_ws_connection_options() {
     return connection_options;
 }
 
+/**
+ * ChargePointImpl::connect_websocket - connect websocket
+ */
 void ChargePointImpl::connect_websocket() {
     if (!this->websocket->is_connected()) {
         this->websocket->start_connecting();
     }
 }
 
+/**
+ * ChargePointImpl::disconnect_websocket - disconnect websocket
+ */
 void ChargePointImpl::disconnect_websocket() {
     if (this->websocket->is_connected()) {
         this->websocket->disconnect(WebsocketCloseReason::Normal);
     }
 }
 
+/**
+ * ChargePointImpl::call_set_connection_timeout - call set connection timeout
+ */
 void ChargePointImpl::call_set_connection_timeout() {
     if (this->set_connection_timeout_callback != nullptr) {
         this->set_connection_timeout_callback(this->configuration->getConnectionTimeOut());
     }
 }
 
+/**
+ * ChargePointImpl::heartbeat - heartbeat
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::heartbeat(bool initiated_by_trigger_message) {
     EVLOG_debug << "Sending heartbeat";
     const HeartbeatRequest req;
@@ -451,6 +481,10 @@ void ChargePointImpl::heartbeat(bool initiated_by_trigger_message) {
     this->message_dispatcher->dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * ChargePointImpl::boot_notification - boot notification
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::boot_notification(bool initiated_by_trigger_message) {
     EVLOG_debug << "Sending BootNotification";
     BootNotificationRequest req;
@@ -468,6 +502,9 @@ void ChargePointImpl::boot_notification(bool initiated_by_trigger_message) {
     this->message_dispatcher->dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * ChargePointImpl::clock_aligned_meter_values_sample - clock aligned meter values sample
+ */
 void ChargePointImpl::clock_aligned_meter_values_sample() {
     EVLOG_debug << "Sending clock aligned meter values";
     for (std::int32_t connector = 1; connector < this->configuration->getNumberOfConnectors() + 1; connector++) {
@@ -485,16 +522,25 @@ void ChargePointImpl::clock_aligned_meter_values_sample() {
     }
 }
 
+/**
+ * ChargePointImpl::update_heartbeat_interval - update heartbeat interval
+ */
 void ChargePointImpl::update_heartbeat_interval() {
     this->heartbeat_timer->interval(std::chrono::seconds(this->configuration->getHeartbeatInterval()));
 }
 
+/**
+ * ChargePointImpl::update_meter_values_sample_interval - update meter values sample interval
+ */
 void ChargePointImpl::update_meter_values_sample_interval() {
     // TODO(kai): should we update the meter values for continuous monitoring here too?
     const std::int32_t interval = this->configuration->getMeterValueSampleInterval();
     this->transaction_handler->change_meter_values_sample_intervals(interval);
 }
 
+/**
+ * ChargePointImpl::update_clock_aligned_meter_values_interval - update clock aligned meter values interval
+ */
 void ChargePointImpl::update_clock_aligned_meter_values_interval() {
     const auto clock_aligned_data_interval = this->configuration->getClockAlignedDataInterval();
 
@@ -507,6 +553,10 @@ void ChargePointImpl::update_clock_aligned_meter_values_interval() {
     }
 }
 
+/**
+ * ChargePointImpl::try_resume_transactions - try resume transactions
+ * @resuming_session_ids: 传入的 resuming_session_ids
+ */
 void ChargePointImpl::try_resume_transactions(const std::set<std::string>& resuming_session_ids) {
     std::vector<ocpp::v16::TransactionEntry> transactions;
     try {
@@ -563,6 +613,9 @@ void ChargePointImpl::try_resume_transactions(const std::set<std::string>& resum
     }
 }
 
+/**
+ * ChargePointImpl::load_charging_profiles - load charging profiles
+ */
 void ChargePointImpl::load_charging_profiles() {
     try {
         auto profiles = this->database_handler->get_charging_profiles();
@@ -603,6 +656,14 @@ void ChargePointImpl::load_charging_profiles() {
     }
 }
 
+/**
+ * ChargePointImpl::get_latest_meter_value - get latest meter value
+ * @connector: 传入的 connector
+ * @values_of_interest: 传入的 values_of_interest
+ * @context: 传入的 context
+ *
+ * 返回 std::optional<MeterValue>。
+ */
 std::optional<MeterValue> ChargePointImpl::get_latest_meter_value(std::int32_t connector,
                                                                   std::vector<MeasurandWithPhase> values_of_interest,
                                                                   ReadingContext context) {
@@ -979,6 +1040,7 @@ std::optional<MeterValue> ChargePointImpl::get_latest_meter_value(std::int32_t c
 }
 
 namespace {
+/* get signed meter value */
 MeterValue get_signed_meter_value(const std::string& signed_value, const ReadingContext& context,
                                   const ocpp::DateTime& timestamp) {
     MeterValue meter_value;
@@ -993,6 +1055,12 @@ MeterValue get_signed_meter_value(const std::string& signed_value, const Reading
 }
 } // namespace
 
+/**
+ * ChargePointImpl::send_meter_value - send meter value
+ * @connector: 传入的 connector
+ * @meter_value: 传入的 meter_value
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::send_meter_value(std::int32_t connector, MeterValue meter_value,
                                        bool initiated_by_trigger_message) {
 
@@ -1032,6 +1100,12 @@ void ChargePointImpl::send_meter_value(std::int32_t connector, MeterValue meter_
     this->message_dispatcher->dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * ChargePointImpl::send_meter_value_on_pricing_trigger - send meter value on pricing trigger
+ * @connector_number: 传入的 connector_number
+ * @connector: 传入的 connector
+ * @measurement: 传入的 measurement
+ */
 void ChargePointImpl::send_meter_value_on_pricing_trigger(const std::int32_t connector_number,
                                                           std::shared_ptr<Connector> connector,
                                                           const Measurement& measurement) {
@@ -1104,6 +1178,10 @@ void ChargePointImpl::send_meter_value_on_pricing_trigger(const std::int32_t con
     }
 }
 
+/**
+ * ChargePointImpl::reset_pricing_triggers - reset pricing triggers
+ * @connector_number: 传入的 connector_number
+ */
 void ChargePointImpl::reset_pricing_triggers(const std::int32_t connector_number) {
     const std::shared_ptr<Connector> c = this->connectors.at(connector_number);
     c->last_triggered_metervalue_power_kw = std::nullopt;
@@ -1118,6 +1196,14 @@ void ChargePointImpl::reset_pricing_triggers(const std::int32_t connector_number
     }
 }
 
+/**
+ * ChargePointImpl::update_chargepoint_information - update chargepoint information
+ * @vendor: 传入的 vendor
+ * @model: 传入的 model
+ * @serialnumber: 传入的 serialnumber
+ * @chargebox_serialnumber: 传入的 chargebox_serialnumber
+ * @firmware_version: 传入的 firmware_version
+ */
 void ChargePointImpl::update_chargepoint_information(const std::string& vendor, const std::string& model,
                                                      const std::optional<std::string>& serialnumber,
                                                      const std::optional<std::string>& chargebox_serialnumber,
@@ -1126,16 +1212,33 @@ void ChargePointImpl::update_chargepoint_information(const std::string& vendor, 
                                                    firmware_version);
 }
 
+/**
+ * ChargePointImpl::update_modem_information - update modem information
+ * @iccid: 传入的 iccid
+ * @imsi: 传入的 imsi
+ */
 void ChargePointImpl::update_modem_information(const std::optional<std::string>& iccid,
                                                const std::optional<std::string>& imsi) {
     this->configuration->setChargepointModemInformation(iccid, imsi);
 }
 
+/**
+ * ChargePointImpl::update_meter_information - update meter information
+ * @meter_serialnumber: 传入的 meter_serialnumber
+ * @meter_type: 传入的 meter_type
+ */
 void ChargePointImpl::update_meter_information(const std::optional<std::string>& meter_serialnumber,
                                                const std::optional<std::string>& meter_type) {
     this->configuration->setChargepointMeterInformation(meter_serialnumber, meter_type);
 }
 
+/**
+ * ChargePointImpl::init - init
+ * @connector_status_map: 传入的 connector_status_map
+ * @resuming_session_ids: 传入的 resuming_session_ids
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::init(const std::map<int, ChargePointStatus>& connector_status_map,
                            const std::set<std::string>& resuming_session_ids) {
     // push transaction messages including SecurityEventNotification.req onto the message queue
@@ -1150,6 +1253,14 @@ bool ChargePointImpl::init(const std::map<int, ChargePointStatus>& connector_sta
     return true;
 }
 
+/**
+ * ChargePointImpl::start - start
+ * @connector_status_map: 传入的 connector_status_map
+ * @bootreason: 传入的 bootreason
+ * @resuming_session_ids: 传入的 resuming_session_ids
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::start(const std::map<int, ChargePointStatus>& connector_status_map, BootReasonEnum bootreason,
                             const std::set<std::string>& resuming_session_ids) {
     if (!this->initialized) {
@@ -1192,6 +1303,13 @@ bool ChargePointImpl::start(const std::map<int, ChargePointStatus>& connector_st
     return true;
 }
 
+/**
+ * ChargePointImpl::restart - restart
+ * @connector_status_map: 传入的 connector_status_map
+ * @bootreason: 传入的 bootreason
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::restart(const std::map<int, ChargePointStatus>& connector_status_map, BootReasonEnum bootreason) {
     if (this->stopped) {
         EVLOG_info << "Restarting OCPP Chargepoint";
@@ -1206,10 +1324,17 @@ bool ChargePointImpl::restart(const std::map<int, ChargePointStatus>& connector_
     return false;
 }
 
+/**
+ * ChargePointImpl::reset_state_machine - reset state machine
+ * @connector_status_map: 传入的 connector_status_map
+ */
 void ChargePointImpl::reset_state_machine(const std::map<int, ChargePointStatus>& connector_status_map) {
     this->status->reset(connector_status_map);
 }
 
+/**
+ * ChargePointImpl::change_all_connectors_to_unavailable_for_firmware_update - change all connectors to unavailable for firmware update
+ */
 void ChargePointImpl::change_all_connectors_to_unavailable_for_firmware_update() {
     std::map<std::int32_t, AvailabilityStatus> connector_availability_status;
 
@@ -1244,10 +1369,17 @@ void ChargePointImpl::change_all_connectors_to_unavailable_for_firmware_update()
     }
 }
 
+/**
+ * ChargePointImpl::stop_all_transactions - stop all transactions
+ */
 void ChargePointImpl::stop_all_transactions() {
     this->stop_all_transactions(Reason::Other);
 }
 
+/**
+ * ChargePointImpl::stop_all_transactions - stop all transactions
+ * @reason: 传入的 reason
+ */
 void ChargePointImpl::stop_all_transactions(Reason reason) {
     const std::int32_t number_of_connectors = this->configuration->getNumberOfConnectors();
     for (std::int32_t connector = 1; connector <= number_of_connectors; connector++) {
@@ -1257,6 +1389,11 @@ void ChargePointImpl::stop_all_transactions(Reason reason) {
     }
 }
 
+/**
+ * ChargePointImpl::stop - stop
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::stop() {
     if (!this->stopped) {
         EVLOG_info << "Stopping OCPP Chargepoint";
@@ -1307,6 +1444,9 @@ bool ChargePointImpl::stop() {
     EVLOG_info << "Terminating...";
 }
 
+/**
+ * ChargePointImpl::connected_callback - connected callback
+ */
 void ChargePointImpl::connected_callback() {
     this->switch_security_profile_callback = nullptr;
     switch (this->connection_state) {
@@ -1333,6 +1473,10 @@ void ChargePointImpl::connected_callback() {
     }
 }
 
+/**
+ * ChargePointImpl::message_callback - message callback
+ * @message: 已经组好的 JSON 报文
+ */
 void ChargePointImpl::message_callback(const std::string& message) {
     EVLOG_debug << "Received Message: " << message;
 
@@ -1479,6 +1623,10 @@ void ChargePointImpl::message_callback(const std::string& message) {
     }
 }
 
+/**
+ * ChargePointImpl::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void ChargePointImpl::handle_message(const EnhancedMessage<v16::MessageType>& message) {
     const auto& json_message = message.message;
     // lots of messages are allowed here
@@ -1661,6 +1809,10 @@ void ChargePointImpl::handle_message(const EnhancedMessage<v16::MessageType>& me
     }
 }
 
+/**
+ * ChargePointImpl::handleBootNotificationResponse - handleBootNotificationResponse
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void ChargePointImpl::handleBootNotificationResponse(ocpp::CallResult<BootNotificationResponse> call_result) {
     EVLOG_debug << "Received BootNotificationResponse: " << call_result.msg
                 << "\nwith messageId: " << call_result.uniqueId;
@@ -1732,6 +1884,12 @@ void ChargePointImpl::handleBootNotificationResponse(ocpp::CallResult<BootNotifi
     }
 }
 
+/**
+ * ChargePointImpl::preprocess_change_availability_request - preprocess change availability request
+ * @request: 传入的 request
+ * @response: 传入的 response
+ * @accepted_connector_availability_changes: 传入的 accepted_connector_availability_changes
+ */
 void ChargePointImpl::preprocess_change_availability_request(
     const ChangeAvailabilityRequest& request, ChangeAvailabilityResponse& response,
     std::vector<std::int32_t>& accepted_connector_availability_changes) {
@@ -1792,6 +1950,12 @@ void ChargePointImpl::preprocess_change_availability_request(
     }
 }
 
+/**
+ * ChargePointImpl::execute_connectors_availability_change - execute connectors availability change
+ * @changed_connectors: 传入的 changed_connectors
+ * @availability: 传入的 availability
+ * @persist: 传入的 persist
+ */
 void ChargePointImpl::execute_connectors_availability_change(const std::vector<std::int32_t>& changed_connectors,
                                                              const ocpp::v16::AvailabilityType availability,
                                                              bool persist) {
@@ -1823,6 +1987,10 @@ void ChargePointImpl::execute_connectors_availability_change(const std::vector<s
     }
 }
 
+/**
+ * ChargePointImpl::execute_queued_availability_change - execute queued availability change
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::execute_queued_availability_change(const std::int32_t connector) {
     bool change_queued = false;
     AvailabilityType connector_availability = AvailabilityType::Inoperative;
@@ -1994,10 +2162,21 @@ ChargePointImpl::set_configuration_key_internal(CiString<50> key, CiString<500> 
     return {result, response};
 }
 
+/**
+ * ChargePointImpl::set_powermeter_public_key - set powermeter public key
+ * @connector: 传入的 connector
+ * @public_key_pem: 传入的 public_key_pem
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::set_powermeter_public_key(const int32_t connector, const std::string& public_key_pem) {
     return this->configuration->setMeterPublicKey(connector, public_key_pem);
 }
 
+/**
+ * ChargePointImpl::handleChangeAvailabilityRequest - handleChangeAvailabilityRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleChangeAvailabilityRequest(ocpp::Call<ChangeAvailabilityRequest> call) {
     EVLOG_debug << "Received ChangeAvailabilityRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2018,6 +2197,10 @@ void ChargePointImpl::handleChangeAvailabilityRequest(ocpp::Call<ChangeAvailabil
     }
 }
 
+/**
+ * ChargePointImpl::handleChangeConfigurationRequest - handleChangeConfigurationRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleChangeConfigurationRequest(ocpp::Call<ChangeConfigurationRequest> call) {
     EVLOG_debug << "Received ChangeConfigurationRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2029,6 +2212,11 @@ void ChargePointImpl::handleChangeConfigurationRequest(ocpp::Call<ChangeConfigur
     }
 }
 
+/**
+ * ChargePointImpl::switchSecurityProfile - switchSecurityProfile
+ * @new_security_profile: 传入的 new_security_profile
+ * @max_connection_attempts: 传入的 max_connection_attempts
+ */
 void ChargePointImpl::switchSecurityProfile(std::int32_t new_security_profile, std::int32_t max_connection_attempts) {
     EVLOG_info << "Switching security profile from " << this->configuration->getSecurityProfile() << " to "
                << new_security_profile;
@@ -2052,6 +2240,10 @@ void ChargePointImpl::switchSecurityProfile(std::int32_t new_security_profile, s
         WEBSOCKET_INIT_DELAY);
 }
 
+/**
+ * ChargePointImpl::handleClearCacheRequest - handleClearCacheRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleClearCacheRequest(ocpp::Call<ClearCacheRequest> call) {
     EVLOG_debug << "Received ClearCacheRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2075,6 +2267,10 @@ void ChargePointImpl::handleClearCacheRequest(ocpp::Call<ClearCacheRequest> call
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleDataTransferRequest - handleDataTransferRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleDataTransferRequest(ocpp::Call<DataTransferRequest> call) {
     EVLOG_debug << "Received DataTransferRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2124,6 +2320,10 @@ void ChargePointImpl::handleDataTransferRequest(ocpp::Call<DataTransferRequest> 
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleGetConfigurationRequest - handleGetConfigurationRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleGetConfigurationRequest(ocpp::Call<GetConfigurationRequest> call) {
     EVLOG_debug << "Received GetConfigurationRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2132,6 +2332,10 @@ void ChargePointImpl::handleGetConfigurationRequest(ocpp::Call<GetConfigurationR
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleRemoteStartTransactionRequest - handleRemoteStartTransactionRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleRemoteStartTransactionRequest(ocpp::Call<RemoteStartTransactionRequest> call) {
     EVLOG_debug << "Received RemoteStartTransactionRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2243,6 +2447,12 @@ void ChargePointImpl::handleRemoteStartTransactionRequest(ocpp::Call<RemoteStart
     }
 }
 
+/**
+ * ChargePointImpl::validate_against_cache_entries - validate against cache entries
+ * @id_tag: 传入的 id_tag
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::validate_against_cache_entries(CiString<20> id_tag) {
     try {
         const auto cache_entry_opt = this->database_handler->get_authorization_cache_entry(id_tag);
@@ -2274,6 +2484,10 @@ bool ChargePointImpl::validate_against_cache_entries(CiString<20> id_tag) {
     }
 }
 
+/**
+ * ChargePointImpl::handleRemoteStopTransactionRequest - handleRemoteStopTransactionRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleRemoteStopTransactionRequest(ocpp::Call<RemoteStopTransactionRequest> call) {
     EVLOG_debug << "Received RemoteStopTransactionRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2293,6 +2507,10 @@ void ChargePointImpl::handleRemoteStopTransactionRequest(ocpp::Call<RemoteStopTr
     }
 }
 
+/**
+ * ChargePointImpl::handleResetRequest - handleResetRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleResetRequest(ocpp::Call<ResetRequest> call) {
     EVLOG_debug << "Received ResetRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2339,6 +2557,10 @@ void ChargePointImpl::handleResetRequest(ocpp::Call<ResetRequest> call) {
     }
 }
 
+/**
+ * ChargePointImpl::handleStartTransactionResponse - handleStartTransactionResponse
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void ChargePointImpl::handleStartTransactionResponse(ocpp::CallResult<StartTransactionResponse> call_result) {
 
     const StartTransactionResponse start_transaction_response = call_result.msg;
@@ -2390,6 +2612,10 @@ void ChargePointImpl::handleStartTransactionResponse(ocpp::CallResult<StartTrans
     }
 }
 
+/**
+ * ChargePointImpl::handleStopTransactionResponse - handleStopTransactionResponse
+ * @message: 已经组好的 JSON 报文
+ */
 void ChargePointImpl::handleStopTransactionResponse(const EnhancedMessage<v16::MessageType>& message) {
 
     const CallResult<StopTransactionResponse> call_result = message.message;
@@ -2435,6 +2661,10 @@ void ChargePointImpl::handleStopTransactionResponse(const EnhancedMessage<v16::M
     }
 }
 
+/**
+ * ChargePointImpl::handleUnlockConnectorRequest - handleUnlockConnectorRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleUnlockConnectorRequest(ocpp::Call<UnlockConnectorRequest> call) {
     EVLOG_debug << "Received UnlockConnectorRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     const std::lock_guard<std::mutex> lock(this->stop_transaction_mutex);
@@ -2461,12 +2691,20 @@ void ChargePointImpl::handleUnlockConnectorRequest(ocpp::Call<UnlockConnectorReq
     }
 }
 
+/**
+ * ChargePointImpl::handleHeartbeatResponse - handleHeartbeatResponse
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void ChargePointImpl::handleHeartbeatResponse(CallResult<HeartbeatResponse> call_result) {
     if (this->set_system_time_callback != nullptr) {
         this->set_system_time_callback(call_result.msg.currentTime.to_rfc3339());
     }
 }
 
+/**
+ * ChargePointImpl::handleSetChargingProfileRequest - handleSetChargingProfileRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleSetChargingProfileRequest(ocpp::Call<SetChargingProfileRequest> call) {
     EVLOG_debug << "Received SetChargingProfileRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2522,6 +2760,10 @@ void ChargePointImpl::handleSetChargingProfileRequest(ocpp::Call<SetChargingProf
     }
 }
 
+/**
+ * ChargePointImpl::handleGetCompositeScheduleRequest - handleGetCompositeScheduleRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleGetCompositeScheduleRequest(ocpp::Call<GetCompositeScheduleRequest> call) {
     EVLOG_debug << "Received GetCompositeScheduleRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2561,6 +2803,10 @@ void ChargePointImpl::handleGetCompositeScheduleRequest(ocpp::Call<GetCompositeS
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleClearChargingProfileRequest - handleClearChargingProfileRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleClearChargingProfileRequest(ocpp::Call<ClearChargingProfileRequest> call) {
     EVLOG_debug << "Received ClearChargingProfileRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2591,6 +2837,10 @@ void ChargePointImpl::handleClearChargingProfileRequest(ocpp::Call<ClearCharging
     }
 }
 
+/**
+ * ChargePointImpl::handleTriggerMessageRequest - handleTriggerMessageRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleTriggerMessageRequest(ocpp::Call<TriggerMessageRequest> call) {
     EVLOG_debug << "Received TriggerMessageRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2689,6 +2939,10 @@ void ChargePointImpl::handleTriggerMessageRequest(ocpp::Call<TriggerMessageReque
     }
 }
 
+/**
+ * ChargePointImpl::handleGetDiagnosticsRequest - handleGetDiagnosticsRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleGetDiagnosticsRequest(ocpp::Call<GetDiagnosticsRequest> call) {
     EVLOG_debug << "Received GetDiagnosticsRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     GetDiagnosticsResponse response;
@@ -2702,6 +2956,10 @@ void ChargePointImpl::handleGetDiagnosticsRequest(ocpp::Call<GetDiagnosticsReque
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleUpdateFirmwareRequest - handleUpdateFirmwareRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleUpdateFirmwareRequest(ocpp::Call<UpdateFirmwareRequest> call) {
     EVLOG_debug << "Received UpdateFirmwareRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     const UpdateFirmwareResponse response;
@@ -2712,6 +2970,10 @@ void ChargePointImpl::handleUpdateFirmwareRequest(ocpp::Call<UpdateFirmwareReque
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleExtendedTriggerMessageRequest - handleExtendedTriggerMessageRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleExtendedTriggerMessageRequest(ocpp::Call<ExtendedTriggerMessageRequest> call) {
     EVLOG_debug << "Received ExtendedTriggerMessageRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2809,6 +3071,11 @@ void ChargePointImpl::handleExtendedTriggerMessageRequest(ocpp::Call<ExtendedTri
     }
 }
 
+/**
+ * ChargePointImpl::sign_certificate - sign certificate
+ * @certificate_signing_use: 传入的 certificate_signing_use
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::sign_certificate(const ocpp::CertificateSigningUseEnum& certificate_signing_use,
                                        bool initiated_by_trigger_message) {
 
@@ -2857,6 +3124,9 @@ void ChargePointImpl::sign_certificate(const ocpp::CertificateSigningUseEnum& ce
     this->message_dispatcher->dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * ChargePointImpl::update_ocsp_cache - update ocsp cache
+ */
 void ChargePointImpl::update_ocsp_cache() {
     try {
         EVLOG_info << "Updating OCSP cache for V2G leaf certificates";
@@ -2871,6 +3141,10 @@ void ChargePointImpl::update_ocsp_cache() {
     }
 }
 
+/**
+ * ChargePointImpl::handleCertificateSignedRequest - handleCertificateSignedRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleCertificateSignedRequest(ocpp::Call<CertificateSignedRequest> call) {
     EVLOG_debug << "Received CertificateSignedRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -2903,6 +3177,10 @@ void ChargePointImpl::handleCertificateSignedRequest(ocpp::Call<CertificateSigne
     }
 }
 
+/**
+ * ChargePointImpl::handleGetInstalledCertificateIdsRequest - handleGetInstalledCertificateIdsRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleGetInstalledCertificateIdsRequest(ocpp::Call<GetInstalledCertificateIdsRequest> call) {
     EVLOG_debug << "Received GetInstalledCertificatesRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     GetInstalledCertificateIdsResponse response;
@@ -2937,6 +3215,10 @@ void ChargePointImpl::handleGetInstalledCertificateIdsRequest(ocpp::Call<GetInst
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleDeleteCertificateRequest - handleDeleteCertificateRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleDeleteCertificateRequest(ocpp::Call<DeleteCertificateRequest> call) {
     DeleteCertificateResponse response;
 
@@ -2952,6 +3234,10 @@ void ChargePointImpl::handleDeleteCertificateRequest(ocpp::Call<DeleteCertificat
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleInstallCertificateRequest - handleInstallCertificateRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleInstallCertificateRequest(ocpp::Call<InstallCertificateRequest> call) {
     InstallCertificateResponse response;
     response.status = InstallCertificateStatusEnumType::Rejected;
@@ -2983,6 +3269,10 @@ void ChargePointImpl::handleInstallCertificateRequest(ocpp::Call<InstallCertific
     }
 }
 
+/**
+ * ChargePointImpl::handleGetLogRequest - handleGetLogRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleGetLogRequest(ocpp::Call<GetLogRequest> call) {
     GetLogResponse response;
 
@@ -2997,6 +3287,10 @@ void ChargePointImpl::handleGetLogRequest(ocpp::Call<GetLogRequest> call) {
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleSignedUpdateFirmware - handleSignedUpdateFirmware
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleSignedUpdateFirmware(ocpp::Call<SignedUpdateFirmwareRequest> call) {
     EVLOG_debug << "Received SignedUpdateFirmwareRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     SignedUpdateFirmwareResponse response;
@@ -3019,6 +3313,14 @@ void ChargePointImpl::handleSignedUpdateFirmware(ocpp::Call<SignedUpdateFirmware
     }
 }
 
+/**
+ * ChargePointImpl::securityEventNotification - securityEventNotification
+ * @event_type: 传入的 event_type
+ * @tech_info: 传入的 tech_info
+ * @triggered_internally: 传入的 triggered_internally
+ * @critical: 传入的 critical
+ * @timestamp: 传入的 timestamp
+ */
 void ChargePointImpl::securityEventNotification(const CiString<50>& event_type,
                                                 const std::optional<CiString<255>>& tech_info,
                                                 const bool triggered_internally, const std::optional<bool>& critical,
@@ -3051,6 +3353,12 @@ void ChargePointImpl::securityEventNotification(const CiString<50>& event_type,
     }
 }
 
+/**
+ * ChargePointImpl::log_status_notification - log status notification
+ * @status: 传入的 status
+ * @requestId: 传入的 requestId
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::log_status_notification(UploadLogStatusEnumType status, int requestId,
                                               bool initiated_by_trigger_message) {
 
@@ -3073,6 +3381,12 @@ void ChargePointImpl::log_status_notification(UploadLogStatusEnumType status, in
     }
 }
 
+/**
+ * ChargePointImpl::signed_firmware_update_status_notification - signed firmware update status notification
+ * @status: 传入的 status
+ * @requestId: 传入的 requestId
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::signed_firmware_update_status_notification(FirmwareStatusEnumType status, int requestId,
                                                                  bool initiated_by_trigger_message) {
     EVLOG_debug << "Sending FirmwareUpdateStatusNotification with status"
@@ -3109,6 +3423,10 @@ void ChargePointImpl::signed_firmware_update_status_notification(FirmwareStatusE
     }
 }
 
+/**
+ * ChargePointImpl::handleReserveNowRequest - handleReserveNowRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleReserveNowRequest(ocpp::Call<ReserveNowRequest> call) {
     ReserveNowResponse response;
     response.status = ReservationStatus::Rejected;
@@ -3129,6 +3447,10 @@ void ChargePointImpl::handleReserveNowRequest(ocpp::Call<ReserveNowRequest> call
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleCancelReservationRequest - handleCancelReservationRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleCancelReservationRequest(ocpp::Call<CancelReservationRequest> call) {
     CancelReservationResponse response;
     response.status = CancelReservationStatus::Rejected;
@@ -3142,6 +3464,10 @@ void ChargePointImpl::handleCancelReservationRequest(ocpp::Call<CancelReservatio
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleSendLocalListRequest - handleSendLocalListRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleSendLocalListRequest(ocpp::Call<SendLocalListRequest> call) {
     EVLOG_debug << "Received SendLocalListRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -3196,6 +3522,10 @@ void ChargePointImpl::handleSendLocalListRequest(ocpp::Call<SendLocalListRequest
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handleGetLocalListVersionRequest - handleGetLocalListVersionRequest
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handleGetLocalListVersionRequest(ocpp::Call<GetLocalListVersionRequest> call) {
     EVLOG_debug << "Received GetLocalListVersionRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -3235,6 +3565,12 @@ void ChargePointImpl::handleGetLocalListVersionRequest(ocpp::Call<GetLocalListVe
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handle_set_user_price - handle set user price
+ * @msg: 传入的 msg
+ *
+ * 返回 DataTransferResponse。
+ */
 DataTransferResponse ChargePointImpl::handle_set_user_price(const std::optional<std::string>& msg) {
     std::optional<std::string> id_token = std::nullopt;
     DataTransferResponse response;
@@ -3318,6 +3654,13 @@ DataTransferResponse ChargePointImpl::handle_set_user_price(const std::optional<
     return response;
 }
 
+/**
+ * ChargePointImpl::handle_set_session_cost - handle set session cost
+ * @type: 传入的 type
+ * @message: 已经组好的 JSON 报文
+ *
+ * 返回 DataTransferResponse。
+ */
 DataTransferResponse ChargePointImpl::handle_set_session_cost(const RunningCostState& type,
                                                               const std::optional<std::string>& message) {
     DataTransferResponse response;
@@ -3391,6 +3734,11 @@ DataTransferResponse ChargePointImpl::handle_set_session_cost(const RunningCostS
     return session_cost_callback(cost, number_of_decimals);
 }
 
+/**
+ * ChargePointImpl::set_connector_trigger_metervalue_timer - set connector trigger metervalue timer
+ * @date_time: 传入的 date_time
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::set_connector_trigger_metervalue_timer(const DateTime& date_time,
                                                              std::shared_ptr<Connector> connector) {
     if (connector == nullptr) {
@@ -3441,6 +3789,10 @@ void ChargePointImpl::set_connector_trigger_metervalue_timer(const DateTime& dat
     connector->trigger_metervalue_at_time_timer->at(trigger_timepoint);
 }
 
+/**
+ * ChargePointImpl::set_time_offset_timer - set time offset timer
+ * @date_time: 传入的 date_time
+ */
 void ChargePointImpl::set_time_offset_timer(const std::string& date_time) {
     if (this->change_time_offset_timer != nullptr) {
         this->change_time_offset_timer->stop();
@@ -3463,6 +3815,17 @@ void ChargePointImpl::set_time_offset_timer(const std::string& date_time) {
     this->change_time_offset_timer->at(d.to_time_point());
 }
 
+/**
+ * ChargePointImpl::status_notification - status notification
+ * @connector: 传入的 connector
+ * @errorCode: 传入的 errorCode
+ * @status: 传入的 status
+ * @/: 见函数签名
+ * @info: 传入的 info
+ * @vendor_id: 传入的 vendor_id
+ * @vendor_error_code: 传入的 vendor_error_code
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::status_notification(const std::int32_t connector, const ChargePointErrorCode errorCode,
                                           const ChargePointStatus status, const ocpp::DateTime& /*timestamp*/,
                                           const std::optional<CiString<50>>& info,
@@ -3663,16 +4026,34 @@ ChargePointImpl::get_all_enhanced_composite_charging_schedules(const std::int32_
     return charging_schedules;
 }
 
+/**
+ * ChargePointImpl::is_pnc_enabled - is pnc enabled
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::is_pnc_enabled() {
     return (this->configuration->getSupportedFeatureProfilesSet().count(SupportedFeatureProfiles::PnC) != 0) and
            this->configuration->getISO15118PnCEnabled();
 }
 
+/**
+ * ChargePointImpl::is_iso15118_certificate_management_enabled - is iso15118 certificate management enabled
+ *
+ * 返回 bool。
+ */
 bool ChargePointImpl::is_iso15118_certificate_management_enabled() {
     return (this->configuration->getSupportedFeatureProfilesSet().count(SupportedFeatureProfiles::PnC) != 0) and
            this->configuration->getISO15118CertificateManagementEnabled();
 }
 
+/**
+ * ChargePointImpl::data_transfer_pnc_authorize - data transfer pnc authorize
+ * @emaid: 传入的 emaid
+ * @certificate: 传入的 certificate
+ * @iso15118_certificate_hash_data: 传入的 iso15118_certificate_hash_data
+ *
+ * 返回 ocpp::v2::AuthorizeResponse。
+ */
 ocpp::v2::AuthorizeResponse ChargePointImpl::data_transfer_pnc_authorize(
 
     const std::string& emaid, const std::optional<std::string>& certificate,
@@ -3842,6 +4223,9 @@ ocpp::v2::AuthorizeResponse ChargePointImpl::data_transfer_pnc_authorize(
     return authorize_response;
 }
 
+/**
+ * ChargePointImpl::data_transfer_pnc_sign_certificate - data transfer pnc sign certificate
+ */
 void ChargePointImpl::data_transfer_pnc_sign_certificate() {
 
     if (!this->configuration->getCpoName().has_value() and
@@ -3884,6 +4268,13 @@ void ChargePointImpl::data_transfer_pnc_sign_certificate() {
     this->message_dispatcher->dispatch_call(call);
 }
 
+/**
+ * ChargePointImpl::data_transfer_pnc_get_15118_ev_certificate - data transfer pnc get 15118 ev certificate
+ * @connector_id: 传入的 connector_id
+ * @exi_request: 传入的 exi_request
+ * @iso15118_schema_version: 传入的 iso15118_schema_version
+ * @certificate_action: 传入的 certificate_action
+ */
 void ChargePointImpl::data_transfer_pnc_get_15118_ev_certificate(
     const std::int32_t connector_id, const std::string& exi_request, const std::string& iso15118_schema_version,
     const ocpp::v2::CertificateActionEnum& certificate_action) {
@@ -3944,6 +4335,10 @@ void ChargePointImpl::data_transfer_pnc_get_15118_ev_certificate(
     }
 }
 
+/**
+ * ChargePointImpl::data_transfer_pnc_get_certificate_status - data transfer pnc get certificate status
+ * @ocsp_request_data: 传入的 ocsp_request_data
+ */
 void ChargePointImpl::data_transfer_pnc_get_certificate_status(const ocpp::v2::OCSPRequestData& ocsp_request_data) {
     EVLOG_info << "Requesting OCSP certificate Status";
 
@@ -4007,6 +4402,10 @@ void ChargePointImpl::data_transfer_pnc_get_certificate_status(const ocpp::v2::O
     }
 }
 
+/**
+ * ChargePointImpl::handle_data_transfer_pnc_trigger_message - handle data transfer pnc trigger message
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handle_data_transfer_pnc_trigger_message(Call<DataTransferRequest> call) {
     EVLOG_info << "Received Data Transfer TriggerMessage: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -4034,6 +4433,10 @@ void ChargePointImpl::handle_data_transfer_pnc_trigger_message(Call<DataTransfer
     }
 }
 
+/**
+ * ChargePointImpl::handle_data_transfer_pnc_certificate_signed - handle data transfer pnc certificate signed
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handle_data_transfer_pnc_certificate_signed(Call<DataTransferRequest> call) {
     EVLOG_info << "Received Data Transfer CertificateSignedRequest: " << call.msg
                << "\nwith messageId: " << call.uniqueId;
@@ -4101,6 +4504,10 @@ void ChargePointImpl::handle_data_transfer_pnc_certificate_signed(Call<DataTrans
     }
 }
 
+/**
+ * ChargePointImpl::handle_data_transfer_pnc_get_installed_certificates - handle data transfer pnc get installed certificates
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handle_data_transfer_pnc_get_installed_certificates(Call<DataTransferRequest> call) {
     EVLOG_debug << "Received Data Transfer GetInstalledCertificatesRequest: " << call.msg
                 << "\nwith messageId: " << call.uniqueId;
@@ -4154,6 +4561,10 @@ void ChargePointImpl::handle_data_transfer_pnc_get_installed_certificates(Call<D
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handle_data_transfer_delete_certificate - handle data transfer delete certificate
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handle_data_transfer_delete_certificate(Call<DataTransferRequest> call) {
     DataTransferResponse response;
 
@@ -4184,6 +4595,10 @@ void ChargePointImpl::handle_data_transfer_delete_certificate(Call<DataTransferR
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::handle_data_transfer_install_certificate - handle data transfer install certificate
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ChargePointImpl::handle_data_transfer_install_certificate(Call<DataTransferRequest> call) {
     DataTransferResponse response;
 
@@ -4212,6 +4627,14 @@ void ChargePointImpl::handle_data_transfer_install_certificate(Call<DataTransfer
     this->message_dispatcher->dispatch_call_result(call_result);
 }
 
+/**
+ * ChargePointImpl::data_transfer - data transfer
+ * @vendorId: 传入的 vendorId
+ * @messageId: 传入的 messageId
+ * @data: 传入的 data
+ *
+ * 返回 std::optional<DataTransferResponse>。
+ */
 std::optional<DataTransferResponse> ChargePointImpl::data_transfer(const CiString<255>& vendorId,
                                                                    const std::optional<CiString<50>>& messageId,
                                                                    const std::optional<std::string>& data) {
@@ -4256,6 +4679,12 @@ std::optional<DataTransferResponse> ChargePointImpl::data_transfer(const CiStrin
     return response;
 }
 
+/**
+ * ChargePointImpl::register_data_transfer_callback - register data transfer callback
+ * @vendorId: 传入的 vendorId
+ * @messageId: 传入的 messageId
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_data_transfer_callback(
     const CiString<255>& vendorId, const CiString<50>& messageId,
     const std::function<DataTransferResponse(const std::optional<std::string>& msg)>& callback) {
@@ -4263,11 +4692,20 @@ void ChargePointImpl::register_data_transfer_callback(
     this->data_transfer_callbacks[vendorId.get()][messageId.get()] = callback;
 }
 
+/**
+ * ChargePointImpl::register_data_transfer_callback - register data transfer callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_data_transfer_callback(
     const std::function<DataTransferResponse(const DataTransferRequest& request)>& callback) {
     this->data_transfer_callback = callback;
 }
 
+/**
+ * ChargePointImpl::on_meter_values - on meter values
+ * @connector: 传入的 connector
+ * @measurement: 传入的 measurement
+ */
 void ChargePointImpl::on_meter_values(std::int32_t connector, const Measurement& measurement) {
     // FIXME: fix measurement to also work with dc
     std::shared_ptr<Connector> c;
@@ -4281,6 +4719,11 @@ void ChargePointImpl::on_meter_values(std::int32_t connector, const Measurement&
     send_meter_value_on_pricing_trigger(connector, c, measurement);
 }
 
+/**
+ * ChargePointImpl::on_max_current_offered - on max current offered
+ * @connector: 传入的 connector
+ * @max_current: 传入的 max_current
+ */
 void ChargePointImpl::on_max_current_offered(std::int32_t connector, std::int32_t max_current) {
     const std::lock_guard<std::mutex> lock(measurement_mutex);
     // TODO(kai): uses power meter mutex because the reading context is similar, think about storing
@@ -4288,6 +4731,11 @@ void ChargePointImpl::on_max_current_offered(std::int32_t connector, std::int32_
     this->connectors.at(connector)->max_current_offered = max_current;
 }
 
+/**
+ * ChargePointImpl::on_max_power_offered - on max power offered
+ * @connector: 传入的 connector
+ * @max_power: 传入的 max_power
+ */
 void ChargePointImpl::on_max_power_offered(std::int32_t connector, std::int32_t max_power) {
     const std::lock_guard<std::mutex> lock(measurement_mutex);
     // TODO(kai): uses power meter mutex because the reading context is similar, think about storing
@@ -4295,6 +4743,10 @@ void ChargePointImpl::on_max_power_offered(std::int32_t connector, std::int32_t 
     this->connectors.at(connector)->max_power_offered = max_power;
 }
 
+/**
+ * ChargePointImpl::start_transaction - start transaction
+ * @transaction: 传入的 transaction
+ */
 void ChargePointImpl::start_transaction(std::shared_ptr<Transaction> transaction) {
 
     StartTransactionRequest req;
@@ -4331,6 +4783,13 @@ void ChargePointImpl::start_transaction(std::shared_ptr<Transaction> transaction
     }
 }
 
+/**
+ * ChargePointImpl::on_session_started - on session started
+ * @connector: 传入的 connector
+ * @session_id: 传入的 session_id
+ * @reason: 传入的 reason
+ * @session_logging_path: 传入的 session_logging_path
+ */
 void ChargePointImpl::on_session_started(std::int32_t connector, const std::string& session_id,
                                          const ocpp::SessionStartedReason reason,
                                          const std::optional<std::string>& session_logging_path) {
@@ -4350,6 +4809,11 @@ void ChargePointImpl::on_session_started(std::int32_t connector, const std::stri
     }
 }
 
+/**
+ * ChargePointImpl::on_session_stopped - on session stopped
+ * @connector: 传入的 connector
+ * @session_id: 传入的 session_id
+ */
 void ChargePointImpl::on_session_stopped(const std::int32_t connector, const std::string& session_id) {
     this->execute_queued_availability_change(connector);
 
@@ -4363,6 +4827,16 @@ void ChargePointImpl::on_session_stopped(const std::int32_t connector, const std
     }
 }
 
+/**
+ * ChargePointImpl::on_transaction_started - on transaction started
+ * @connector: 传入的 connector
+ * @session_id: 传入的 session_id
+ * @id_token: 传入的 id_token
+ * @meter_start: 传入的 meter_start
+ * @reservation_id: 传入的 reservation_id
+ * @timestamp: 传入的 timestamp
+ * @signed_meter_value: 传入的 signed_meter_value
+ */
 void ChargePointImpl::on_transaction_started(const std::int32_t& connector, const std::string& session_id,
                                              const std::string& id_token, const double meter_start,
                                              std::optional<std::int32_t> reservation_id,
@@ -4418,6 +4892,16 @@ void ChargePointImpl::on_transaction_started(const std::int32_t& connector, cons
     this->start_transaction(transaction);
 }
 
+/**
+ * ChargePointImpl::on_transaction_stopped - on transaction stopped
+ * @connector: 传入的 connector
+ * @session_id: 传入的 session_id
+ * @reason: 传入的 reason
+ * @timestamp: 传入的 timestamp
+ * @energy_wh_import: 传入的 energy_wh_import
+ * @id_tag_end: 传入的 id_tag_end
+ * @signed_meter_value: 传入的 signed_meter_value
+ */
 void ChargePointImpl::on_transaction_stopped(const std::int32_t connector, const std::string& session_id,
                                              const Reason& reason, ocpp::DateTime timestamp, float energy_wh_import,
                                              std::optional<CiString<20>> id_tag_end,
@@ -4457,6 +4941,12 @@ void ChargePointImpl::on_transaction_stopped(const std::int32_t connector, const
     reset_pricing_triggers(connector);
 }
 
+/**
+ * ChargePointImpl::stop_transaction - stop transaction
+ * @connector: 传入的 connector
+ * @reason: 传入的 reason
+ * @id_tag_end: 传入的 id_tag_end
+ */
 void ChargePointImpl::stop_transaction(std::int32_t connector, Reason reason, std::optional<CiString<20>> id_tag_end) {
     EVLOG_debug << "Called stop transaction with reason: " << conversions::reason_to_string(reason);
     StopTransactionRequest req;
@@ -4582,30 +5072,63 @@ ChargePointImpl::get_filtered_transaction_data(const std::shared_ptr<Transaction
     return filtered_transaction_data_vec;
 }
 
+/**
+ * ChargePointImpl::on_suspend_charging_ev - on suspend charging ev
+ * @connector: 传入的 connector
+ * @info: 传入的 info
+ */
 void ChargePointImpl::on_suspend_charging_ev(std::int32_t connector, const std::optional<CiString<50>> info) {
     this->status->submit_event(connector, FSMEvent::PauseChargingEV, ocpp::DateTime(), info);
 }
 
+/**
+ * ChargePointImpl::on_suspend_charging_evse - on suspend charging evse
+ * @connector: 传入的 connector
+ * @info: 传入的 info
+ */
 void ChargePointImpl::on_suspend_charging_evse(std::int32_t connector, const std::optional<CiString<50>> info) {
     this->status->submit_event(connector, FSMEvent::PauseChargingEVSE, ocpp::DateTime(), info);
 }
 
+/**
+ * ChargePointImpl::on_resume_charging - on resume charging
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_resume_charging(std::int32_t connector) {
     this->status->submit_event(connector, FSMEvent::StartCharging, ocpp::DateTime());
 }
 
+/**
+ * ChargePointImpl::on_error - on error
+ * @connector: 传入的 connector
+ * @error_info: 传入的 error_info
+ */
 void ChargePointImpl::on_error(std::int32_t connector, const ErrorInfo& error_info) {
     this->status->submit_error(connector, error_info);
 }
 
+/**
+ * ChargePointImpl::on_error_cleared - on error cleared
+ * @connector: 传入的 connector
+ * @uuid: 传入的 uuid
+ */
 void ChargePointImpl::on_error_cleared(std::int32_t connector, const std::string uuid) {
     this->status->submit_error_cleared(connector, uuid);
 }
 
+/**
+ * ChargePointImpl::on_all_errors_cleared - on all errors cleared
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_all_errors_cleared(std::int32_t connector) {
     this->status->submit_all_errors_cleared(connector);
 }
 
+/**
+ * ChargePointImpl::on_log_status_notification - on log status notification
+ * @request_id: 传入的 request_id
+ * @log_status: 传入的 log_status
+ */
 void ChargePointImpl::on_log_status_notification(std::int32_t request_id, std::string log_status) {
     // request id of -1 indicates a diagnostics status notification, else log status notification
     if (request_id != -1) {
@@ -4620,6 +5143,11 @@ void ChargePointImpl::on_log_status_notification(std::int32_t request_id, std::s
     }
 }
 
+/**
+ * ChargePointImpl::on_firmware_update_status_notification - on firmware update status notification
+ * @request_id: 传入的 request_id
+ * @firmware_update_status: 传入的 firmware_update_status
+ */
 void ChargePointImpl::on_firmware_update_status_notification(std::int32_t request_id,
                                                              const FirmwareStatusNotification firmware_update_status) {
     try {
@@ -4674,6 +5202,11 @@ void ChargePointImpl::on_firmware_update_status_notification(std::int32_t reques
     }
 }
 
+/**
+ * ChargePointImpl::diagnostic_status_notification - diagnostic status notification
+ * @status: 传入的 status
+ * @/: 见函数签名
+ */
 void ChargePointImpl::diagnostic_status_notification(DiagnosticsStatus status, bool /*initiated_by_trigger_message*/) {
     DiagnosticsStatusNotificationRequest req;
     req.status = status;
@@ -4689,6 +5222,11 @@ void ChargePointImpl::diagnostic_status_notification(DiagnosticsStatus status, b
     }
 }
 
+/**
+ * ChargePointImpl::firmware_status_notification - firmware status notification
+ * @status: 传入的 status
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ChargePointImpl::firmware_status_notification(FirmwareStatus status, bool initiated_by_trigger_message) {
 
     EVLOG_debug << "Received FirmwareUpdateStatusNotification with status"
@@ -4715,33 +5253,61 @@ void ChargePointImpl::firmware_status_notification(FirmwareStatus status, bool i
     }
 }
 
+/**
+ * ChargePointImpl::register_enable_evse_callback - register enable evse callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_enable_evse_callback(const std::function<bool(std::int32_t connector)>& callback) {
     this->enable_evse_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_disable_evse_callback - register disable evse callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_disable_evse_callback(const std::function<bool(std::int32_t connector)>& callback) {
     this->disable_evse_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_pause_charging_callback - register pause charging callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_pause_charging_callback(const std::function<bool(std::int32_t connector)>& callback) {
     this->pause_charging_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_resume_charging_callback - register resume charging callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_resume_charging_callback(const std::function<bool(std::int32_t connector)>& callback) {
     this->resume_charging_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_provide_token_callback - register provide token callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_provide_token_callback(
     const std::function<void(const std::string& id_token, std::vector<std::int32_t> referenced_connectors,
                              bool prevalidated)>& callback) {
     this->provide_token_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_stop_transaction_callback - register stop transaction callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_stop_transaction_callback(
     const std::function<bool(std::int32_t connector, Reason reason)>& callback) {
     this->stop_transaction_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_reserve_now_callback - register reserve now callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_reserve_now_callback(
     const std::function<ReservationStatus(std::int32_t reservation_id, std::int32_t connector,
                                           ocpp::DateTime expiryDate, CiString<20> idTag,
@@ -4749,72 +5315,132 @@ void ChargePointImpl::register_reserve_now_callback(
     this->reserve_now_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_cancel_reservation_callback - register cancel reservation callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_cancel_reservation_callback(
     const std::function<bool(std::int32_t connector)>& callback) {
     this->cancel_reservation_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_unlock_connector_callback - register unlock connector callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_unlock_connector_callback(
     const std::function<UnlockStatus(std::int32_t connector)>& callback) {
     this->unlock_connector_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_is_reset_allowed_callback - register is reset allowed callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_is_reset_allowed_callback(
     const std::function<bool(const ResetType& reset_type)>& callback) {
     this->is_reset_allowed_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_reset_callback - register reset callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_reset_callback(const std::function<void(const ResetType& reset_type)>& callback) {
     this->reset_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_set_system_time_callback - register set system time callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_set_system_time_callback(
     const std::function<void(const std::string& system_time)>& callback) {
     this->set_system_time_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_boot_notification_response_callback - register boot notification response callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_boot_notification_response_callback(
     const std::function<void(const BootNotificationResponse& boot_notification_response)>& callback) {
     this->boot_notification_response_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_signal_set_charging_profiles_callback - register signal set charging profiles callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_signal_set_charging_profiles_callback(const std::function<void()>& callback) {
     this->signal_set_charging_profiles_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_upload_diagnostics_callback - register upload diagnostics callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_upload_diagnostics_callback(
     const std::function<GetLogResponse(const GetDiagnosticsRequest& request)>& callback) {
     this->upload_diagnostics_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_update_firmware_callback - register update firmware callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_update_firmware_callback(
     const std::function<void(const UpdateFirmwareRequest msg)>& callback) {
     this->update_firmware_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_signed_update_firmware_callback - register signed update firmware callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_signed_update_firmware_callback(
     const std::function<UpdateFirmwareStatusEnumType(const SignedUpdateFirmwareRequest msg)>& callback) {
     this->signed_update_firmware_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_all_connectors_unavailable_callback - register all connectors unavailable callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_all_connectors_unavailable_callback(const std::function<void()>& callback) {
     this->all_connectors_unavailable_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_upload_logs_callback - register upload logs callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_upload_logs_callback(const std::function<GetLogResponse(GetLogRequest req)>& callback) {
     this->upload_logs_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_set_connection_timeout_callback - register set connection timeout callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_set_connection_timeout_callback(
     const std::function<void(std::int32_t connection_timeout)>& callback) {
     this->set_connection_timeout_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_connection_state_changed_callback - register connection state changed callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_connection_state_changed_callback(
     const std::function<void(bool is_connected)>& callback) {
     this->connection_state_changed_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_get_15118_ev_certificate_response_callback - register get 15118 ev certificate response callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_get_15118_ev_certificate_response_callback(
     const std::function<void(const std::int32_t connector,
                              const ocpp::v2::Get15118EVCertificateResponse& certificate_response,
@@ -4822,17 +5448,29 @@ void ChargePointImpl::register_get_15118_ev_certificate_response_callback(
     this->get_15118_ev_certificate_response_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_transaction_started_callback - register transaction started callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_transaction_started_callback(
     const std::function<void(const std::int32_t connector, const std::string& session_id)>& callback) {
     this->transaction_started_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_transaction_stopped_callback - register transaction stopped callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_transaction_stopped_callback(
     const std::function<void(const std::int32_t connector, const std::string& session_id,
                              const std::int32_t transaction_id)>& callback) {
     this->transaction_stopped_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_transaction_updated_callback - register transaction updated callback
+ * @id_tag_info: 传入的 id_tag_info
+ */
 void ChargePointImpl::register_transaction_updated_callback(
     const std::function<void(const std::int32_t connector, const std::string& session_id,
                              const std::int32_t transaction_id, const IdTagInfo& id_tag_info)>
@@ -4840,70 +5478,132 @@ void ChargePointImpl::register_transaction_updated_callback(
     this->transaction_updated_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_configuration_key_changed_callback - register configuration key changed callback
+ * @key: 传入的 key
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_configuration_key_changed_callback(
     const CiString<50>& key, const std::function<void(const KeyValue& key_value)>& callback) {
     this->configuration_key_changed_callbacks[key] = callback;
 }
 
+/**
+ * ChargePointImpl::register_generic_configuration_key_changed_callback - register generic configuration key changed callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_generic_configuration_key_changed_callback(
     const std::function<void(const KeyValue& key_value)>& callback) {
     this->generic_configuration_key_changed_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_security_event_callback - register security event callback
+ * @callback: 传入的 callback
+ */
 void ChargePointImpl::register_security_event_callback(
     const std::function<void(const std::string& type, const std::string& tech_info)>& callback) {
     this->security_event_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_is_token_reserved_for_connector_callback - register is token reserved for connector callback
+ * @id_token: 传入的 id_token
+ */
 void ChargePointImpl::register_is_token_reserved_for_connector_callback(
     const std::function<ocpp::ReservationCheckStatus(const std::int32_t connector, const std::string& id_token)>&
         callback) {
     this->is_token_reserved_for_connector_callback = callback;
 }
 
+/**
+ * ChargePointImpl::register_session_cost_callback - register session cost callback
+ * @number_of_decimals: 传入的 number_of_decimals
+ */
 void ChargePointImpl::register_session_cost_callback(
     const std::function<DataTransferResponse(const RunningCost& running_cost, const std::uint32_t number_of_decimals)>&
         session_cost_callback) {
     this->session_cost_callback = session_cost_callback;
 }
 
+/**
+ * ChargePointImpl::register_tariff_message_callback - register tariff message callback
+ * @tariff_message_callback: 传入的 tariff_message_callback
+ */
 void ChargePointImpl::register_tariff_message_callback(
     const std::function<DataTransferResponse(const TariffMessage& message)>& tariff_message_callback) {
     this->tariff_message_callback = tariff_message_callback;
 }
 
+/**
+ * ChargePointImpl::register_set_display_message_callback - register set display message callback
+ * @display_message: 传入的 display_message
+ */
 void ChargePointImpl::register_set_display_message_callback(
     const std::function<DataTransferResponse(const std::vector<DisplayMessage>& display_message)>
         set_display_message_callback) {
     this->set_display_message_callback = set_display_message_callback;
 }
 
+/**
+ * ChargePointImpl::on_reservation_start - on reservation start
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_reservation_start(std::int32_t connector) {
     this->status->submit_event(connector, FSMEvent::ReserveConnector, ocpp::DateTime());
 }
 
+/**
+ * ChargePointImpl::on_reservation_end - on reservation end
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_reservation_end(std::int32_t connector) {
     this->status->submit_event(connector, FSMEvent::ReservationEnd, ocpp::DateTime());
 }
 
+/**
+ * ChargePointImpl::on_enabled - on enabled
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_enabled(std::int32_t connector) {
     this->status->submit_event(connector, FSMEvent::BecomeAvailable, ocpp::DateTime());
 }
 
+/**
+ * ChargePointImpl::on_disabled - on disabled
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_disabled(std::int32_t connector) {
     this->status->submit_event(connector, FSMEvent::ChangeAvailabilityToUnavailable, ocpp::DateTime());
 }
 
+/**
+ * ChargePointImpl::on_plugin_timeout - on plugin timeout
+ * @connector: 传入的 connector
+ */
 void ChargePointImpl::on_plugin_timeout(std::int32_t connector) {
     this->status->submit_event(connector, FSMEvent::TransactionStoppedAndUserActionRequired, ocpp::DateTime(),
                                "ConnectionTimeout");
 }
 
+/**
+ * ChargePointImpl::on_security_event - on security event
+ * @event_type: 传入的 event_type
+ * @tech_info: 传入的 tech_info
+ * @critical: 传入的 critical
+ * @timestamp: 传入的 timestamp
+ */
 void ChargePointImpl::on_security_event(const CiString<50>& event_type, const std::optional<CiString<255>>& tech_info,
                                         const std::optional<bool>& critical, const std::optional<DateTime>& timestamp) {
     this->securityEventNotification(event_type, tech_info, false, critical, timestamp);
 }
 
+/**
+ * ChargePointImpl::on_change_availability - on change availability
+ * @request: 传入的 request
+ *
+ * 返回 ChangeAvailabilityResponse。
+ */
 ChangeAvailabilityResponse ChargePointImpl::on_change_availability(const ChangeAvailabilityRequest& request) {
     EVLOG_debug << "Received internal ChangeAvailabilityRequest for connector " << request.connectorId << " to state "
                 << conversions::availability_type_to_string(request.type);
@@ -4920,6 +5620,12 @@ ChangeAvailabilityResponse ChargePointImpl::on_change_availability(const ChangeA
     return response;
 }
 
+/**
+ * ChargePointImpl::get_configuration_key - get configuration key
+ * @request: 传入的 request
+ *
+ * 返回 GetConfigurationResponse。
+ */
 GetConfigurationResponse ChargePointImpl::get_configuration_key(const GetConfigurationRequest& request) {
     GetConfigurationResponse response;
     std::vector<KeyValue> configurationKey;
@@ -4956,6 +5662,13 @@ GetConfigurationResponse ChargePointImpl::get_configuration_key(const GetConfigu
     return response;
 }
 
+/**
+ * ChargePointImpl::set_configuration_key - set configuration key
+ * @key: 传入的 key
+ * @value: 传入的 value
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointImpl::set_configuration_key(CiString<50> key, CiString<500> value) {
     // const auto result = this->configuration->set(key, value);
     const auto [result, _] = set_configuration_key_internal(key, value, {});

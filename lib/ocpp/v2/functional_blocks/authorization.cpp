@@ -24,6 +24,7 @@ namespace {
 /// \return True if there is a duplicate.
 ///
 bool has_duplicate_in_list(const std::vector<ocpp::v2::AuthorizationData>& list);
+/* has no token info */
 bool has_no_token_info(const ocpp::v2::AuthorizationData& item);
 } // namespace
 
@@ -35,6 +36,9 @@ ocpp::v2::Authorization::~Authorization() {
     stop_auth_cache_cleanup_thread();
 }
 
+/**
+ * ocpp::v2::Authorization::start_auth_cache_cleanup_thread - start auth cache cleanup thread
+ */
 void ocpp::v2::Authorization::start_auth_cache_cleanup_thread() {
     if (!auth_cache_cleanup_handler_running) {
         auth_cache_cleanup_handler_running = true;
@@ -42,6 +46,10 @@ void ocpp::v2::Authorization::start_auth_cache_cleanup_thread() {
     }
 }
 
+/**
+ * ocpp::v2::Authorization::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void ocpp::v2::Authorization::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -104,6 +112,9 @@ ocpp::v2::Authorization::authorize_req(const IdToken id_token, const std::option
     }
 }
 
+/**
+ * ocpp::v2::Authorization::trigger_authorization_cache_cleanup - trigger authorization cache cleanup
+ */
 void ocpp::v2::Authorization::trigger_authorization_cache_cleanup() {
     {
         const std::scoped_lock lk(this->auth_cache_cleanup_mutex);
@@ -112,6 +123,9 @@ void ocpp::v2::Authorization::trigger_authorization_cache_cleanup() {
     this->auth_cache_cleanup_cv.notify_one();
 }
 
+/**
+ * ocpp::v2::Authorization::update_authorization_cache_size - update authorization cache size
+ */
 void ocpp::v2::Authorization::update_authorization_cache_size() {
     auto& auth_cache_size = ControllerComponentVariables::AuthCacheStorage;
     if (auth_cache_size.variable.has_value()) {
@@ -128,11 +142,21 @@ void ocpp::v2::Authorization::update_authorization_cache_size() {
     }
 }
 
+/**
+ * ocpp::v2::Authorization::is_auth_cache_ctrlr_enabled - is auth cache ctrlr enabled
+ *
+ * 返回 bool。
+ */
 bool ocpp::v2::Authorization::is_auth_cache_ctrlr_enabled() {
     return this->context.device_model.get_optional_value<bool>(ControllerComponentVariables::AuthCacheCtrlrEnabled)
         .value_or(false);
 }
 
+/**
+ * ocpp::v2::Authorization::authorization_cache_insert_entry - authorization cache insert entry
+ * @id_token_hash: 传入的 id_token_hash
+ * @id_token_info: 传入的 id_token_info
+ */
 void ocpp::v2::Authorization::authorization_cache_insert_entry(const std::string& id_token_hash,
                                                                const IdTokenInfo& id_token_info) {
     this->context.database_handler.authorization_cache_insert_entry(id_token_hash, id_token_info);
@@ -143,6 +167,10 @@ ocpp::v2::Authorization::authorization_cache_get_entry(const std::string& id_tok
     return this->context.database_handler.authorization_cache_get_entry(id_token_hash);
 }
 
+/**
+ * ocpp::v2::Authorization::authorization_cache_delete_entry - authorization cache delete entry
+ * @id_token_hash: 传入的 id_token_hash
+ */
 void ocpp::v2::Authorization::authorization_cache_delete_entry(const std::string& id_token_hash) {
     this->context.database_handler.authorization_cache_delete_entry(id_token_hash);
 }
@@ -403,6 +431,9 @@ ocpp::v2::Authorization::validate_token(const IdToken id_token, const std::optio
     return response;
 }
 
+/**
+ * ocpp::v2::Authorization::stop_auth_cache_cleanup_thread - stop auth cache cleanup thread
+ */
 void ocpp::v2::Authorization::stop_auth_cache_cleanup_thread() {
     if (this->auth_cache_cleanup_handler_running) {
         {
@@ -417,6 +448,10 @@ void ocpp::v2::Authorization::stop_auth_cache_cleanup_thread() {
     }
 }
 
+/**
+ * ocpp::v2::Authorization::handle_clear_cache_req - handle clear cache req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ocpp::v2::Authorization::handle_clear_cache_req(Call<ClearCacheRequest> call) {
     ClearCacheResponse response;
     response.status = ClearCacheStatusEnum::Rejected;
@@ -438,6 +473,9 @@ void ocpp::v2::Authorization::handle_clear_cache_req(Call<ClearCacheRequest> cal
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * ocpp::v2::Authorization::cache_cleanup_handler - cache cleanup handler
+ */
 void ocpp::v2::Authorization::cache_cleanup_handler() {
     // Run the update once so the ram variable gets initialized
     this->update_authorization_cache_size();
@@ -492,6 +530,10 @@ void ocpp::v2::Authorization::cache_cleanup_handler() {
     }
 }
 
+/**
+ * ocpp::v2::Authorization::handle_send_local_authorization_list_req - handle send local authorization list req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ocpp::v2::Authorization::handle_send_local_authorization_list_req(Call<SendLocalListRequest> call) {
     SendLocalListResponse response;
 
@@ -531,6 +573,10 @@ void ocpp::v2::Authorization::handle_send_local_authorization_list_req(Call<Send
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * ocpp::v2::Authorization::handle_get_local_authorization_list_version_req - handle get local authorization list version req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void ocpp::v2::Authorization::handle_get_local_authorization_list_version_req(Call<GetLocalListVersionRequest> call) {
     GetLocalListVersionResponse response;
 
@@ -607,6 +653,7 @@ ocpp::v2::Authorization::apply_local_authorization_list(const SendLocalListReque
 }
 
 namespace {
+/* has duplicate in list */
 bool has_duplicate_in_list(const std::vector<ocpp::v2::AuthorizationData>& list) {
     for (auto it1 = list.begin(); it1 != list.end(); ++it1) {
         for (auto it2 = it1 + 1; it2 != list.end(); ++it2) {
@@ -618,6 +665,7 @@ bool has_duplicate_in_list(const std::vector<ocpp::v2::AuthorizationData>& list)
     return false;
 }
 
+/* has no token info */
 bool has_no_token_info(const ocpp::v2::AuthorizationData& item) {
     return !item.idTokenInfo.has_value();
 };

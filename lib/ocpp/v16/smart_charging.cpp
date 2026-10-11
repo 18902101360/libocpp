@@ -23,6 +23,7 @@ namespace {
  * \param[in,out] map - the map containing charging profiles
  */
 template <class PROFILES>
+/* clear expired profiles */
 void clear_expired_profiles(const date::utc_clock::time_point& now, ocpp::v16::DatabaseHandler& db, PROFILES& map) {
     using ocpp::v16::ChargingProfileKindType;
 
@@ -66,6 +67,14 @@ void clear_expired_profiles(const date::utc_clock::time_point& now, ocpp::v16::D
 namespace ocpp {
 namespace v16 {
 
+/**
+ * validate_schedule - validate schedule
+ * @schedule: 传入的 schedule
+ * @charging_schedule_max_periods: 传入的 charging_schedule_max_periods
+ * @charging_schedule_allowed_charging_rate_units: 传入的 charging_schedule_allowed_charging_rate_units
+ *
+ * 返回 bool。
+ */
 bool validate_schedule(const ChargingSchedule& schedule, const int charging_schedule_max_periods,
                        const std::vector<ChargingRateUnit>& charging_schedule_allowed_charging_rate_units) {
 
@@ -108,6 +117,10 @@ SmartChargingHandler::SmartChargingHandler(std::map<std::int32_t, std::shared_pt
                                          hours(HOURS_PER_DAY));
 }
 
+/**
+ * SmartChargingHandler::clear_expired_profiles - clear expired profiles
+ * @now: 计算充电曲线时的当前时间
+ */
 void SmartChargingHandler::clear_expired_profiles(const date::utc_clock::time_point& now) {
     EVLOG_debug << "Scanning all installed profiles and clearing expired profiles";
 
@@ -124,6 +137,11 @@ void SmartChargingHandler::clear_expired_profiles(const date::utc_clock::time_po
     }
 }
 
+/**
+ * SmartChargingHandler::get_number_installed_profiles - get number installed profiles
+ *
+ * 返回 int。
+ */
 int SmartChargingHandler::get_number_installed_profiles() {
     int number = 0;
 
@@ -170,6 +188,7 @@ struct CompositeScheduleConfig {
     }
 };
 
+/* generate evse intermediates */
 std::vector<IntermediateProfile> generate_evse_intermediates(std::vector<ChargingProfile>&& evse_profiles,
                                                              const std::vector<ChargingProfile>& station_wide_profiles,
                                                              const ocpp::DateTime& start_time,
@@ -203,6 +222,17 @@ std::vector<IntermediateProfile> generate_evse_intermediates(std::vector<Chargin
 }
 } // namespace
 
+/**
+ * SmartChargingHandler::calculate_composite_schedule - calculate composite schedule
+ * @start_time: 传入的 start_time
+ * @end_time: 传入的 end_time
+ * @evse_id: 传入的 evse_id
+ * @charging_rate_unit: 传入的 charging_rate_unit
+ * @is_offline: 传入的 is_offline
+ * @simulate_transaction_active: 传入的 simulate_transaction_active
+ *
+ * 返回 ChargingSchedule。
+ */
 ChargingSchedule SmartChargingHandler::calculate_composite_schedule(const ocpp::DateTime& start_time,
                                                                     const ocpp::DateTime& end_time,
                                                                     const std::int32_t evse_id,
@@ -225,6 +255,17 @@ ChargingSchedule SmartChargingHandler::calculate_composite_schedule(const ocpp::
     return composite_schedule;
 }
 
+/**
+ * SmartChargingHandler::calculate_enhanced_composite_schedule - calculate enhanced composite schedule
+ * @start_time: 传入的 start_time
+ * @end_time: 传入的 end_time
+ * @evse_id: 传入的 evse_id
+ * @charging_rate_unit: 传入的 charging_rate_unit
+ * @is_offline: 传入的 is_offline
+ * @simulate_transaction_active: 传入的 simulate_transaction_active
+ *
+ * 返回 EnhancedChargingSchedule。
+ */
 EnhancedChargingSchedule SmartChargingHandler::calculate_enhanced_composite_schedule(
     const ocpp::DateTime& start_time, const ocpp::DateTime& end_time, const std::int32_t evse_id,
     ChargingRateUnit charging_rate_unit, bool is_offline, bool simulate_transaction_active) {
@@ -301,6 +342,18 @@ EnhancedChargingSchedule SmartChargingHandler::calculate_enhanced_composite_sche
     return composite;
 }
 
+/**
+ * SmartChargingHandler::validate_profile - validate profile
+ * @profile: 传入的 profile
+ * @connector_id: 传入的 connector_id
+ * @ignore_no_transaction: 传入的 ignore_no_transaction
+ * @profile_max_stack_level: 传入的 profile_max_stack_level
+ * @max_charging_profiles_installed: 传入的 max_charging_profiles_installed
+ * @charging_schedule_max_periods: 传入的 charging_schedule_max_periods
+ * @charging_schedule_allowed_charging_rate_units: 传入的 charging_schedule_allowed_charging_rate_units
+ *
+ * 返回 bool。
+ */
 bool SmartChargingHandler::validate_profile(
     ChargingProfile& profile, const int connector_id, bool ignore_no_transaction, const int profile_max_stack_level,
     const int max_charging_profiles_installed, const int charging_schedule_max_periods,
@@ -397,6 +450,10 @@ bool SmartChargingHandler::validate_profile(
     return true;
 }
 
+/**
+ * SmartChargingHandler::add_charge_point_max_profile - add charge point max profile
+ * @profile: 传入的 profile
+ */
 void SmartChargingHandler::add_charge_point_max_profile(const ChargingProfile& profile) {
     const std::lock_guard<std::mutex> lk(this->charge_point_max_profiles_map_mutex);
     this->stack_level_charge_point_max_profiles_map[profile.stackLevel] = profile;
@@ -407,6 +464,11 @@ void SmartChargingHandler::add_charge_point_max_profile(const ChargingProfile& p
     }
 }
 
+/**
+ * SmartChargingHandler::add_tx_default_profile - add tx default profile
+ * @profile: 传入的 profile
+ * @connector_id: 传入的 connector_id
+ */
 void SmartChargingHandler::add_tx_default_profile(const ChargingProfile& profile, const int connector_id) {
     const std::lock_guard<std::mutex> lk(this->tx_default_profiles_map_mutex);
     if (connector_id == 0) {
@@ -424,6 +486,11 @@ void SmartChargingHandler::add_tx_default_profile(const ChargingProfile& profile
     }
 }
 
+/**
+ * SmartChargingHandler::add_tx_profile - add tx profile
+ * @profile: 传入的 profile
+ * @connector_id: 传入的 connector_id
+ */
 void SmartChargingHandler::add_tx_profile(const ChargingProfile& profile, const int connector_id) {
     const std::lock_guard<std::mutex> lk(this->tx_profiles_map_mutex);
     this->connectors.at(connector_id)->stack_level_tx_profiles_map[profile.stackLevel] = profile;
@@ -434,6 +501,18 @@ void SmartChargingHandler::add_tx_profile(const ChargingProfile& profile, const 
     }
 }
 
+/**
+ * SmartChargingHandler::clear_profiles - clear profiles
+ * @stack_level_profiles_map: 传入的 stack_level_profiles_map
+ * @profile_id_opt: 传入的 profile_id_opt
+ * @connector_id_opt: 传入的 connector_id_opt
+ * @connector_id: 传入的 connector_id
+ * @stack_level_opt: 传入的 stack_level_opt
+ * @charging_profile_purpose_opt: 传入的 charging_profile_purpose_opt
+ * @check_id_only: 传入的 check_id_only
+ *
+ * 返回 bool。
+ */
 bool SmartChargingHandler::clear_profiles(std::map<std::int32_t, ChargingProfile>& stack_level_profiles_map,
                                           std::optional<int> profile_id_opt, std::optional<int> connector_id_opt,
                                           const int connector_id, std::optional<int> stack_level_opt,
@@ -470,6 +549,16 @@ bool SmartChargingHandler::clear_profiles(std::map<std::int32_t, ChargingProfile
     return erased_at_least_one;
 }
 
+/**
+ * SmartChargingHandler::clear_all_profiles_with_filter - clear all profiles with filter
+ * @profile_id_opt: 传入的 profile_id_opt
+ * @connector_id_opt: 传入的 connector_id_opt
+ * @stack_level_opt: 传入的 stack_level_opt
+ * @charging_profile_purpose_opt: 传入的 charging_profile_purpose_opt
+ * @check_id_only: 传入的 check_id_only
+ *
+ * 返回 bool。
+ */
 bool SmartChargingHandler::clear_all_profiles_with_filter(
     std::optional<int> profile_id_opt, std::optional<int> connector_id_opt, std::optional<int> stack_level_opt,
     std::optional<ChargingProfilePurposeType> charging_profile_purpose_opt, bool check_id_only) {
@@ -498,6 +587,9 @@ bool SmartChargingHandler::clear_all_profiles_with_filter(
     return erased_charge_point_max_profile or erased_at_least_one_tx_profile;
 }
 
+/**
+ * SmartChargingHandler::clear_all_profiles - clear all profiles
+ */
 void SmartChargingHandler::clear_all_profiles() {
     EVLOG_info << "Clearing all charging profiles";
     const std::lock_guard<std::mutex> lk_cp(this->charge_point_max_profiles_map_mutex);

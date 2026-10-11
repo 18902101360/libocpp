@@ -41,4 +41,10 @@ static const ocpp16_message_info_t k_table[OCPP16_MESSAGE_COUNT] = {
     { "SignedFirmwareStatusNotification", 1, 0 },
     { "SignedUpdateFirmware", 0, 1 },
 };
+/**
+ * ocpp16_message_table - 1.6 全部 action 以及谁发起 CALL
+ *
+ * from_cp 为 1 表示桩发 CALL，from_csms 为 1 表示平台发 CALL。
+ * DataTransfer 两边都能发起。返回的表是静态的，不要释放。
+ */
 const ocpp16_message_info_t *ocpp16_message_table(void) { return k_table; }

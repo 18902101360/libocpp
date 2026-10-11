@@ -49,6 +49,12 @@ template <typename T> T to_specific_type(const std::string& value) {
     }
 }
 
+/**
+ * to_specific_type_auto - to specific type auto
+ * @value: 传入的 value
+ *
+ * 返回 auto。
+ */
 template <DataEnum T> auto to_specific_type_auto(const std::string& value) {
     static_assert(T == DataEnum::string || T == DataEnum::integer || T == DataEnum::decimal ||
                       T == DataEnum::dateTime || T == DataEnum::boolean,
@@ -67,6 +73,11 @@ template <DataEnum T> auto to_specific_type_auto(const std::string& value) {
     }
 }
 
+/**
+ * is_type_numeric - is type numeric
+ *
+ * 返回 bool。
+ */
 template <DataEnum T> bool is_type_numeric() {
     static_assert(T == DataEnum::string || T == DataEnum::integer || T == DataEnum::decimal ||
                       T == DataEnum::dateTime || T == DataEnum::boolean || T == DataEnum::OptionList ||
@@ -80,6 +91,11 @@ template <DataEnum T> bool is_type_numeric() {
     }
 }
 
+/**
+ * filter_criteria_monitors - filter criteria monitors
+ * @criteria: 传入的 criteria
+ * @monitors: 传入的 monitors
+ */
 void filter_criteria_monitors(const std::vector<MonitoringCriterionEnum>& criteria,
                               std::vector<VariableMonitoringMeta>& monitors);
 

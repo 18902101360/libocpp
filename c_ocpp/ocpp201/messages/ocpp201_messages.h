@@ -67,5 +67,10 @@
 #include "ocpp201/messages/ocpp201_update_firmware.h"
 #define OCPP201_MESSAGE_COUNT 64
 typedef struct ocpp201_message_info { const char *action; int from_cp; int from_csms; } ocpp201_message_info_t;
+/**
+ * ocpp201_message_table - 2.0.1 全部 action，以及 CALL 由桩还是平台发起
+ *
+ * 返回静态表，不要释放。
+ */
 const ocpp201_message_info_t *ocpp201_message_table(void);
 #endif

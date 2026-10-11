@@ -15,10 +15,17 @@ ocpp::v2::MeterValues::MeterValues(const FunctionalBlockContext& functional_bloc
     context(functional_block_context) {
 }
 
+/**
+ * ocpp::v2::MeterValues::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void ocpp::v2::MeterValues::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     throw MessageTypeNotImplementedException(message.messageType);
 }
 
+/**
+ * ocpp::v2::MeterValues::update_aligned_data_interval - update aligned data interval
+ */
 void ocpp::v2::MeterValues::update_aligned_data_interval() {
     using namespace std::chrono_literals;
 
@@ -87,6 +94,11 @@ void ocpp::v2::MeterValues::update_aligned_data_interval() {
         interval, std::chrono::floor<date::days>(date::utc_clock::to_sys(date::utc_clock::now())));
 }
 
+/**
+ * ocpp::v2::MeterValues::on_meter_value - on meter value
+ * @evse_id: 传入的 evse_id
+ * @meter_value: 传入的 meter_value
+ */
 void ocpp::v2::MeterValues::on_meter_value(const std::int32_t evse_id, const MeterValue& meter_value) {
     if (evse_id == 0) {
         // if evseId = 0 then store in the chargepoint metervalues
@@ -107,6 +119,12 @@ ocpp::v2::MeterValues::get_latest_meter_value_filtered(const MeterValue& meter_v
     return filtered_meter_value;
 }
 
+/**
+ * ocpp::v2::MeterValues::meter_values_req - meter values req
+ * @evse_id: 传入的 evse_id
+ * @meter_values: 传入的 meter_values
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void ocpp::v2::MeterValues::meter_values_req(const std::int32_t evse_id, const std::vector<MeterValue>& meter_values,
                                              const bool initiated_by_trigger_message) {
     MeterValuesRequest req;

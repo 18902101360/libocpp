@@ -24,6 +24,12 @@ VariableMonitorType string_to_variable_monitor_type(const std::string& s) {
     throw std::out_of_range("Provided string " + s + " could not be converted to enum of type VariableMonitorType");
 }
 
+/**
+ * variable_monitor_type_to_event_notification_type - variable monitor type to event notification type
+ * @type: 传入的 type
+ *
+ * 返回 EventNotificationEnum。
+ */
 EventNotificationEnum variable_monitor_type_to_event_notification_type(const VariableMonitorType& type) {
     switch (type) {
     case VariableMonitorType::HardWiredMonitor:

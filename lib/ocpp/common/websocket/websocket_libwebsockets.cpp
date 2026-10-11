@@ -33,6 +33,7 @@ using namespace std::chrono_literals;
 namespace {
 std::optional<std::filesystem::path> keylog_file;
 
+/* keylog callback */
 void keylog_callback(const SSL* /*ssl*/, const char* line) {
     if (keylog_file.has_value()) {
         std::ofstream keylog_ofs;
@@ -272,6 +273,7 @@ public:
 };
 
 namespace {
+/* wildcard X509 check host */
 int wildcard_X509_check_host(bool allow_wildcards, X509* server_cert, const std::string& hostname) {
     if (allow_wildcards) {
         return X509_check_host(server_cert, hostname.c_str(), hostname.length(), X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS,
@@ -280,6 +282,7 @@ int wildcard_X509_check_host(bool allow_wildcards, X509* server_cert, const std:
     return X509_check_host(server_cert, hostname.c_str(), hostname.length(), X509_CHECK_FLAG_NO_WILDCARDS, nullptr);
 }
 
+/* verify csms cn */
 bool verify_csms_cn(const std::string& hostname, bool preverified, const X509_STORE_CTX* ctx, bool allow_wildcards) {
 
     // Error depth gives the depth in the chain (with 0 = leaf certificate) where
@@ -380,6 +383,10 @@ WebsocketLibwebsockets::~WebsocketLibwebsockets() {
     }
 }
 
+/**
+ * WebsocketLibwebsockets::set_connection_options - set connection options
+ * @connection_options: 传入的 connection_options
+ */
 void WebsocketLibwebsockets::set_connection_options(const WebsocketConnectionOptions& connection_options) {
     switch (connection_options.security_profile) { // `switch` used to lint on missing enum-values
     case security::SecurityProfile::OCPP_1_6_ONLY_UNSECURED_TRANSPORT_WITHOUT_BASIC_AUTHENTICATION:
@@ -418,6 +425,7 @@ void WebsocketLibwebsockets::set_connection_options(const WebsocketConnectionOpt
 }
 
 namespace {
+/* callback minimal */
 int callback_minimal(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
     // Get user safely, since on some callbacks (void *user) can be different than what we set
     if (wsi != nullptr) {
@@ -434,6 +442,7 @@ int callback_minimal(struct lws* wsi, enum lws_callback_reasons reason, void* us
     return 0;
 }
 
+/* private key callback */
 int private_key_callback(char* buf, int size, int /*rwflag*/, void* userdata) {
     const auto* password = static_cast<const std::string*>(userdata);
     const std::size_t max_pass_len = (size - 1); // we exclude the endline
@@ -451,6 +460,15 @@ constexpr auto local_protocol_name = "lws-everest-client";
 static const std::array<struct lws_protocols, 2> protocols = {
     {{local_protocol_name, callback_minimal, 0, 0, 0, nullptr, 0}, LWS_PROTOCOL_LIST_TERM}};
 
+/**
+ * WebsocketLibwebsockets::tls_init - tls init
+ * @ctx: 传入的 ctx
+ * @path_chain: 传入的 path_chain
+ * @path_key: 传入的 path_key
+ * @password: 传入的 password
+ *
+ * 返回 bool。
+ */
 bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chain, const std::string& path_key,
                                       std::optional<std::string>& password) {
     auto rc = SSL_CTX_set_cipher_list(ctx, this->connection_options.supported_ciphers_12.c_str());
@@ -567,6 +585,10 @@ bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chai
     return true;
 }
 
+/**
+ * WebsocketLibwebsockets::thread_websocket_message_recv_loop - thread websocket message recv loop
+ * @local_data: 传入的 local_data
+ */
 void WebsocketLibwebsockets::thread_websocket_message_recv_loop(std::shared_ptr<ConnectionData> local_data) {
     if (local_data == nullptr) {
         EVLOG_AND_THROW(std::runtime_error("Null 'ConnectionData' in message thread, fatal error!"));
@@ -604,6 +626,12 @@ void WebsocketLibwebsockets::thread_websocket_message_recv_loop(std::shared_ptr<
     EVLOG_debug << "Exit recv loop with ID: " << std::hex << std::this_thread::get_id();
 }
 
+/**
+ * WebsocketLibwebsockets::initialize_connection_options - initialize connection options
+ * @new_connection_data: 传入的 new_connection_data
+ *
+ * 返回 bool。
+ */
 bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<ConnectionData>& new_connection_data) {
     // lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG | LLL_PARSER | LLL_HEADER | LLL_EXT |
     //                          LLL_CLIENT | LLL_LATENCY | LLL_THREAD | LLL_USER, nullptr);
@@ -699,6 +727,10 @@ bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<Conne
     return true;
 }
 
+/**
+ * WebsocketLibwebsockets::thread_websocket_client_loop - thread websocket client loop
+ * @local_data: 传入的 local_data
+ */
 void WebsocketLibwebsockets::thread_websocket_client_loop(std::shared_ptr<ConnectionData> local_data) {
     if (local_data == nullptr) {
         EVLOG_AND_THROW(std::runtime_error("Null 'ConnectionData' in client thread, fatal error!"));
@@ -875,12 +907,18 @@ void WebsocketLibwebsockets::thread_websocket_client_loop(std::shared_ptr<Connec
     EVLOG_info << "Exit websocket client loop with ID: " << std::hex << std::this_thread::get_id();
 }
 
+/**
+ * WebsocketLibwebsockets::clear_all_queues - clear all queues
+ */
 void WebsocketLibwebsockets::clear_all_queues() {
     this->message_queue.clear();
     this->recv_buffered_message.clear();
     this->recv_message_queue.clear();
 }
 
+/**
+ * WebsocketLibwebsockets::safe_close_threads - safe close threads
+ */
 void WebsocketLibwebsockets::safe_close_threads() {
     // If we already have a connection attempt started for now shut it down first
     const std::shared_ptr<ConnectionData> local_conn_data = conn_data;
@@ -934,11 +972,21 @@ void WebsocketLibwebsockets::safe_close_threads() {
     }
 }
 
+/**
+ * WebsocketLibwebsockets::is_trying_to_connect - is trying to connect
+ *
+ * 返回 bool。
+ */
 bool WebsocketLibwebsockets::is_trying_to_connect() {
     const std::lock_guard lock(this->connection_mutex);
     return is_trying_to_connect_internal();
 }
 
+/**
+ * WebsocketLibwebsockets::is_trying_to_connect_internal - is trying to connect internal
+ *
+ * 返回 bool。
+ */
 bool WebsocketLibwebsockets::is_trying_to_connect_internal() {
     const std::shared_ptr<ConnectionData> local_conn_data = conn_data;
     return (local_conn_data != nullptr) && (local_conn_data->get_state() != EConnectionState::FINALIZED);
@@ -1002,11 +1050,21 @@ bool WebsocketLibwebsockets::start_connecting() {
     return true;
 }
 
+/**
+ * WebsocketLibwebsockets::close - close
+ * @code: 传入的 code
+ * @reason: 传入的 reason
+ */
 void WebsocketLibwebsockets::close(const WebsocketCloseReason code, const std::string& reason) {
     const std::lock_guard lock(this->connection_mutex);
     close_internal(code, reason);
 }
 
+/**
+ * WebsocketLibwebsockets::close_internal - close internal
+ * @code: 传入的 code
+ * @reason: 传入的 reason
+ */
 void WebsocketLibwebsockets::close_internal(const WebsocketCloseReason code, const std::string& reason) {
     const bool trying_connecting = is_trying_to_connect_internal() || this->m_is_connected;
 
@@ -1031,6 +1089,10 @@ void WebsocketLibwebsockets::close_internal(const WebsocketCloseReason code, con
     }
 }
 
+/**
+ * WebsocketLibwebsockets::reconnect - reconnect
+ * @delay: 传入的 delay
+ */
 void WebsocketLibwebsockets::reconnect(long delay) {
     const std::lock_guard lock(this->connection_mutex);
 
@@ -1060,6 +1122,7 @@ void WebsocketLibwebsockets::reconnect(long delay) {
 }
 
 namespace {
+/* send internal */
 bool send_internal(lws* wsi, WebsocketMessage* msg) {
     static std::vector<char> buff;
 
@@ -1110,6 +1173,9 @@ bool send_internal(lws* wsi, WebsocketMessage* msg) {
 }
 } // namespace
 
+/**
+ * WebsocketLibwebsockets::request_write - request write
+ */
 void WebsocketLibwebsockets::request_write() {
     if (this->m_is_connected) {
         const std::shared_ptr<ConnectionData> local_data = conn_data;
@@ -1124,6 +1190,10 @@ void WebsocketLibwebsockets::request_write() {
     }
 }
 
+/**
+ * WebsocketLibwebsockets::poll_message - poll message
+ * @msg: 传入的 msg
+ */
 void WebsocketLibwebsockets::poll_message(const std::shared_ptr<WebsocketMessage>& msg) {
     if (this->m_is_connected == false) {
         EVLOG_debug << "Trying to poll message without being connected!";
@@ -1178,6 +1248,9 @@ bool WebsocketLibwebsockets::send(const std::string& message) {
     return msg->message_sent;
 }
 
+/**
+ * WebsocketLibwebsockets::ping - ping
+ */
 void WebsocketLibwebsockets::ping() {
     if (!this->initialized()) {
         EVLOG_error << "Could not send ping because websocket is not properly initialized.";
@@ -1190,6 +1263,16 @@ void WebsocketLibwebsockets::ping() {
     poll_message(msg);
 }
 
+/**
+ * WebsocketLibwebsockets::process_callback - process callback
+ * @wsi_ptr: 传入的 wsi_ptr
+ * @callback_reason: 传入的 callback_reason
+ * @user: 传入的 user
+ * @in: 传入的 in
+ * @len: 传入的 len
+ *
+ * 返回 int。
+ */
 int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason, void* user, void* in, size_t len) {
     const auto reason = static_cast<lws_callback_reasons>(callback_reason);
 
@@ -1522,6 +1605,10 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
     return 0;
 }
 
+/**
+ * WebsocketLibwebsockets::on_conn_connected - on conn connected
+ * @/: 见函数签名
+ */
 void WebsocketLibwebsockets::on_conn_connected(ConnectionData* /*conn_data*/) {
     // Called on the websocket client thread
     EVLOG_info << "OCPP client successfully connected to server with version: " << this->connected_ocpp_version;
@@ -1550,6 +1637,10 @@ void WebsocketLibwebsockets::on_conn_connected(ConnectionData* /*conn_data*/) {
     });
 }
 
+/**
+ * WebsocketLibwebsockets::on_conn_close - on conn close
+ * @conn_data: 传入的 conn_data
+ */
 void WebsocketLibwebsockets::on_conn_close(ConnectionData* conn_data) {
     // Called on the websocket client thread
     EVLOG_info << "OCPP client closed connection to server";
@@ -1587,6 +1678,10 @@ void WebsocketLibwebsockets::on_conn_close(ConnectionData* conn_data) {
     conn_data->mark_stop_executed();
 }
 
+/**
+ * WebsocketLibwebsockets::on_conn_fail - on conn fail
+ * @/: 见函数签名
+ */
 void WebsocketLibwebsockets::on_conn_fail(ConnectionData* /*conn_data*/) {
     // Called on the websocket client thread
     EVLOG_error << "OCPP client connection to server failed";
@@ -1615,6 +1710,10 @@ void WebsocketLibwebsockets::on_conn_fail(ConnectionData* /*conn_data*/) {
     // lws_set_timeout(conn_data->get_conn(), (enum pending_timeout)1, LWS_TO_KILL_ASYNC);
 }
 
+/**
+ * WebsocketLibwebsockets::on_conn_message - on conn message
+ * @message: 已经组好的 JSON 报文
+ */
 void WebsocketLibwebsockets::on_conn_message(std::string&& message) {
     // Called on the websocket client thread
     if (!this->initialized()) {
@@ -1625,6 +1724,9 @@ void WebsocketLibwebsockets::on_conn_message(std::string&& message) {
     recv_message_queue.push(std::move(message));
 }
 
+/**
+ * WebsocketLibwebsockets::on_conn_writable - on conn writable
+ */
 void WebsocketLibwebsockets::on_conn_writable() {
     // Called on the websocket client thread
     if (!this->initialized() || !this->m_is_connected) {
@@ -1698,6 +1800,10 @@ void WebsocketLibwebsockets::on_conn_writable() {
     }
 }
 
+/**
+ * WebsocketLibwebsockets::push_deferred_callback - push deferred callback
+ * @callback: 传入的 callback
+ */
 void WebsocketLibwebsockets::push_deferred_callback(const std::function<void()>& callback) {
     if (!callback) {
         EVLOG_error << "Attempting to push stale callback in deferred queue!";
@@ -1707,6 +1813,9 @@ void WebsocketLibwebsockets::push_deferred_callback(const std::function<void()>&
     this->deferred_callback_queue.push(callback);
 }
 
+/**
+ * WebsocketLibwebsockets::thread_deferred_callback_queue - thread deferred callback queue
+ */
 void WebsocketLibwebsockets::thread_deferred_callback_queue() {
     while (true) {
         std::function<void()> callback;

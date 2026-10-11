@@ -415,7 +415,19 @@ enum class RunningCostState {
 };
 
 namespace conversions {
+/**
+ * string_to_running_cost_state - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @state: 传入的 state
+ *
+ * 返回 RunningCostState。
+ */
 RunningCostState string_to_running_cost_state(const std::string& state);
+/**
+ * running_cost_state_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @state: 传入的 state
+ *
+ * 返回 std::string。
+ */
 std::string running_cost_state_to_string(const RunningCostState& state);
 } // namespace conversions
 

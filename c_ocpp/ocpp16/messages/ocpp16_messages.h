@@ -51,6 +51,11 @@ typedef struct ocpp16_message_info {
     int from_csms;
 } ocpp16_message_info_t;
 
+/**
+ * ocpp16_message_table - 1.6 全部 action，以及 CALL 由桩还是平台发起
+ *
+ * 返回静态表，不要释放。from_cp / from_csms 为 1 表示该侧会发 CALL。
+ */
 const ocpp16_message_info_t *ocpp16_message_table(void);
 
 #endif

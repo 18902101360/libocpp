@@ -44,6 +44,10 @@ Diagnostics::Diagnostics(const FunctionalBlockContext& context, AuthorizationInt
             .value_or(false)) {
 }
 
+/**
+ * Diagnostics::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void Diagnostics::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -71,6 +75,10 @@ void Diagnostics::handle_message(const ocpp::EnhancedMessage<MessageType>& messa
     }
 }
 
+/**
+ * Diagnostics::notify_event_req - notify event req
+ * @events: 传入的 events
+ */
 void Diagnostics::notify_event_req(const std::vector<EventData>& events) {
     NotifyEventRequest req;
     req.eventData = events;
@@ -81,18 +89,32 @@ void Diagnostics::notify_event_req(const std::vector<EventData>& events) {
     this->context.message_dispatcher.dispatch_call(call);
 }
 
+/**
+ * Diagnostics::stop_monitoring - stop monitoring
+ */
 void Diagnostics::stop_monitoring() {
     monitoring_updater.stop_monitoring();
 }
 
+/**
+ * Diagnostics::start_monitoring - start monitoring
+ */
 void Diagnostics::start_monitoring() {
     monitoring_updater.start_monitoring();
 }
 
+/**
+ * Diagnostics::process_triggered_monitors - process triggered monitors
+ */
 void Diagnostics::process_triggered_monitors() {
     monitoring_updater.process_triggered_monitors();
 }
 
+/**
+ * Diagnostics::notify_customer_information_req - notify customer information req
+ * @data: 传入的 data
+ * @request_id: 传入的 request_id
+ */
 void Diagnostics::notify_customer_information_req(const std::string& data, const std::int32_t request_id) {
     size_t pos = 0;
     std::int32_t seq_no = 0;
@@ -115,6 +137,11 @@ void Diagnostics::notify_customer_information_req(const std::string& data, const
     }
 }
 
+/**
+ * Diagnostics::notify_monitoring_report_req - notify monitoring report req
+ * @request_id: 传入的 request_id
+ * @montoring_data: 传入的 montoring_data
+ */
 void Diagnostics::notify_monitoring_report_req(const int request_id, std::vector<MonitoringData>& montoring_data) {
     static constexpr std::int32_t MAXIMUM_VARIABLE_SEND = 10;
 
@@ -170,6 +197,10 @@ void Diagnostics::notify_monitoring_report_req(const int request_id, std::vector
     }
 }
 
+/**
+ * Diagnostics::handle_get_log_req - handle get log req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Diagnostics::handle_get_log_req(Call<GetLogRequest> call) {
     const GetLogResponse response = this->get_log_request_callback(call.msg);
 
@@ -177,6 +208,10 @@ void Diagnostics::handle_get_log_req(Call<GetLogRequest> call) {
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Diagnostics::handle_customer_information_req - handle customer information req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Diagnostics::handle_customer_information_req(Call<CustomerInformationRequest> call) {
     CustomerInformationResponse response;
     const auto& msg = call.msg;
@@ -219,6 +254,10 @@ void Diagnostics::handle_customer_information_req(Call<CustomerInformationReques
     }
 }
 
+/**
+ * Diagnostics::handle_set_monitoring_base_req - handle set monitoring base req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Diagnostics::handle_set_monitoring_base_req(Call<SetMonitoringBaseRequest> call) {
     SetMonitoringBaseResponse response;
     const auto& msg = call.msg;
@@ -256,6 +295,10 @@ void Diagnostics::handle_set_monitoring_base_req(Call<SetMonitoringBaseRequest> 
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Diagnostics::handle_set_monitoring_level_req - handle set monitoring level req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Diagnostics::handle_set_monitoring_level_req(Call<SetMonitoringLevelRequest> call) {
     SetMonitoringLevelResponse response;
     const auto& msg = call.msg;
@@ -285,6 +328,10 @@ void Diagnostics::handle_set_monitoring_level_req(Call<SetMonitoringLevelRequest
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Diagnostics::handle_set_variable_monitoring_req - handle set variable monitoring req
+ * @message: 已经组好的 JSON 报文
+ */
 void Diagnostics::handle_set_variable_monitoring_req(const EnhancedMessage<MessageType>& message) {
     const Call<SetVariableMonitoringRequest> call = message.call_message;
     SetVariableMonitoringResponse response;
@@ -318,6 +365,10 @@ void Diagnostics::handle_set_variable_monitoring_req(const EnhancedMessage<Messa
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Diagnostics::handle_get_monitoring_report_req - handle get monitoring report req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Diagnostics::handle_get_monitoring_report_req(Call<GetMonitoringReportRequest> call) {
     GetMonitoringReportResponse response;
     const auto& msg = call.msg;
@@ -358,6 +409,10 @@ void Diagnostics::handle_get_monitoring_report_req(Call<GetMonitoringReportReque
     }
 }
 
+/**
+ * Diagnostics::handle_clear_variable_monitoring_req - handle clear variable monitoring req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Diagnostics::handle_clear_variable_monitoring_req(Call<ClearVariableMonitoringRequest> call) {
     ClearVariableMonitoringResponse response;
     const auto& msg = call.msg;
@@ -372,6 +427,14 @@ void Diagnostics::handle_clear_variable_monitoring_req(Call<ClearVariableMonitor
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Diagnostics::get_customer_information - get customer information
+ * @customer_certificate: 传入的 customer_certificate
+ * @id_token: 传入的 id_token
+ * @customer_identifier: 传入的 customer_identifier
+ *
+ * 返回 std::string。
+ */
 std::string Diagnostics::get_customer_information(const std::optional<CertificateHashDataType> customer_certificate,
                                                   const std::optional<IdToken> id_token,
                                                   const std::optional<CiString<64>> customer_identifier) {
@@ -403,6 +466,12 @@ std::string Diagnostics::get_customer_information(const std::optional<Certificat
     return s.str();
 }
 
+/**
+ * Diagnostics::clear_customer_information - clear customer information
+ * @customer_certificate: 传入的 customer_certificate
+ * @id_token: 传入的 id_token
+ * @customer_identifier: 传入的 customer_identifier
+ */
 void Diagnostics::clear_customer_information(const std::optional<CertificateHashDataType> customer_certificate,
                                              const std::optional<IdToken> id_token,
                                              const std::optional<CiString<64>> customer_identifier) {
@@ -423,6 +492,10 @@ void Diagnostics::clear_customer_information(const std::optional<CertificateHash
     }
 }
 
+/**
+ * Diagnostics::throw_when_monitoring_not_available - throw when monitoring not available
+ * @type: 传入的 type
+ */
 void Diagnostics::throw_when_monitoring_not_available(const MessageType type) const {
     if (!is_monitoring_available) {
         throw MessageTypeNotImplementedException(type);

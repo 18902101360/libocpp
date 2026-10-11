@@ -1227,6 +1227,13 @@ const Variable Power = {"Power"};
 const Variable DCInputPhaseControl = {"DCInputPhaseControl", std::nullopt, std::nullopt};
 const Variable ISO15118EvseId = {"ISO15118EvseId"};
 
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable) {
     EVSE evse = {evse_id};
     const Component component = {"EVSE", evse};
@@ -1244,6 +1251,14 @@ const Variable AvailabilityState = {"AvailabilityState"};
 const Variable Type = {"ConnectorType"};
 const Variable SupplyPhases = {"SupplyPhases"};
 
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const std::int32_t connector_id,
                                          const Variable& variable) {
     EVSE evse = {evse_id, connector_id};
@@ -1267,36 +1282,73 @@ const Variable TxEndedInterval = {"TxEndedInterval"};
 const Variable TxUpdatedMeasurands = {"TxUpdatedMeasurands"};
 const Variable TxUpdatedInterval = {"TxUpdatedInterval"};
 
+/**
+ * get_v2x_tx_started_measurands - get v2x tx started measurands
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_started_measurands(const OperationModeEnum& mode) {
     Variable cv = V2xComponentVariables::TxStartedMeasurands;
     cv.instance = conversions::operation_mode_enum_to_string(mode);
     return cv;
 }
 
+/**
+ * get_v2x_tx_ended_measurands - get v2x tx ended measurands
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_ended_measurands(const OperationModeEnum& mode) {
     Variable cv = V2xComponentVariables::TxEndedMeasurands;
     cv.instance = conversions::operation_mode_enum_to_string(mode);
     return cv;
 }
 
+/**
+ * get_v2x_tx_ended_interval - get v2x tx ended interval
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_ended_interval(const OperationModeEnum& mode) {
     Variable cv = V2xComponentVariables::TxEndedInterval;
     cv.instance = conversions::operation_mode_enum_to_string(mode);
     return cv;
 }
 
+/**
+ * get_v2x_tx_updated_measurands - get v2x tx updated measurands
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_updated_measurands(const OperationModeEnum& mode) {
     Variable cv = V2xComponentVariables::TxUpdatedMeasurands;
     cv.instance = conversions::operation_mode_enum_to_string(mode);
     return cv;
 }
 
+/**
+ * get_v2x_tx_updated_interval - get v2x tx updated interval
+ * @mode: 传入的 mode
+ *
+ * 返回 Variable。
+ */
 Variable get_v2x_tx_updated_interval(const OperationModeEnum& mode) {
     Variable cv = V2xComponentVariables::TxUpdatedInterval;
     cv.instance = conversions::operation_mode_enum_to_string(mode);
     return cv;
 }
 
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable) {
     EVSE evse = {evse_id};
     const Component component = {"V2XChargingCtrlr", evse};
@@ -1317,6 +1369,13 @@ const Variable SeccId = {"SeccId"};
 const Variable CountryName = {"CountryName"};
 const Variable OrganizationName = {"OrganizationName"};
 
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable) {
     EVSE evse = {evse_id};
     const Component component = {"ISO15118Ctrlr", evse};
@@ -1337,11 +1396,24 @@ const Variable VehicleCertificateSubCa1 = {"VehicleCertificate", "SubCA1"};
 const Variable VehicleCertificateSubCa2 = {"VehicleCertificate", "SubCA2"};
 const Variable VehicleCertificateRoot = {"VehicleCertificate", "Root"};
 
+/**
+ * get_protocol_supported_by_ev - get protocol supported by ev
+ * @priority: 传入的 priority
+ *
+ * 返回 Variable。
+ */
 Variable get_protocol_supported_by_ev(const std::int32_t priority) {
     Variable protocol_supported_by_ev = {"ProtocolSupportedByEV", std::to_string(priority)};
     return protocol_supported_by_ev;
 }
 
+/**
+ * get_component_variable - get component variable
+ * @evse_id: 传入的 evse_id
+ * @variable: 传入的 variable
+ *
+ * 返回 ComponentVariable。
+ */
 ComponentVariable get_component_variable(const std::int32_t evse_id, const Variable& variable) {
     EVSE evse = {evse_id};
     const Component component = {"ConnectedEV", evse};

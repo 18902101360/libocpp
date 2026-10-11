@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v16 {
 
+/**
+ * SendLocalListRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string SendLocalListRequest::get_type() const {
     return "SendLocalList";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const SendLocalListRequest& k) {
     // the required parts of the message
     j = json{
@@ -32,6 +42,11 @@ void to_json(json& j, const SendLocalListRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, SendLocalListRequest& k) {
     // the required parts of the message
     k.listVersion = j.at("listVersion");
@@ -55,10 +70,20 @@ std::ostream& operator<<(std::ostream& os, const SendLocalListRequest& k) {
     return os;
 }
 
+/**
+ * SendLocalListResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string SendLocalListResponse::get_type() const {
     return "SendLocalListResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const SendLocalListResponse& k) {
     // the required parts of the message
     j = json{
@@ -67,6 +92,11 @@ void to_json(json& j, const SendLocalListResponse& k) {
     // the optional parts of the message
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, SendLocalListResponse& k) {
     // the required parts of the message
     k.status = conversions::string_to_update_status(j.at("status"));

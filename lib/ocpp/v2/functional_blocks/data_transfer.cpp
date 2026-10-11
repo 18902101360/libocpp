@@ -10,6 +10,10 @@
 namespace ocpp {
 namespace v2 {
 
+/**
+ * DataTransfer::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void DataTransfer::handle_message(const EnhancedMessage<MessageType>& message) {
     if (message.messageType != MessageType::DataTransfer) {
         throw MessageTypeNotImplementedException(message.messageType);
@@ -31,6 +35,14 @@ void DataTransfer::handle_message(const EnhancedMessage<MessageType>& message) {
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * DataTransfer::data_transfer_req - data transfer req
+ * @vendorId: 传入的 vendorId
+ * @messageId: 传入的 messageId
+ * @data: 传入的 data
+ *
+ * 返回 std::optional<DataTransferResponse>。
+ */
 std::optional<DataTransferResponse> DataTransfer::data_transfer_req(const CiString<255>& vendorId,
                                                                     const std::optional<CiString<50>>& messageId,
                                                                     const std::optional<json>& data) {
@@ -42,6 +54,12 @@ std::optional<DataTransferResponse> DataTransfer::data_transfer_req(const CiStri
     return this->data_transfer_req(req);
 }
 
+/**
+ * DataTransfer::data_transfer_req - data transfer req
+ * @request: 传入的 request
+ *
+ * 返回 std::optional<DataTransferResponse>。
+ */
 std::optional<DataTransferResponse> DataTransfer::data_transfer_req(const DataTransferRequest& request) {
     DataTransferResponse response;
     response.status = DataTransferStatusEnum::Rejected;

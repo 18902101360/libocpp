@@ -20,8 +20,10 @@ typedef struct {
     uint8_t buffer[64];
 } sha1_ctx;
 
+/* SHA-1 用的 32 位循环左移。 */
 static uint32_t rol(uint32_t v, int n) { return (v << n) | (v >> (32 - n)); }
 
+/* 装入 SHA-1 初始状态。只给握手的 Sec-WebSocket-Accept 用。 */
 static void sha1_init(sha1_ctx *c) {
     c->state[0] = 0x67452301u;
     c->state[1] = 0xEFCDAB89u;
@@ -31,6 +33,7 @@ static void sha1_init(sha1_ctx *c) {
     c->count[0] = c->count[1] = 0;
 }
 
+/* 压缩一个 64 字节块。 */
 static void sha1_block(sha1_ctx *c, const uint8_t *buf) {
     uint32_t w[80];
     for (int i = 0; i < 16; i++) {
@@ -71,6 +74,7 @@ static void sha1_block(sha1_ctx *c, const uint8_t *buf) {
     c->state[4] += e;
 }
 
+/* 把任意长度的数据送进 SHA-1。 */
 static void sha1_update(sha1_ctx *c, const uint8_t *data, size_t len) {
     uint32_t i = c->count[0];
     uint32_t j = (i >> 3) & 63;
@@ -100,6 +104,7 @@ static void sha1_update(sha1_ctx *c, const uint8_t *data, size_t len) {
     }
 }
 
+/* 结束 SHA-1，写出 20 字节摘要。 */
 static void sha1_final(sha1_ctx *c, uint8_t out[20]) {
     uint8_t finalcount[8];
     for (int i = 0; i < 8; i++) {
@@ -117,6 +122,7 @@ static void sha1_final(sha1_ctx *c, uint8_t out[20]) {
     }
 }
 
+/* 把 20 字节摘要编成握手需要的 Base64。 */
 static void b64_20(const uint8_t in[20], char out[29]) {
     static const char t[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int o = 0;
@@ -135,6 +141,7 @@ static void b64_20(const uint8_t in[20], char out[29]) {
     out[o] = 0;
 }
 
+/* 带超时的 recv。超时返回 0，对端关闭或出错返回 -1。 */
 static int timed_recv(int fd, void *buf, size_t n, int timeout_ms) {
     size_t got = 0;
     while (got < n) {
@@ -165,6 +172,7 @@ static int timed_recv(int fd, void *buf, size_t n, int timeout_ms) {
     return (int)got;
 }
 
+/* 把缓冲区写完。短写会继续，失败返回 -1。 */
 static int send_all(int fd, const void *buf, size_t n) {
     const char *p = buf;
     size_t off = 0;
@@ -178,6 +186,16 @@ static int send_all(int fd, const void *buf, size_t n) {
     return 0;
 }
 
+/**
+ * ws_connect - 作为充电桩连上 CSMS 的 WebSocket
+ * @c: 连接对象。成功后 fd 有效
+ * @host: 主机名或地址
+ * @port: TCP 端口
+ * @path: URL 路径，OCPP 里就是桩号，例如 /CP001
+ * @subprotocol: ocpp1.6 或 ocpp2.0.1。写进 Sec-WebSocket-Protocol
+ *
+ * 只完成 RFC6455 握手。返回 0 成功，-1 失败。这个文件不进单片机固件。
+ */
 int ws_connect(ws_conn_t *c, const char *host, int port, const char *path, const char *subprotocol) {
     memset(c, 0, sizeof(*c));
     c->fd = -1;
@@ -276,6 +294,14 @@ int ws_connect(ws_conn_t *c, const char *host, int port, const char *path, const
     return 0;
 }
 
+/**
+ * ws_send_text - 发一条 WebSocket 文本帧
+ * @c: 已连接的对象
+ * @data: UTF-8 文本，不要求以 NUL 结尾
+ * @len: 字节数
+ *
+ * 客户端帧必须掩码。返回 0 成功，-1 表示发送失败。
+ */
 int ws_send_text(ws_conn_t *c, const void *data, size_t len) {
     if (c == NULL || c->fd < 0) {
         return -1;
@@ -321,6 +347,16 @@ int ws_send_text(ws_conn_t *c, const void *data, size_t len) {
     return 0;
 }
 
+/**
+ * ws_recv_text - 读一条 WebSocket 文本帧
+ * @c: 已连接的对象
+ * @buf: 输出缓冲
+ * @buflen: buf 容量，含结尾 NUL 的位置
+ * @timeout_ms: 等待毫秒。0 表示一直等
+ *
+ * 返回写入 buf 的字节数。超时返回 0，关闭或错误返回 -1。
+ * Ping 会自动回 Pong，不返回给调用方。
+ */
 int ws_recv_text(ws_conn_t *c, char *buf, size_t buflen, int timeout_ms) {
     if (c == NULL || c->fd < 0) {
         return -1;
@@ -384,6 +420,10 @@ int ws_recv_text(ws_conn_t *c, char *buf, size_t buflen, int timeout_ms) {
     }
 }
 
+/**
+ * ws_close - 关闭套接字
+ * @c: 连接。NULL 或已经关闭时什么都不做
+ */
 void ws_close(ws_conn_t *c) {
     if (c && c->fd >= 0) {
         close(c->fd);

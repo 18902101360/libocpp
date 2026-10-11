@@ -10,6 +10,11 @@ namespace ocpp {
 
 namespace v2 {
 
+/**
+ * EnhancedTransaction::get_transaction - get transaction
+ *
+ * 返回 Transaction。
+ */
 Transaction EnhancedTransaction::get_transaction() {
     Transaction transaction;
     transaction.transactionId = this->transactionId;
@@ -20,6 +25,11 @@ Transaction EnhancedTransaction::get_transaction() {
     return transaction;
 }
 
+/**
+ * EnhancedTransaction::get_seq_no - get seq no
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t EnhancedTransaction::get_seq_no() {
     this->seq_no += 1;
     if (this->database_enabled) {
@@ -32,6 +42,10 @@ std::int32_t EnhancedTransaction::get_seq_no() {
     return this->seq_no - 1;
 }
 
+/**
+ * EnhancedTransaction::update_charging_state - update charging state
+ * @charging_state: 传入的 charging_state
+ */
 void EnhancedTransaction::update_charging_state(const ChargingStateEnum charging_state) {
     this->chargingState = charging_state;
     if (this->database_enabled) {
@@ -43,6 +57,9 @@ void EnhancedTransaction::update_charging_state(const ChargingStateEnum charging
     }
 }
 
+/**
+ * EnhancedTransaction::set_id_token_sent - set id token sent
+ */
 void EnhancedTransaction::set_id_token_sent() {
     this->id_token_sent = true;
     if (this->database_enabled) {

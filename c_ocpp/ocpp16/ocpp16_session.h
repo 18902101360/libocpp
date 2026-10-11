@@ -77,8 +77,10 @@ typedef struct ocpp16_session {
     ocpp_link_t link;                 /* 本路 send / 心跳槽 / accept_control */
     ocpp16_handlers_t handlers;
     unsigned seq;                     /* 发出 CALL 的 uniqueId 计数，从 1 起 */
-    int registered;                   /* 收到 BootNotification.conf 后置 1 */
-    int heartbeat_interval_s;         /* 来自 Boot conf.interval，默认 300 */
+    int registered;                   /* 仅 Boot status 为 Accepted 时置 1 */
+    int heartbeat_interval_s;         /* Accepted 时是心跳秒数；Pending/Rejected 时是重试秒数 */
+    int has_boot_req;                 /* 保存过 Boot 请求，Pending/Rejected 到点后重发 */
+    ocpp16_boot_notification_req_t boot_req;
     struct { int used; char uid[37]; char action[48]; } pending[OCPP16_PENDING_MAX];
     char payload[OCPP_PAYLOAD_MAX];
     char frame[OCPP_FRAME_MAX];
@@ -88,23 +90,135 @@ typedef struct ocpp16_session {
 void ocpp16_session_init(ocpp16_session_t *s, const ocpp16_handlers_t *h, const ocpp_link_t *link);
 /** 运行时换链路或改 accept_control（主备切换）。 */
 void ocpp16_session_bind(ocpp16_session_t *s, const ocpp_link_t *link);
-/** WS 收齐一帧后调用。内部会 arena_reset。 */
+/** 喂入完整一帧。返回前释放 unpack 摘出的 payload。不要传半包。 */
 ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len);
 /** 发任意 action 的 CALL；uniqueId 由 seq 生成并记入 pending。 */
 ocpp_err_t ocpp16_session_call(ocpp16_session_t *s, const char *action, const char *payload_json);
+/**
+ * ocpp16_session_send_authorize - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_authorize(ocpp16_session_t *s, const ocpp16_authorize_req_t *req);
+/**
+ * ocpp16_session_send_boot_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_boot_notification(ocpp16_session_t *s, const ocpp16_boot_notification_req_t *req);
+/**
+ * ocpp16_session_send_data_transfer - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_data_transfer(ocpp16_session_t *s, const ocpp16_data_transfer_req_t *req);
+/**
+ * ocpp16_session_send_diagnostics_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_diagnostics_status_notification(ocpp16_session_t *s, const ocpp16_diagnostics_status_notification_req_t *req);
+/**
+ * ocpp16_session_send_firmware_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_firmware_status_notification(ocpp16_session_t *s, const ocpp16_firmware_status_notification_req_t *req);
+/**
+ * ocpp16_session_send_heartbeat - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_heartbeat(ocpp16_session_t *s, const ocpp16_heartbeat_req_t *req);
+/**
+ * ocpp16_session_send_meter_values - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_meter_values(ocpp16_session_t *s, const ocpp16_meter_values_req_t *req);
+/**
+ * ocpp16_session_send_start_transaction - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_start_transaction(ocpp16_session_t *s, const ocpp16_start_transaction_req_t *req);
+/**
+ * ocpp16_session_send_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_status_notification(ocpp16_session_t *s, const ocpp16_status_notification_req_t *req);
+/**
+ * ocpp16_session_send_stop_transaction - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_stop_transaction(ocpp16_session_t *s, const ocpp16_stop_transaction_req_t *req);
+/**
+ * ocpp16_session_send_log_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_log_status_notification(ocpp16_session_t *s, const ocpp16_log_status_notification_req_t *req);
+/**
+ * ocpp16_session_send_security_event_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_security_event_notification(ocpp16_session_t *s, const ocpp16_security_event_notification_req_t *req);
+/**
+ * ocpp16_session_send_sign_certificate - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_sign_certificate(ocpp16_session_t *s, const ocpp16_sign_certificate_req_t *req);
+/**
+ * ocpp16_session_send_signed_firmware_status_notification - 桩发出对应的 OCPP CALL
+ * @s: 本路会话，里面的 link.send 必须已经能写 WebSocket
+ * @req: 已填好的请求。函数会把它编进 s->payload
+ *
+ * 成功返回 OCPP_OK。encode 失败、pending 表满或 send 失败时返回负的 ocpp_err_t。
+ * 对端 CALLRESULT 由 session_rx 按 uniqueId 分发到 *_conf 回调。
+ */
 ocpp_err_t ocpp16_session_send_signed_firmware_status_notification(ocpp16_session_t *s, const ocpp16_signed_firmware_status_notification_req_t *req);
 
 #ifdef __cplusplus

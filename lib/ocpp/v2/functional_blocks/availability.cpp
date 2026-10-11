@@ -29,6 +29,10 @@ Availability::~Availability() {
     }
 }
 
+/**
+ * Availability::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void Availability::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -41,6 +45,13 @@ void Availability::handle_message(const ocpp::EnhancedMessage<MessageType>& mess
     }
 }
 
+/**
+ * Availability::status_notification_req - status notification req
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @status: 传入的 status
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void Availability::status_notification_req(const std::int32_t evse_id, const std::int32_t connector_id,
                                            const ConnectorStatusEnum status, const bool initiated_by_trigger_message) {
     StatusNotificationRequest req;
@@ -53,6 +64,10 @@ void Availability::status_notification_req(const std::int32_t evse_id, const std
     this->context.message_dispatcher.dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * Availability::heartbeat_req - heartbeat req
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void Availability::heartbeat_req(const bool initiated_by_trigger_message) {
     const HeartbeatRequest req;
 
@@ -61,6 +76,10 @@ void Availability::heartbeat_req(const bool initiated_by_trigger_message) {
     this->context.message_dispatcher.dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * Availability::handle_scheduled_change_availability_requests - handle scheduled change availability requests
+ * @evse_id: 传入的 evse_id
+ */
 void Availability::handle_scheduled_change_availability_requests(const std::int32_t evse_id) {
     if (this->scheduled_change_availability_requests.count(evse_id) != 0) {
         EVLOG_info << "Found scheduled ChangeAvailability.req for evse_id:" << evse_id;
@@ -81,19 +100,35 @@ void Availability::handle_scheduled_change_availability_requests(const std::int3
     }
 }
 
+/**
+ * Availability::set_scheduled_change_availability_requests - set scheduled change availability requests
+ * @evse_id: 传入的 evse_id
+ * @availability_change: 传入的 availability_change
+ */
 void Availability::set_scheduled_change_availability_requests(const std::int32_t evse_id,
                                                               AvailabilityChange availability_change) {
     this->scheduled_change_availability_requests[evse_id] = availability_change;
 }
 
+/**
+ * Availability::set_heartbeat_timer_interval - set heartbeat timer interval
+ * @interval: 传入的 interval
+ */
 void Availability::set_heartbeat_timer_interval(const std::chrono::seconds& interval) {
     this->heartbeat_timer.interval([this]() { this->heartbeat_req(); }, interval);
 }
 
+/**
+ * Availability::stop_heartbeat_timer - stop heartbeat timer
+ */
 void Availability::stop_heartbeat_timer() {
     this->heartbeat_timer.stop();
 }
 
+/**
+ * Availability::handle_change_availability_req - handle change availability req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Availability::handle_change_availability_req(Call<ChangeAvailabilityRequest> call) {
     const auto msg = call.msg;
     ChangeAvailabilityResponse response;
@@ -167,6 +202,10 @@ void Availability::handle_change_availability_req(Call<ChangeAvailabilityRequest
     }
 }
 
+/**
+ * Availability::handle_heartbeat_response - handle heartbeat response
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Availability::handle_heartbeat_response(CallResult<HeartbeatResponse> call) {
     if (this->time_sync_callback.has_value() and
         this->context.device_model.get_value<std::string>(ControllerComponentVariables::TimeSource).find("Heartbeat") !=
@@ -179,6 +218,12 @@ void Availability::handle_heartbeat_response(CallResult<HeartbeatResponse> call)
     }
 }
 
+/**
+ * Availability::is_already_in_state - is already in state
+ * @request: 传入的 request
+ *
+ * 返回 bool。
+ */
 bool Availability::is_already_in_state(const ChangeAvailabilityRequest& request) {
     // TODO: This checks against the individual status setting. What about effective/persisted status?
     if (!request.evse.has_value()) {
@@ -196,6 +241,11 @@ bool Availability::is_already_in_state(const ChangeAvailabilityRequest& request)
                 request.evse.value().id, request.evse.value().connectorId.value()) == request.operationalStatus);
 }
 
+/**
+ * Availability::execute_change_availability_request - execute change availability request
+ * @request: 传入的 request
+ * @persist: 传入的 persist
+ */
 void Availability::execute_change_availability_request(ChangeAvailabilityRequest request, bool persist) {
     if (request.evse.has_value()) {
         if (request.evse.value().connectorId.has_value()) {
@@ -209,14 +259,32 @@ void Availability::execute_change_availability_request(ChangeAvailabilityRequest
     }
 }
 
+/**
+ * Availability::set_cs_operative_status - set cs operative status
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void Availability::set_cs_operative_status(OperationalStatusEnum new_status, bool persist) {
     this->context.component_state_manager.set_cs_individual_operational_status(new_status, persist);
 }
 
+/**
+ * Availability::set_evse_operative_status - set evse operative status
+ * @evse_id: 传入的 evse_id
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void Availability::set_evse_operative_status(std::int32_t evse_id, OperationalStatusEnum new_status, bool persist) {
     this->context.evse_manager.get_evse(evse_id).set_evse_operative_status(new_status, persist);
 }
 
+/**
+ * Availability::set_connector_operative_status - set connector operative status
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void Availability::set_connector_operative_status(std::int32_t evse_id, std::int32_t connector_id,
                                                   OperationalStatusEnum new_status, bool persist) {
     this->context.evse_manager.get_evse(evse_id).set_connector_operative_status(connector_id, new_status, persist);

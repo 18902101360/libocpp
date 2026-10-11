@@ -24,6 +24,10 @@ ocpp::v2::Bidirectional::Bidirectional(
 
 ocpp::v2::Bidirectional::~Bidirectional() = default;
 
+/**
+ * ocpp::v2::Bidirectional::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void ocpp::v2::Bidirectional::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -34,6 +38,10 @@ void ocpp::v2::Bidirectional::handle_message(const ocpp::EnhancedMessage<Message
     }
 }
 
+/**
+ * ocpp::v2::Bidirectional::handle_notify_allowed_energy_transfer - handle notify allowed energy transfer
+ * @notify_allowed_energy_transfer: 传入的 notify_allowed_energy_transfer
+ */
 void ocpp::v2::Bidirectional::handle_notify_allowed_energy_transfer(
     Call<v21::NotifyAllowedEnergyTransferRequest> notify_allowed_energy_transfer) {
     if (this->context.ocpp_version != OcppProtocolVersion::v21) {

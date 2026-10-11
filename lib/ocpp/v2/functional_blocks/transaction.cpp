@@ -39,6 +39,10 @@ TransactionBlock::TransactionBlock(
     reset_scheduled(false) {
 }
 
+/**
+ * TransactionBlock::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void TransactionBlock::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -51,6 +55,20 @@ void TransactionBlock::handle_message(const ocpp::EnhancedMessage<MessageType>& 
     }
 }
 
+/**
+ * TransactionBlock::on_transaction_started - on transaction started
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @session_id: 传入的 session_id
+ * @timestamp: 传入的 timestamp
+ * @trigger_reason: 传入的 trigger_reason
+ * @meter_start: 传入的 meter_start
+ * @id_token: 传入的 id_token
+ * @group_id_token: 传入的 group_id_token
+ * @reservation_id: 传入的 reservation_id
+ * @remote_start_id: 传入的 remote_start_id
+ * @charging_state: 传入的 charging_state
+ */
 void TransactionBlock::on_transaction_started(const std::int32_t evse_id, const std::int32_t connector_id,
                                               const std::string& session_id, const DateTime& timestamp,
                                               const TriggerReasonEnum trigger_reason, const MeterValue& meter_start,
@@ -87,6 +105,17 @@ void TransactionBlock::on_transaction_started(const std::int32_t evse_id, const 
                                 reservation_id);
 }
 
+/**
+ * TransactionBlock::on_transaction_finished - on transaction finished
+ * @evse_id: 传入的 evse_id
+ * @timestamp: 传入的 timestamp
+ * @meter_stop: 传入的 meter_stop
+ * @reason: 传入的 reason
+ * @trigger_reason: 传入的 trigger_reason
+ * @id_token: 传入的 id_token
+ * @/: 见函数签名
+ * @charging_state: 传入的 charging_state
+ */
 void TransactionBlock::on_transaction_finished(const std::int32_t evse_id, const DateTime& timestamp,
                                                const MeterValue& meter_stop, const ReasonEnum reason,
                                                const TriggerReasonEnum trigger_reason,
@@ -193,6 +222,22 @@ void TransactionBlock::on_transaction_finished(const std::int32_t evse_id, const
     this->availability.handle_scheduled_change_availability_requests(0);
 }
 
+/**
+ * TransactionBlock::transaction_event_req - transaction event req
+ * @event_type: 传入的 event_type
+ * @timestamp: 传入的 timestamp
+ * @transaction: 传入的 transaction
+ * @trigger_reason: 传入的 trigger_reason
+ * @seq_no: 传入的 seq_no
+ * @cable_max_current: 传入的 cable_max_current
+ * @evse: 传入的 evse
+ * @id_token: 传入的 id_token
+ * @meter_value: 传入的 meter_value
+ * @number_of_phases_used: 传入的 number_of_phases_used
+ * @offline: 传入的 offline
+ * @reservation_id: 传入的 reservation_id
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void TransactionBlock::transaction_event_req(const TransactionEventEnum& event_type, const DateTime& timestamp,
                                              const Transaction& transaction, const TriggerReasonEnum& trigger_reason,
                                              const std::int32_t seq_no,
@@ -252,11 +297,21 @@ void TransactionBlock::transaction_event_req(const TransactionEventEnum& event_t
     }
 }
 
+/**
+ * TransactionBlock::set_remote_start_id_for_evse - set remote start id for evse
+ * @evse_id: 传入的 evse_id
+ * @id_token: 传入的 id_token
+ * @remote_start_id: 传入的 remote_start_id
+ */
 void TransactionBlock::set_remote_start_id_for_evse(const std::int32_t evse_id, const IdToken id_token,
                                                     const std::int32_t remote_start_id) {
     remote_start_id_per_evse[evse_id] = {id_token, remote_start_id};
 }
 
+/**
+ * TransactionBlock::schedule_reset - schedule reset
+ * @reset_scheduled_evseid: 传入的 reset_scheduled_evseid
+ */
 void TransactionBlock::schedule_reset(const std::optional<std::int32_t> reset_scheduled_evseid) {
     reset_scheduled = true;
     if (reset_scheduled_evseid.has_value()) {
@@ -264,6 +319,10 @@ void TransactionBlock::schedule_reset(const std::optional<std::int32_t> reset_sc
     }
 }
 
+/**
+ * TransactionBlock::handle_transaction_event_response - handle transaction event response
+ * @message: 已经组好的 JSON 报文
+ */
 void TransactionBlock::handle_transaction_event_response(const EnhancedMessage<MessageType>& message) {
     const CallResult<TransactionEventResponse> call_result = message.message;
     const Call<TransactionEventRequest>& original_call = message.call_message;
@@ -335,6 +394,10 @@ void TransactionBlock::handle_transaction_event_response(const EnhancedMessage<M
     }
 }
 
+/**
+ * TransactionBlock::handle_get_transaction_status - handle get transaction status
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void TransactionBlock::handle_get_transaction_status(const Call<GetTransactionStatusRequest> call) {
     const auto msg = call.msg;
 

@@ -25,6 +25,9 @@ OcspUpdater::OcspUpdater(std::shared_ptr<EvseSecurity> evse_security, cert_statu
     running(false) {
 }
 
+/**
+ * OcspUpdater::start - start
+ */
 void OcspUpdater::start() {
     const std::unique_lock lock(this->update_ocsp_cache_lock);
     this->running = true;
@@ -33,6 +36,9 @@ void OcspUpdater::start() {
     this->updater_thread = std::thread([this] { this->updater_thread_loop(); });
 }
 
+/**
+ * OcspUpdater::stop - stop
+ */
 void OcspUpdater::stop() {
     std::unique_lock lock(this->update_ocsp_cache_lock);
     if (this->running) {
@@ -45,6 +51,9 @@ void OcspUpdater::stop() {
     }
 }
 
+/**
+ * OcspUpdater::trigger_ocsp_cache_update - trigger ocsp cache update
+ */
 void OcspUpdater::trigger_ocsp_cache_update() {
     const std::unique_lock lock(this->update_ocsp_cache_lock);
     if (!this->running) {
@@ -56,6 +65,9 @@ void OcspUpdater::trigger_ocsp_cache_update() {
     this->explicit_update_trigger.notify_one();
 }
 
+/**
+ * OcspUpdater::updater_thread_loop - updater thread loop
+ */
 void OcspUpdater::updater_thread_loop() {
     std::unique_lock lock(this->update_ocsp_cache_lock);
     while (true) {
@@ -95,6 +107,9 @@ void OcspUpdater::updater_thread_loop() {
     }
 }
 
+/**
+ * OcspUpdater::execute_ocsp_update - execute ocsp update
+ */
 void OcspUpdater::execute_ocsp_update() {
     auto ocsp_request_list = this->evse_security->get_v2g_ocsp_request_data();
     std::vector<std::pair<ocpp::CertificateHashDataType, std::string>> ocsp_responses;
