@@ -1,3 +1,7 @@
+/*
+ * 充电桩窗口。一条 QWebSocket 对一个 c_ocpp session。
+ * cJSON arena 是进程全局的，所以两条连接的收发都留在 GUI 线程。
+ */
 #ifndef QT_OCPP_MAINWINDOW_H
 #define QT_OCPP_MAINWINDOW_H
 
@@ -13,7 +17,11 @@ class QLineEdit;
 class QPlainTextEdit;
 class QTimer;
 
-/* Qt 5.14 充电桩窗口：两条 QWebSocket 分别跑 c_ocpp 1.6 和 2.0.1。 */
+/**
+ * MainWindow - OCPP 1.6 与 2.0.1 各一条 WebSocket
+ *
+ * 桩号是 URL 路径，不是 HTTP Basic 用户。这个测试平台给未登记的路径回 404。
+ */
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -23,7 +31,12 @@ public:
     void setAutoExit(bool enabled);
     bool autoSucceeded() const { return autoOk_; }
     void logLine(const QString &line);
+    /**
+     * noteBoot16 - 记录 1.6 Boot 是否被接受
+     * @accepted: status 为 Accepted 时为真。Pending 也是合法应答，但不能当作已批准。
+     */
     void noteBoot16(bool accepted);
+    /** 同 noteBoot16，对应 2.0.1。 */
     void noteBoot201(bool accepted);
 
 public slots:
@@ -43,12 +56,27 @@ private slots:
     void on201Error(QAbstractSocket::SocketError error);
 
 private:
+    /**
+     * Tx - ocpp_link_t.send 的 user 指针
+     *
+     * 链接里只能存一个 void *。套接字和窗口都要，所以包在一起。
+     * 对象必须活过 session，send 回调会在心跳定时器里被调用。
+     */
     struct Tx {
         QWebSocket *socket;
         MainWindow *window;
         const char *name;
     };
 
+    /**
+     * sendThunk - c_ocpp 的发送回调
+     * @data: 一帧已经编好的 OCPP JSON
+     * @len: 字节数，不含额外的结尾 NUL
+     * @user: Tx *
+     *
+     * 返回 0 表示交给了 QWebSocket。非 0 会被 session 记成 OCPP_ERR_IO。
+     * 必须是不捕获的函数：ocpp_port_send_fn 是 C 函数指针。
+     */
     static int sendThunk(const void *data, size_t len, void *user);
 
     void openLink(QWebSocket &sock, const QString &subprotocol);

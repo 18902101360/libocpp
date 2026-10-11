@@ -1,3 +1,7 @@
+/*
+ * Qt 5.14 充电桩入口。协议在 c_ocpp 里，这里只把命令行交给窗口。
+ * --auto 用来在没有人点按钮时确认 Boot 已被 CSMS 接受。
+ */
 #include "MainWindow.h"
 
 #include <QApplication>
@@ -40,7 +44,12 @@ int main(int argc, char *argv[]) {
     window.show();
 
     if (autoExit) {
+        /* 等窗口进入事件循环再连，否则套接字还没有线程。 */
         QTimer::singleShot(0, &window, &MainWindow::startConnect);
+        /*
+         * 超时用 exit(2)，和 Boot 成功的 0 分开。关窗口会让事件循环以 0 结束，
+         * 若那时还没 Accepted，下面同样记成 2。
+         */
         QTimer::singleShot(20000, &app, []() { QCoreApplication::exit(2); });
     }
 

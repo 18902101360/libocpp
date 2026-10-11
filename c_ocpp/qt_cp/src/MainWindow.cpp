@@ -17,6 +17,10 @@
 
 #include <cstring>
 
+/*
+ * session 保存的是 C 函数指针。C++ 成员函数语言链接对不上，所以放在 extern "C"。
+ * 只接 Reset：它会改桩状态，必须在窗口里看得见。其余 CSMS CALL 用库里的 example 应答。
+ */
 extern "C" {
 static void on_boot16(const ocpp16_boot_notification_conf_t *conf, void *user) {
     auto *w = static_cast<MainWindow *>(user);
@@ -82,7 +86,7 @@ void fill201Handlers(ocpp201_handlers_t *h, MainWindow *window) {
     h->reset_req = on_reset201;
 }
 
-}  // namespace
+} /* namespace */
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -113,6 +117,7 @@ MainWindow::MainWindow(QWidget *parent)
     memset(&sess16_, 0, sizeof(sess16_));
     memset(&sess201_, 0, sizeof(sess201_));
 
+    /* arena 和软件定时器表是全局的，整个进程只能初始化一次。 */
     ocpp_port_init();
 
     auto *central = new QWidget(this);
@@ -129,6 +134,10 @@ MainWindow::MainWindow(QWidget *parent)
     status201_ = new QLabel(QStringLiteral("未连接"), central);
     form->addRow(QStringLiteral("CSMS 地址"), urlEdit_);
     form->addRow(QStringLiteral("桩号"), idEdit_);
+    /*
+     * 「用户」写进 BootNotification 的厂商字段。不要放进 Authorization：
+     * 这个平台对 Basic 用户 zephyr 直接 404，桩号只认 URL 路径。
+     */
     form->addRow(QStringLiteral("用户"), vendorEdit_);
     form->addRow(QStringLiteral("型号"), modelEdit_);
     form->addRow(use16_);
@@ -170,6 +179,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&sock201_, &QWebSocket::textMessageReceived, this, &MainWindow::on201Text);
     connect(&sock201_, QOverload<QAbstractSocket::SocketError>::of(&QWebSocket::error), this, &MainWindow::on201Error);
 
+    /*
+     * c_ocpp 的心跳不会自己走。ocpp_port_timer_tick 每 100 ms 减一次剩余时间，
+     * 间隔必须和 start() 一致，否则 Boot 里的 interval 会被放大或缩短。
+     */
     tick_ = new QTimer(this);
     connect(tick_, &QTimer::timeout, this, &MainWindow::onTick);
     tick_->start(100);
@@ -206,6 +219,11 @@ void MainWindow::setLinkStatus(QLabel *label, const QString &text) {
     label->setText(text);
 }
 
+/**
+ * MainWindow::chargePointUrl - 拼出 ws://主机:端口/桩号
+ *
+ * OCPP 用路径区分桩。末尾多余的斜杠会变成空路径段，先削掉。
+ */
 QString MainWindow::chargePointUrl() const {
     QString base = urlEdit_->text().trimmed();
     while (base.endsWith(QLatin1Char('/'))) {
@@ -230,6 +248,13 @@ int MainWindow::sendThunk(const void *data, size_t len, void *user) {
     return 0;
 }
 
+/**
+ * MainWindow::openLink - 按指定子协议发起握手
+ * @sock: 这一路的套接字
+ * @subprotocol: "ocpp1.6" 或 "ocpp2.0.1"
+ *
+ * Qt 5.14 的 QWebSocket 没有设置子协议的接口。不带这个头时，CSMS 无法选择协议。
+ */
 void MainWindow::openLink(QWebSocket &sock, const QString &subprotocol) {
     if (sock.state() != QAbstractSocket::UnconnectedState) {
         sock.abort();
@@ -271,6 +296,7 @@ void MainWindow::startConnect() {
 void MainWindow::onDisconnect() {
     sock16_.close();
     sock201_.close();
+    /* 0 和 1 是两路心跳槽。停掉，避免断线后 tick 仍去写已经关闭的套接字。 */
     ocpp_port_timer_stop(0);
     ocpp_port_timer_stop(1);
     sess16Ready_ = false;
@@ -342,6 +368,10 @@ void MainWindow::onSendStatus() {
 void MainWindow::on16Connected() {
     ocpp16_handlers_t handlers;
     fill16Handlers(&handlers, this);
+    /*
+     * 心跳槽必须和 2.0.1 的槽 1 错开。两路共用一张定时器表，
+     * 都用 0 的话后启动的一路会取消前一路的心跳。
+     */
     ocpp_link_t link;
     ocpp_link_init(&link, 0, &MainWindow::sendThunk, &tx16_, 0, 1);
     ocpp16_session_init(&sess16_, &handlers, &link);
@@ -377,6 +407,12 @@ void MainWindow::on201Disconnected() {
     logLine(QStringLiteral("2.0.1 WebSocket 已断开"));
 }
 
+/**
+ * MainWindow::on16Text - 把一整帧文本交给 session
+ *
+ * session_rx 会清空 cJSON arena。bytes 必须活到调用结束，不能把临时指针传进去。
+ * 2.0.1 的槽也在这个线程，所以两路不会同时碰 arena。
+ */
 void MainWindow::on16Text(const QString &message) {
     logLine(QStringLiteral("1.6 RX %1").arg(message));
     if (!sess16Ready_) {
@@ -429,6 +465,11 @@ void MainWindow::noteBoot201(bool accepted) {
     finishAutoIfReady();
 }
 
+/**
+ * MainWindow::finishAutoIfReady - --auto 只在两路都 Accepted 时退出 0
+ *
+ * Pending 表示桩已登记但还没批准。把它当成成功会让未批准的桩也通过检查。
+ */
 void MainWindow::finishAutoIfReady() {
     if (!autoExit_ || autoOk_) {
         return;

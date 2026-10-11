@@ -11,6 +11,8 @@
 
 连上之后自动发 `BootNotification`。CSMS 的 CALL 里，`Reset` 由窗口回调接受；其它 CSMS 报文用库里的 `*_example()` 默认 Confirmation。心跳由 `QTimer` 每 100 ms 调用 `ocpp_port_timer_tick(100)` 推动。cJSON arena 只有一份，收发都在 GUI 线程。
 
+注释按仓库里的 `.cursor/skills/linux-kernel-style/SKILL.md` 写：只说明为什么，块注释用 `/* */`，函数用 kernel-doc。该 skill 来自 [luban-skill 的 linux-kernel.skill](https://github.com/happydog-intj/luban-skill/tree/master/skills/linux-kernel.skill)。
+
 ## Qt Creator 5.14
 
 1. 用 Qt 5.14 kit 打开 `c_ocpp/qt_cp/qt_ocpp_cp.pro`。
