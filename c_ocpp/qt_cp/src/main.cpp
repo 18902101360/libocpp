@@ -8,6 +8,15 @@
 #include <QCommandLineParser>
 #include <QTimer>
 
+/**
+ * main - 启动充电桩窗口
+ * @argc: 命令行参数个数
+ * @argv: 参数，支持 --url --id --vendor --model --auto
+ *
+ * 普通运行打开界面，用户自己点连接。--auto 在事件循环开始后立刻连接，
+ * 两路 BootNotification 都是 Accepted 时退出码 0；超时或连不上时退出码 2。
+ * 返回值交给操作系统。
+ */
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("qt_ocpp_cp"));
