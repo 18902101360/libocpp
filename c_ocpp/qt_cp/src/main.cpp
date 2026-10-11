@@ -16,12 +16,12 @@ int main(int argc, char *argv[]) {
     parser.addHelpOption();
     QCommandLineOption urlOpt(QStringList() << QStringLiteral("u") << QStringLiteral("url"),
                               QStringLiteral("CSMS base URL, without charge-point id"),
-                              QStringLiteral("url"), QStringLiteral("ws://127.0.0.1:9000"));
+                              QStringLiteral("url"), QStringLiteral("ws://cpmstest.timxon.com:8887"));
     QCommandLineOption idOpt(QStringList() << QStringLiteral("i") << QStringLiteral("id"),
                              QStringLiteral("Charge point id (URL path)"),
                              QStringLiteral("id"), QStringLiteral("CP001"));
-    QCommandLineOption vendorOpt(QStringLiteral("vendor"), QStringLiteral("chargePointVendor / vendorName"),
-                                 QStringLiteral("name"), QStringLiteral("Pionix"));
+    QCommandLineOption vendorOpt(QStringLiteral("vendor"), QStringLiteral("chargePointVendor / vendorName (station user)"),
+                                 QStringLiteral("name"), QStringLiteral("zephyr"));
     QCommandLineOption modelOpt(QStringLiteral("model"), QStringLiteral("chargePointModel / model"),
                                 QStringLiteral("name"), QStringLiteral("QT-CP"));
     QCommandLineOption autoOpt(QStringLiteral("auto"),

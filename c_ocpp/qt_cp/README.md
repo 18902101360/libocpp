@@ -15,7 +15,7 @@
 
 1. 用 Qt 5.14 kit 打开 `c_ocpp/qt_cp/qt_ocpp_cp.pro`。
 2. 影子构建，不要把产物写进 `ocpp16/messages/`。
-3. 运行。默认连 `ws://127.0.0.1:9000/CP001`。
+3. 运行。默认连 `ws://cpmstest.timxon.com:8887/CP001`，BootNotification 里的厂商/用户名是 `zephyr`。
 
 ## 命令行（CMake，Qt 5.14）
 
@@ -34,7 +34,7 @@ PYTHONPATH=. python3 -m ocpp_csms --host 127.0.0.1 --port 9000 --interval 3600
 ```
 
 ```bash
-./c_ocpp/qt_cp/build/qt_ocpp_cp --auto --url ws://127.0.0.1:9000 --id CP001
+./c_ocpp/qt_cp/build/qt_ocpp_cp --auto --url ws://cpmstest.timxon.com:8887 --id CP001 --vendor zephyr
 ```
 
 两条连接的 `BootNotification.conf` 都是 `Accepted` 时进程退出码 0。20 秒内没有完成则退出码 2。

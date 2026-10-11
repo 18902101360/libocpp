@@ -117,9 +117,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *central = new QWidget(this);
     auto *form = new QFormLayout();
-    urlEdit_ = new QLineEdit(QStringLiteral("ws://127.0.0.1:9000"), central);
+    urlEdit_ = new QLineEdit(QStringLiteral("ws://cpmstest.timxon.com:8887"), central);
     idEdit_ = new QLineEdit(QStringLiteral("CP001"), central);
-    vendorEdit_ = new QLineEdit(QStringLiteral("Pionix"), central);
+    vendorEdit_ = new QLineEdit(QStringLiteral("zephyr"), central);
     modelEdit_ = new QLineEdit(QStringLiteral("QT-CP"), central);
     use16_ = new QCheckBox(QStringLiteral("连接 OCPP 1.6（子协议 ocpp1.6）"), central);
     use201_ = new QCheckBox(QStringLiteral("连接 OCPP 2.0.1（子协议 ocpp2.0.1）"), central);
@@ -129,7 +129,7 @@ MainWindow::MainWindow(QWidget *parent)
     status201_ = new QLabel(QStringLiteral("未连接"), central);
     form->addRow(QStringLiteral("CSMS 地址"), urlEdit_);
     form->addRow(QStringLiteral("桩号"), idEdit_);
-    form->addRow(QStringLiteral("厂商"), vendorEdit_);
+    form->addRow(QStringLiteral("用户"), vendorEdit_);
     form->addRow(QStringLiteral("型号"), modelEdit_);
     form->addRow(use16_);
     form->addRow(QStringLiteral("1.6 状态"), status16_);
