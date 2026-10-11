@@ -18,6 +18,7 @@
 | 自己起 CSMS，用 C 客户端连 | [手动起 Python CSMS](#手动起-python-csms) |
 | 多运营商 / 多条 WebSocket | [分层与多路连接](#分层与多路连接) |
 | 编进 Keil / 交叉编译 / 自己写 `port.c` | [移植与编译框架](#移植与编译框架) |
+| 用 Qt 5.14 WebSocket 把本库跑成充电桩 | [Qt 5.14 充电桩](#qt-514-充电桩)（`c_ocpp/qt_cp/`） |
 
 ---
 
@@ -542,6 +543,10 @@ LIB16_SRC := $(C_OCPP)/ocpp16/ocpp16_session.c \
 - [ ] 主机 `ctest` 仍通过后再切交叉编译
 
 ---
+
+## Qt 5.14 充电桩
+
+`c_ocpp/qt_cp/` 是主机上的充电桩窗口：Qt 5.14 `QWebSocket` 当传输，协议仍用本目录的 1.6 / 2.0.1 session。两条连接同时存在，子协议分别是 `ocpp1.6` 和 `ocpp2.0.1`。打开 `qt_ocpp_cp.pro`，或按 `c_ocpp/qt_cp/README.md` 用 CMake 编。连上后自动发 BootNotification。
 
 ## 常见问题
 
