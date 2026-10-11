@@ -1,57 +1,47 @@
 ---
 name: linux-kernel-style
 description: |
-  本仓库的注释 skill。写、改、审 c_ocpp 与 qt_cp 的注释时使用。
-  蒸馏自 Linux 内核 Documentation/process/coding-style.rst 的注释规则，
-  上游是 happydog-intj/luban-skill 的 skills/linux-kernel.skill
-  （该仓库是带 C 注释规范的 skill 仓库里 star 最多的一个）。
-  触发词：「注释」「补注释」「kernel style」「像内核一样写 C」。
+  本仓库的注释 skill。给 c_ocpp、qt_cp、lib/ocpp、include/ocpp 写注释、改注释、审注释时使用。
+  规则是：内部函数短注释，对外函数写详细注释，每个函数都要有注释，重要代码片段也要有注释。
+  块注释用 /* */，对外函数用 /** */。不要修改 cJSON。
+  触发词：「注释」「补注释」「每个函数都要有注释」。
 ---
 
 # 本仓库注释规范
 
-写 `c_ocpp` 和 `qt_cp` 时按这四条，块注释仍用 `/* */`，对外函数用 `/** */`。Qt 的类名和 4 空格缩进保持 Qt 习惯。
+写 `c_ocpp`、`qt_cp`、`lib/ocpp`、`include/ocpp` 时按下面四条。不要改 `c_ocpp/third_party/cjson` 和 `3rd_party` 里的 cJSON。
 
-1. 内部函数（`static`、仅本文件使用）用一行到三行的短注释，说明它负责什么。
-2. 头文件里声明、给别的文件调用的函数要写详细注释：做什么、参数、返回值、调用约束。
-3. 每个函数定义上方都要有注释，不能只在文件头写一段。
-4. 分支、资源释放、协议状态这种关键片段也要有注释，说明为什么这样写。
+## 四条规则
 
-上游全文来自 https://github.com/happydog-intj/luban-skill/tree/master/skills/linux-kernel.skill （仓库约 28 stars）。专门名叫 comment-skill 的仓库当时最高只有 1 star，而且不针对 C。
+1. **内部函数用短注释。** `static`、匿名命名空间、只在本文件使用的函数，用一行到三行说明它负责什么。
+2. **对外函数写详细注释。** 头文件里声明、给别的文件调用的函数，要写清做什么、每个参数、返回值、调用约束（例如不能传半包、谁负责释放）。
+3. **每个函数都要有注释。** 注释写在函数定义的正上方。不能只在文件头写一段就算整个文件都注释过了。
+4. **重要片段也要有注释。** 协议状态、资源释放、子协议选择、定时器槽、失败分支这类看不出原因的代码，要说明为什么这样写。
 
-## 注释哲学
+## 格式
 
-**核心原则：解释「为什么」，不解释「是什么」**
+- 块注释用 `/* */`，不用 `//`。
+- 对外函数和结构体用 `/** */`。
+- Qt 的类名和 4 空格缩进保持 Qt 习惯。C++ 库保持原有命名，不为了注释去改名。
 
-```c
-/* 好注释：解释为什么这么做，而不是代码在做什么 */
-/*
- * We need to disable interrupts here because the DMA controller
- * may fire an IRQ between the status check and the actual transfer,
- * causing a race condition on SMP systems.
- */
-spin_lock_irqsave(&dev->lock, flags);
-
-/* 废话注释：不要写 */
-/* increment i by 1 */
-i++;
-```
-
-**注释格式：**
-
-- 块注释用 `/* */`，对齐成矩形
-- 单行解释用 `/* ... */`，不用 `//`
-- 函数和结构体用 `/** */`（kernel-doc）
+对外函数示例：
 
 ```c
 /**
- * usb_alloc_urb - allocate a URB for a USB driver
- * @iso_packets: number of iso packets for this URB
- * @mem_flags: allocation flags
+ * ocpp16_session_rx - 喂入一条完整的 WebSocket 文本帧
+ * @s: 本路会话
+ * @frame: 一整帧 JSON，不要传半包
+ * @len: 字节数
  *
- * Returns a pointer to the newly allocated URB, or NULL on failure.
+ * CALL 交给处理函数，CALLRESULT 用 uniqueId 找回 pending。
+ * 返回前释放 unpack 摘出来的 payload。返回 OCPP_OK，或负的 ocpp_err_t。
  */
-struct urb *usb_alloc_urb(int iso_packets, gfp_t mem_flags)
+ocpp_err_t ocpp16_session_rx(ocpp16_session_t *s, const char *frame, size_t len);
 ```
 
-不给一眼能看懂的语句补注释。函数超过一屏才考虑拆，那是结构问题，不是注释问题。
+内部函数示例：
+
+```c
+/* 把 s->frame 交给这一路的 send。0 表示成功。 */
+static int session_tx(ocpp16_session_t *s);
+```
