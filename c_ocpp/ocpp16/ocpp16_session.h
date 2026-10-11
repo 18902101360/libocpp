@@ -77,8 +77,10 @@ typedef struct ocpp16_session {
     ocpp_link_t link;                 /* 本路 send / 心跳槽 / accept_control */
     ocpp16_handlers_t handlers;
     unsigned seq;                     /* 发出 CALL 的 uniqueId 计数，从 1 起 */
-    int registered;                   /* 收到 BootNotification.conf 后置 1 */
-    int heartbeat_interval_s;         /* 来自 Boot conf.interval，默认 300 */
+    int registered;                   /* 仅 Boot status 为 Accepted 时置 1 */
+    int heartbeat_interval_s;         /* Accepted 时是心跳秒数；Pending/Rejected 时是重试秒数 */
+    int has_boot_req;                 /* 保存过 Boot 请求，Pending/Rejected 到点后重发 */
+    ocpp16_boot_notification_req_t boot_req;
     struct { int used; char uid[37]; char action[48]; } pending[OCPP16_PENDING_MAX];
     char payload[OCPP_PAYLOAD_MAX];
     char frame[OCPP_FRAME_MAX];

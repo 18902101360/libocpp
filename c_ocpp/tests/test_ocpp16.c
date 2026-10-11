@@ -82,6 +82,14 @@ static int sink_send(const void *data, size_t len, void *user) {
 }
 
 /* 统计这一路收到的 Reset。三路测试用来确认 accept_control。 */
+/* 模拟链路写失败，用来确认 pending 不会被占住。 */
+static int fail_send(const void *data, size_t len, void *user) {
+    (void)data;
+    (void)len;
+    (void)user;
+    return -1;
+}
+
 static int reset_count(const ocpp16_reset_req_t *req, ocpp16_reset_conf_t *conf, void *user) {
     sink_t *sk = (sink_t *)user;
     (void)req;
@@ -283,6 +291,38 @@ int main(void) {
     ocpp_rpc_unpack(g_sink[2].tx, strlen(g_sink[2].tx), &mu[2]);
     if (mu[2].type != OCPP_RPC_CALLRESULT) {
         fail("multi telemetry get config result");
+    }
+
+    /* Pending 不登记、不心跳，到点重发 Boot。发送失败不占 pending。 */
+    ocpp_port_timer_stop(0);
+    memset(&g_sink[0], 0, sizeof g_sink[0]);
+    ocpp_link_init(&link[0], 0, sink_send, &g_sink[0], 0, 1);
+    ocpp16_session_init(&sess[0], NULL, &link[0]);
+    if (ocpp16_session_send_boot_notification(&sess[0], &boot) != OCPP_OK) {
+        fail("pending boot send");
+    }
+    ocpp_rpc_unpack(g_sink[0].tx, strlen(g_sink[0].tx), &mu[0]);
+    ocpp_str_copy(bconf.status, sizeof bconf.status, "Pending");
+    bconf.interval = 1;
+    ocpp16_boot_notification_conf_encode(&bconf, pbuf, sizeof pbuf);
+    ocpp_rpc_pack_callresult(mu[0].unique_id, pbuf, frame, sizeof frame);
+    g_sink[0].tx[0] = 0;
+    if (ocpp16_session_rx(&sess[0], frame, strlen(frame)) != OCPP_OK || sess[0].registered) {
+        fail("pending must not register");
+    }
+    ocpp_port_timer_tick(1000);
+    if (strstr(g_sink[0].tx, "BootNotification") == NULL || strstr(g_sink[0].tx, "Heartbeat") != NULL) {
+        fail("pending retries boot");
+    }
+    ocpp_link_init(&link[0], 0, fail_send, NULL, 0, 1);
+    ocpp16_session_init(&sess[0], NULL, &link[0]);
+    if (ocpp16_session_send_boot_notification(&sess[0], &boot) == OCPP_OK) {
+        fail("io should fail");
+    }
+    for (int i = 0; i < OCPP16_PENDING_MAX; i++) {
+        if (sess[0].pending[i].used) {
+            fail("failed send left pending");
+        }
     }
 
     if (g_fail) {

@@ -4,13 +4,22 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Boot 被应答后启动。到期时发一帧 Heartbeat，周期由 conf.interval 决定。 */
+/* 仅 Boot 已被接受后使用。到期时发一帧 Heartbeat。 */
 static void heartbeat_timer(int id, void *ctx) {
     ocpp16_session_t *s = (ocpp16_session_t *)ctx;
     (void)id;
     ocpp16_heartbeat_req_t req;
     ocpp16_heartbeat_req_example(&req);
     ocpp16_session_send_heartbeat(s, &req);
+}
+
+/* Pending/Rejected 的一次性定时器。到点重发上次的 BootNotification。 */
+static void boot_retry_timer(int id, void *ctx) {
+    ocpp16_session_t *s = (ocpp16_session_t *)ctx;
+    (void)id;
+    if (s->has_boot_req) {
+        ocpp16_session_send_boot_notification(s, &s->boot_req);
+    }
 }
 
 /**
@@ -60,6 +69,16 @@ static int pending_add(ocpp16_session_t *s, const char *uid, const char *action)
     return -1;
 }
 
+/* 发送失败时撤掉刚记下的 pending，避免槽被一条没发出去的 CALL 占死。 */
+static void pending_drop(ocpp16_session_t *s, const char *uid) {
+    for (int i = 0; i < OCPP16_PENDING_MAX; i++) {
+        if (s->pending[i].used && strcmp(s->pending[i].uid, uid) == 0) {
+            s->pending[i].used = 0;
+            return;
+        }
+    }
+}
+
 /**
  * ocpp16_session_call - 发出一条 CALL
  * @s: 本路会话
@@ -75,7 +94,10 @@ ocpp_err_t ocpp16_session_call(ocpp16_session_t *s, const char *action, const ch
     ocpp_err_t rc = ocpp_rpc_pack_call(uid, action, payload_json, s->frame, sizeof(s->frame));
     if (rc != OCPP_OK) return rc;
     if (pending_add(s, uid, action) != 0) return OCPP_ERR_OVERFLOW;
-    if (session_tx(s) != 0) return OCPP_ERR_IO;
+    if (session_tx(s) != 0) {
+        pending_drop(s, uid);
+        return OCPP_ERR_IO;
+    }
     return OCPP_OK;
 }
 
@@ -102,6 +124,11 @@ ocpp_err_t ocpp16_session_send_authorize(ocpp16_session_t *s, const ocpp16_autho
  * 应答由 session_rx 按 uniqueId 找回，再调用对应的 *_conf。
  */
 ocpp_err_t ocpp16_session_send_boot_notification(ocpp16_session_t *s, const ocpp16_boot_notification_req_t *req) {
+    /* 留下请求。Pending/Rejected 到点要原样重发，不能改用 example。 */
+    if (req != NULL) {
+        s->boot_req = *req;
+        s->has_boot_req = 1;
+    }
     ocpp_err_t rc = ocpp16_boot_notification_req_encode(req, s->payload, sizeof(s->payload));
     if (rc != OCPP_OK) return rc;
     return ocpp16_session_call(s, "BootNotification", s->payload);
@@ -682,10 +709,32 @@ static ocpp_err_t handle_call(ocpp16_session_t *s, ocpp_rpc_msg_t *msg) {
     return OCPP_OK;
 }
 
+/* Accepted 才周期心跳。Pending/Rejected 用同一槽做一次性 Boot 重试。 */
+static void arm_boot_timer(ocpp16_session_t *s, const ocpp16_boot_notification_conf_t *conf) {
+    int accepted = strcmp(conf->status, "Accepted") == 0;
+    s->registered = accepted ? 1 : 0;
+    if (conf->interval > 0) {
+        s->heartbeat_interval_s = conf->interval;
+    }
+    if (s->link.heartbeat_timer_id < 0) {
+        return;
+    }
+    if (accepted) {
+        ocpp_port_timer_start(s->link.heartbeat_timer_id, (uint32_t)s->heartbeat_interval_s * 1000u, 1,
+                              heartbeat_timer, s);
+        return;
+    }
+    /* 未批准时不要心跳。interval 是下一次 Boot 的等待时间。 */
+    if (s->has_boot_req && s->heartbeat_interval_s > 0) {
+        ocpp_port_timer_start(s->link.heartbeat_timer_id, (uint32_t)s->heartbeat_interval_s * 1000u, 0,
+                              boot_retry_timer, s);
+        return;
+    }
+    ocpp_port_timer_stop(s->link.heartbeat_timer_id);
+}
+
 /*
  * 处理本端 CALL 的 CALLRESULT。action 来自 pending，不是报文本身。
- * Boot 的应答会启动这一路的心跳定时器，不管 status 是不是 Accepted。
- * 要不要重试由 boot_notification_conf 回调自己决定。
  */
 static void handle_result(ocpp16_session_t *s, const char *action, const cJSON *payload) {
     if (strcmp(action, "Authorize") == 0) {
@@ -694,12 +743,9 @@ static void handle_result(ocpp16_session_t *s, const char *action, const cJSON *
         return;
     }
     else if (strcmp(action, "BootNotification") == 0) {
-        ocpp16_boot_notification_conf_t conf; ocpp16_boot_notification_conf_from_json(payload, &conf);
-        s->registered = 1;
-        if (conf.interval > 0) s->heartbeat_interval_s = conf.interval;
-        if (s->link.heartbeat_timer_id >= 0) {
-            ocpp_port_timer_start(s->link.heartbeat_timer_id, (uint32_t)s->heartbeat_interval_s * 1000u, 1, heartbeat_timer, s);
-        }
+        ocpp16_boot_notification_conf_t conf;
+        ocpp16_boot_notification_conf_from_json(payload, &conf);
+        arm_boot_timer(s, &conf);
         if (s->handlers.boot_notification_conf) s->handlers.boot_notification_conf(&conf, s->handlers.user);
         return;
     }
