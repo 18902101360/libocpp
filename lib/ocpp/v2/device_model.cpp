@@ -23,6 +23,7 @@ bool allow_zero(const Component& component, const Variable& variable) {
            component_variable == ControllerComponentVariables::SampledDataTxEndedInterval;
 }
 
+/* allow set read only value */
 bool allow_set_read_only_value(const Component& component, const Variable& variable,
                                const AttributeEnum attribute_enum) {
     if (attribute_enum != AttributeEnum::Actual) {
@@ -35,6 +36,7 @@ bool allow_set_read_only_value(const Component& component, const Variable& varia
            variable == ConnectorComponentVariables::AvailabilityState;
 }
 
+/* filter criteria monitor */
 bool filter_criteria_monitor(const std::vector<MonitoringCriterionEnum>& criteria,
                              const VariableMonitoringMeta& monitor) {
     // N02.FR.11 - if no criteria is provided we have a match
@@ -67,6 +69,11 @@ bool filter_criteria_monitor(const std::vector<MonitoringCriterionEnum>& criteri
 }
 } // namespace
 
+/**
+ * filter_criteria_monitors - filter criteria monitors
+ * @criteria: 传入的 criteria
+ * @monitors: 传入的 monitors
+ */
 void filter_criteria_monitors(const std::vector<MonitoringCriterionEnum>& criteria,
                               std::vector<VariableMonitoringMeta>& monitors) {
     // N02.FR.11 - if no criteria is provided, all monitors are left
@@ -85,6 +92,13 @@ void filter_criteria_monitors(const std::vector<MonitoringCriterionEnum>& criter
     }
 }
 
+/**
+ * DeviceModel::component_criteria_match - component criteria match
+ * @component: 传入的 component
+ * @component_criteria: 传入的 component_criteria
+ *
+ * 返回 bool。
+ */
 bool DeviceModel::component_criteria_match(const Component& component,
                                            const std::vector<ComponentCriterionEnum>& component_criteria) {
     if (component_criteria.empty()) {
@@ -130,6 +144,11 @@ bool component_variables_match(const std::vector<ComponentVariable>& component_v
 }
 } // namespace
 
+/**
+ * DeviceModel::check_variable_has_value - check variable has value
+ * @component_variable: 传入的 component_variable
+ * @attribute: 传入的 attribute
+ */
 void DeviceModel::check_variable_has_value(const ComponentVariable& component_variable, const AttributeEnum attribute) {
     std::string value;
     if (not component_variable.variable.has_value()) {
@@ -146,6 +165,11 @@ void DeviceModel::check_variable_has_value(const ComponentVariable& component_va
     }
 }
 
+/**
+ * DeviceModel::check_required_variable - check required variable
+ * @required_variable: 传入的 required_variable
+ * @supported_versions: 传入的 supported_versions
+ */
 void DeviceModel::check_required_variable(const RequiredComponentVariable& required_variable,
                                           const std::vector<OcppProtocolVersion>& supported_versions) {
     if (supported_versions.empty()) {
@@ -171,6 +195,9 @@ void DeviceModel::check_required_variable(const RequiredComponentVariable& requi
     check_variable_has_value(required_variable);
 }
 
+/**
+ * DeviceModel::check_required_variables - check required variables
+ */
 void DeviceModel::check_required_variables() {
     const auto supported_versions = utils::get_ocpp_protocol_versions(
         this->get_value<std::string>(ControllerComponentVariables::SupportedOcppVersions));
@@ -226,6 +253,7 @@ void DeviceModel::check_required_variables() {
 }
 
 namespace {
+/* validate value */
 bool validate_value(const VariableCharacteristics& characteristics, const std::string& value, bool allow_zero) {
     switch (characteristics.dataType) {
     case DataEnum::string:
@@ -308,6 +336,7 @@ bool validate_value(const VariableCharacteristics& characteristics, const std::s
     return false;
 }
 
+/* include in summary inventory */
 bool include_in_summary_inventory(const ComponentVariable& cv, const VariableAttribute& attribute) {
     if (cv == ControllerComponentVariables::ChargingStationAvailabilityState) {
         return true;
@@ -327,6 +356,16 @@ bool include_in_summary_inventory(const ComponentVariable& cv, const VariableAtt
 }
 } // namespace
 
+/**
+ * DeviceModel::request_value_internal - request value internal
+ * @component_id: 传入的 component_id
+ * @variable_id: 传入的 variable_id
+ * @attribute_enum: 传入的 attribute_enum
+ * @value: 传入的 value
+ * @allow_write_only: 传入的 allow_write_only
+ *
+ * 返回 GetVariableStatusEnum。
+ */
 GetVariableStatusEnum DeviceModel::request_value_internal(const Component& component_id, const Variable& variable_id,
                                                           const AttributeEnum& attribute_enum, std::string& value,
                                                           bool allow_write_only) const {
@@ -360,6 +399,14 @@ GetVariableStatusEnum DeviceModel::request_value_internal(const Component& compo
     return GetVariableStatusEnum::Accepted;
 }
 
+/**
+ * DeviceModel::get_mutability - get mutability
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ * @attribute_enum: 传入的 attribute_enum
+ *
+ * 返回 std::optional<MutabilityEnum>。
+ */
 std::optional<MutabilityEnum> DeviceModel::get_mutability(const Component& component, const Variable& variable,
                                                           const AttributeEnum& attribute_enum) {
     const auto attribute = this->device_model->get_variable_attribute(component, variable, attribute_enum);
@@ -370,6 +417,17 @@ std::optional<MutabilityEnum> DeviceModel::get_mutability(const Component& compo
     return attribute.value().mutability;
 }
 
+/**
+ * DeviceModel::set_value - set value
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ * @attribute_enum: 传入的 attribute_enum
+ * @value: 传入的 value
+ * @source: 传入的 source
+ * @allow_read_only: 传入的 allow_read_only
+ *
+ * 返回 SetVariableStatusEnum。
+ */
 SetVariableStatusEnum DeviceModel::set_value(const Component& component, const Variable& variable,
                                              const AttributeEnum& attribute_enum, const std::string& value,
                                              const std::string& source, bool allow_read_only) {
@@ -437,6 +495,16 @@ DeviceModel::DeviceModel(std::unique_ptr<DeviceModelStorageInterface> device_mod
     this->device_model_map = this->device_model->get_device_model();
 }
 
+/**
+ * DeviceModel::set_read_only_value - set read only value
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ * @attribute_enum: 传入的 attribute_enum
+ * @value: 传入的 value
+ * @source: 传入的 source
+ *
+ * 返回 SetVariableStatusEnum。
+ */
 SetVariableStatusEnum DeviceModel::set_read_only_value(const Component& component, const Variable& variable,
                                                        const AttributeEnum& attribute_enum, const std::string& value,
                                                        const std::string& source) {
@@ -448,6 +516,13 @@ SetVariableStatusEnum DeviceModel::set_read_only_value(const Component& componen
                                 " and variable " + variable.name.get());
 }
 
+/**
+ * DeviceModel::get_variable_meta_data - get variable meta data
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ *
+ * 返回 std::optional<VariableMetaData>。
+ */
 std::optional<VariableMetaData> DeviceModel::get_variable_meta_data(const Component& component,
                                                                     const Variable& variable) {
     if ((this->device_model_map.count(component) != 0) and
@@ -457,6 +532,12 @@ std::optional<VariableMetaData> DeviceModel::get_variable_meta_data(const Compon
     return std::nullopt;
 }
 
+/**
+ * DeviceModel::get_base_report_data - get base report data
+ * @report_base: 传入的 report_base
+ *
+ * 返回 std::vector<ReportData>。
+ */
 std::vector<ReportData> DeviceModel::get_base_report_data(const ReportBaseEnum& report_base) {
     std::vector<ReportData> report_data_vec;
 
@@ -533,6 +614,10 @@ DeviceModel::get_custom_report_data(const std::optional<std::vector<ComponentVar
     return report_data_vec;
 }
 
+/**
+ * DeviceModel::check_integrity - check integrity
+ * @evse_connector_structure: 传入的 evse_connector_structure
+ */
 void DeviceModel::check_integrity(const std::map<std::int32_t, std::int32_t>& evse_connector_structure) {
     EVLOG_debug << "Checking integrity of device model in storage";
     try {
@@ -634,6 +719,13 @@ void DeviceModel::check_integrity(const std::map<std::int32_t, std::int32_t>& ev
     }
 }
 
+/**
+ * DeviceModel::update_monitor_reference - update monitor reference
+ * @monitor_id: 传入的 monitor_id
+ * @reference_value: 传入的 reference_value
+ *
+ * 返回 bool。
+ */
 bool DeviceModel::update_monitor_reference(std::int32_t monitor_id, const std::string& reference_value) {
     bool found_monitor = false;
     VariableMonitoringMeta* monitor_meta = nullptr;
@@ -691,6 +783,13 @@ bool DeviceModel::update_monitor_reference(std::int32_t monitor_id, const std::s
     return false;
 }
 
+/**
+ * DeviceModel::set_monitors - set monitors
+ * @requests: 传入的 requests
+ * @type: 传入的 type
+ *
+ * 返回 std::vector<SetMonitoringResult>。
+ */
 std::vector<SetMonitoringResult> DeviceModel::set_monitors(const std::vector<SetMonitoringData>& requests,
                                                            const VariableMonitorType type) {
     if (requests.empty()) {
@@ -867,6 +966,11 @@ std::vector<SetMonitoringResult> DeviceModel::set_monitors(const std::vector<Set
     return set_monitors_res;
 }
 
+/**
+ * DeviceModel::get_periodic_monitors - get periodic monitors
+ *
+ * 返回 std::vector<VariableMonitoringPeriodic>。
+ */
 std::vector<VariableMonitoringPeriodic> DeviceModel::get_periodic_monitors() {
     std::vector<VariableMonitoringPeriodic> periodics;
 
@@ -890,6 +994,13 @@ std::vector<VariableMonitoringPeriodic> DeviceModel::get_periodic_monitors() {
     return periodics;
 }
 
+/**
+ * DeviceModel::get_monitors - get monitors
+ * @criteria: 传入的 criteria
+ * @component_variables: 传入的 component_variables
+ *
+ * 返回 std::vector<MonitoringData>。
+ */
 std::vector<MonitoringData> DeviceModel::get_monitors(const std::vector<MonitoringCriterionEnum>& criteria,
                                                       const std::vector<ComponentVariable>& component_variables) {
     std::vector<MonitoringData> get_monitors_res{};
@@ -970,6 +1081,13 @@ std::vector<MonitoringData> DeviceModel::get_monitors(const std::vector<Monitori
 
     return get_monitors_res;
 }
+/**
+ * DeviceModel::clear_monitors - clear monitors
+ * @request_ids: 传入的 request_ids
+ * @allow_protected: 传入的 allow_protected
+ *
+ * 返回 std::vector<ClearMonitoringResult>。
+ */
 std::vector<ClearMonitoringResult> DeviceModel::clear_monitors(const std::vector<int>& request_ids,
                                                                bool allow_protected) {
     if (request_ids.empty()) {
@@ -1005,6 +1123,11 @@ std::vector<ClearMonitoringResult> DeviceModel::clear_monitors(const std::vector
     return clear_monitors_vec;
 }
 
+/**
+ * DeviceModel::clear_custom_monitors - clear custom monitors
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t DeviceModel::clear_custom_monitors() {
     try {
         const std::int32_t deleted = this->device_model->clear_custom_variable_monitors();

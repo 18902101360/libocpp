@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v2 {
 
+/**
+ * SetVariablesRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string SetVariablesRequest::get_type() const {
     return "SetVariables";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const SetVariablesRequest& k) {
     // the required parts of the message
     j = json{
@@ -28,6 +38,11 @@ void to_json(json& j, const SetVariablesRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, SetVariablesRequest& k) {
     // the required parts of the message
     for (const auto& val : j.at("setVariableData")) {
@@ -47,10 +62,20 @@ std::ostream& operator<<(std::ostream& os, const SetVariablesRequest& k) {
     return os;
 }
 
+/**
+ * SetVariablesResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string SetVariablesResponse::get_type() const {
     return "SetVariablesResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const SetVariablesResponse& k) {
     // the required parts of the message
     j = json{
@@ -62,6 +87,11 @@ void to_json(json& j, const SetVariablesResponse& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, SetVariablesResponse& k) {
     // the required parts of the message
     for (const auto& val : j.at("setVariableResult")) {

@@ -16,16 +16,34 @@ ControlMessage<v16::MessageType>::ControlMessage(const json& message, const bool
     stall_until_accepted(stall_until_accepted) {
 }
 
+/**
+ * is_transaction_message - is transaction message
+ * @message_type: OCPP 报文类型
+ *
+ * 返回 bool。
+ */
 bool is_transaction_message(const ocpp::v16::MessageType message_type) {
     return (message_type == v16::MessageType::StartTransaction) ||
            (message_type == v16::MessageType::StopTransaction) || (message_type == v16::MessageType::MeterValues) ||
            (message_type == v16::MessageType::SecurityEventNotification);
 }
 
+/**
+ * is_start_transaction_message - is start transaction message
+ * @message_type: OCPP 报文类型
+ *
+ * 返回 bool。
+ */
 bool is_start_transaction_message(const ocpp::v16::MessageType message_type) {
     return message_type == v16::MessageType::StartTransaction;
 }
 
+/**
+ * is_boot_notification_message - is boot notification message
+ * @message_type: OCPP 报文类型
+ *
+ * 返回 bool。
+ */
 bool is_boot_notification_message(const ocpp::v16::MessageType message_type) {
     return message_type == ocpp::v16::MessageType::BootNotification;
 }

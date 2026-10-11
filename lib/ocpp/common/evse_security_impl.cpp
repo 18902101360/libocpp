@@ -24,23 +24,50 @@ EvseSecurityImpl::EvseSecurityImpl(const SecurityConfiguration& security_configu
         std::make_unique<evse_security::EvseSecurity>(file_paths, security_configuration.private_key_password);
 }
 
+/**
+ * EvseSecurityImpl::install_ca_certificate - install ca certificate
+ * @certificate: 传入的 certificate
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 InstallCertificateResult。
+ */
 InstallCertificateResult EvseSecurityImpl::install_ca_certificate(const std::string& certificate,
                                                                   const CaCertificateType& certificate_type) {
     return conversions::to_ocpp(
         this->evse_security->install_ca_certificate(certificate, conversions::from_ocpp(certificate_type)));
 }
 
+/**
+ * EvseSecurityImpl::delete_certificate - delete certificate
+ * @certificate_hash_data: 传入的 certificate_hash_data
+ *
+ * 返回 DeleteCertificateResult。
+ */
 DeleteCertificateResult EvseSecurityImpl::delete_certificate(const CertificateHashDataType& certificate_hash_data) {
     return conversions::to_ocpp(
         this->evse_security->delete_certificate(conversions::from_ocpp(certificate_hash_data)).result);
 }
 
+/**
+ * EvseSecurityImpl::update_leaf_certificate - update leaf certificate
+ * @certificate_chain: 传入的 certificate_chain
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 InstallCertificateResult。
+ */
 InstallCertificateResult EvseSecurityImpl::update_leaf_certificate(const std::string& certificate_chain,
                                                                    const CertificateSigningUseEnum& certificate_type) {
     return conversions::to_ocpp(
         this->evse_security->update_leaf_certificate(certificate_chain, conversions::from_ocpp(certificate_type)));
 }
 
+/**
+ * EvseSecurityImpl::verify_certificate - verify certificate
+ * @certificate_chain: 传入的 certificate_chain
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 CertificateValidationResult。
+ */
 CertificateValidationResult EvseSecurityImpl::verify_certificate(const std::string& certificate_chain,
                                                                  const LeafCertificateType& certificate_type) {
 
@@ -81,6 +108,11 @@ EvseSecurityImpl::get_installed_certificates(const std::vector<CertificateType>&
     return result;
 }
 
+/**
+ * EvseSecurityImpl::get_v2g_ocsp_request_data - get v2g ocsp request data
+ *
+ * 返回 std::vector<OCSPRequestData>。
+ */
 std::vector<OCSPRequestData> EvseSecurityImpl::get_v2g_ocsp_request_data() {
     std::vector<OCSPRequestData> result;
 
@@ -93,6 +125,12 @@ std::vector<OCSPRequestData> EvseSecurityImpl::get_v2g_ocsp_request_data() {
     return result;
 }
 
+/**
+ * EvseSecurityImpl::get_mo_ocsp_request_data - get mo ocsp request data
+ * @certificate_chain: 传入的 certificate_chain
+ *
+ * 返回 std::vector<OCSPRequestData>。
+ */
 std::vector<OCSPRequestData> EvseSecurityImpl::get_mo_ocsp_request_data(const std::string& certificate_chain) {
     std::vector<OCSPRequestData> result;
 
@@ -105,11 +143,22 @@ std::vector<OCSPRequestData> EvseSecurityImpl::get_mo_ocsp_request_data(const st
     return result;
 }
 
+/**
+ * EvseSecurityImpl::update_ocsp_cache - update ocsp cache
+ * @certificate_hash_data: 传入的 certificate_hash_data
+ * @ocsp_response: 传入的 ocsp_response
+ */
 void EvseSecurityImpl::update_ocsp_cache(const CertificateHashDataType& certificate_hash_data,
                                          const std::string& ocsp_response) {
     this->evse_security->update_ocsp_cache(conversions::from_ocpp(certificate_hash_data), ocsp_response);
 }
 
+/**
+ * EvseSecurityImpl::is_ca_certificate_installed - is ca certificate installed
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 bool。
+ */
 bool EvseSecurityImpl::is_ca_certificate_installed(const CaCertificateType& certificate_type) {
     return this->evse_security->is_ca_certificate_installed(conversions::from_ocpp(certificate_type));
 }
@@ -129,6 +178,13 @@ EvseSecurityImpl::generate_certificate_signing_request(const CertificateSigningU
     return result;
 }
 
+/**
+ * EvseSecurityImpl::get_leaf_certificate_info - get leaf certificate info
+ * @certificate_type: 传入的 certificate_type
+ * @include_ocsp: 传入的 include_ocsp
+ *
+ * 返回 GetCertificateInfoResult。
+ */
 GetCertificateInfoResult EvseSecurityImpl::get_leaf_certificate_info(const CertificateSigningUseEnum& certificate_type,
                                                                      bool include_ocsp) {
     const auto info_response = this->evse_security->get_leaf_certificate_info(
@@ -144,24 +200,54 @@ GetCertificateInfoResult EvseSecurityImpl::get_leaf_certificate_info(const Certi
     return result;
 }
 
+/**
+ * EvseSecurityImpl::update_certificate_links - update certificate links
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 bool。
+ */
 bool EvseSecurityImpl::update_certificate_links(const CertificateSigningUseEnum& certificate_type) {
     return this->evse_security->update_certificate_links(conversions::from_ocpp(certificate_type));
 }
 
+/**
+ * EvseSecurityImpl::get_verify_file - get verify file
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 std::string。
+ */
 std::string EvseSecurityImpl::get_verify_file(const CaCertificateType& certificate_type) {
     return this->evse_security->get_verify_file(conversions::from_ocpp(certificate_type));
 }
 
+/**
+ * EvseSecurityImpl::get_verify_location - get verify location
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 std::string。
+ */
 std::string EvseSecurityImpl::get_verify_location(const CaCertificateType& certificate_type) {
     return this->evse_security->get_verify_location(conversions::from_ocpp(certificate_type));
 }
 
+/**
+ * EvseSecurityImpl::get_leaf_expiry_days_count - get leaf expiry days count
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 int。
+ */
 int EvseSecurityImpl::get_leaf_expiry_days_count(const CertificateSigningUseEnum& certificate_type) {
     return this->evse_security->get_leaf_expiry_days_count(conversions::from_ocpp(certificate_type));
 }
 
 namespace conversions {
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 GetCertificateSignRequestStatus。
+ */
 GetCertificateSignRequestStatus to_ocpp(evse_security::GetCertificateSignRequestStatus other) {
     switch (other) {
     case evse_security::GetCertificateSignRequestStatus::Accepted:
@@ -177,6 +263,12 @@ GetCertificateSignRequestStatus to_ocpp(evse_security::GetCertificateSignRequest
         "Could not convert evse_security::GetCertificateSignRequestStatus to GetCertificateSignRequestStatus");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CaCertificateType。
+ */
 CaCertificateType to_ocpp(evse_security::CaCertificateType other) {
     switch (other) {
     case evse_security::CaCertificateType::V2G:
@@ -192,6 +284,12 @@ CaCertificateType to_ocpp(evse_security::CaCertificateType other) {
     throw EnumConversionException("Could not convert evse_security::CaCertificateType to CaCertificateType");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CertificateType。
+ */
 CertificateType to_ocpp(evse_security::CertificateType other) {
     switch (other) {
     case evse_security::CertificateType::V2GRootCertificate:
@@ -208,6 +306,12 @@ CertificateType to_ocpp(evse_security::CertificateType other) {
     throw EnumConversionException("Could not convert evse_security::CertificateType to CertificateType");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 HashAlgorithmEnumType。
+ */
 HashAlgorithmEnumType to_ocpp(evse_security::HashAlgorithm other) {
     switch (other) {
     case evse_security::HashAlgorithm::SHA256:
@@ -220,6 +324,12 @@ HashAlgorithmEnumType to_ocpp(evse_security::HashAlgorithm other) {
     throw EnumConversionException("Could not convert evse_security::HashAlgorithm to HashAlgorithmEnumType");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 GetCertificateInfoStatus。
+ */
 GetCertificateInfoStatus to_ocpp(evse_security::GetCertificateInfoStatus other) {
     switch (other) {
     case evse_security::GetCertificateInfoStatus::Accepted:
@@ -237,6 +347,12 @@ GetCertificateInfoStatus to_ocpp(evse_security::GetCertificateInfoStatus other) 
         "Could not convert evse_security::GetCertificateInfoStatus to GetCertificateInfoStatus");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 InstallCertificateResult。
+ */
 InstallCertificateResult to_ocpp(evse_security::InstallCertificateResult other) {
     switch (other) {
     case evse_security::InstallCertificateResult::InvalidSignature:
@@ -262,6 +378,12 @@ InstallCertificateResult to_ocpp(evse_security::InstallCertificateResult other) 
         "Could not convert evse_security::InstallCertificateResult to InstallCertificateResult");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CertificateValidationResult。
+ */
 CertificateValidationResult to_ocpp(evse_security::CertificateValidationResult other) {
     switch (other) {
     case evse_security::CertificateValidationResult::Valid:
@@ -283,6 +405,12 @@ CertificateValidationResult to_ocpp(evse_security::CertificateValidationResult o
         "Could not convert evse_security::CertificateValidationResult to CertificateValidationResult");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 DeleteCertificateResult。
+ */
 DeleteCertificateResult to_ocpp(evse_security::DeleteCertificateResult other) {
     switch (other) {
     case evse_security::DeleteCertificateResult::Accepted:
@@ -296,6 +424,12 @@ DeleteCertificateResult to_ocpp(evse_security::DeleteCertificateResult other) {
         "Could not convert evse_security::DeleteCertificateResult to DeleteCertificateResult");
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CertificateHashDataType。
+ */
 CertificateHashDataType to_ocpp(evse_security::CertificateHashData other) {
     CertificateHashDataType lhs;
     lhs.hashAlgorithm = to_ocpp(other.hash_algorithm);
@@ -305,6 +439,12 @@ CertificateHashDataType to_ocpp(evse_security::CertificateHashData other) {
     return lhs;
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CertificateHashDataChain。
+ */
 CertificateHashDataChain to_ocpp(evse_security::CertificateHashDataChain other) {
     CertificateHashDataChain lhs;
     lhs.certificateType = to_ocpp(other.certificate_type);
@@ -320,6 +460,12 @@ CertificateHashDataChain to_ocpp(evse_security::CertificateHashDataChain other) 
     return lhs;
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 OCSPRequestData。
+ */
 OCSPRequestData to_ocpp(evse_security::OCSPRequestData other) {
     OCSPRequestData lhs;
     if (other.certificate_hash_data.has_value()) {
@@ -334,6 +480,12 @@ OCSPRequestData to_ocpp(evse_security::OCSPRequestData other) {
     return lhs;
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CertificateOCSP。
+ */
 CertificateOCSP to_ocpp(evse_security::CertificateOCSP other) {
     CertificateOCSP lhs;
     lhs.hash = to_ocpp(other.hash);
@@ -341,6 +493,12 @@ CertificateOCSP to_ocpp(evse_security::CertificateOCSP other) {
     return lhs;
 }
 
+/**
+ * to_ocpp - to ocpp
+ * @other: 传入的 other
+ *
+ * 返回 CertificateInfo。
+ */
 CertificateInfo to_ocpp(evse_security::CertificateInfo other) {
     CertificateInfo lhs;
     lhs.certificate_path = other.certificate;
@@ -358,6 +516,12 @@ CertificateInfo to_ocpp(evse_security::CertificateInfo other) {
     return lhs;
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::CaCertificateType。
+ */
 evse_security::CaCertificateType from_ocpp(CaCertificateType other) {
     switch (other) {
     case CaCertificateType::V2G:
@@ -375,6 +539,12 @@ evse_security::CaCertificateType from_ocpp(CaCertificateType other) {
     throw EnumConversionException("Could not convert CaCertificateType to evse_security::CaCertificateType");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::LeafCertificateType。
+ */
 evse_security::LeafCertificateType from_ocpp(LeafCertificateType other) {
     switch (other) {
     case LeafCertificateType::V2G:
@@ -389,6 +559,12 @@ evse_security::LeafCertificateType from_ocpp(LeafCertificateType other) {
     throw EnumConversionException("Could not convert evse_security::CaCertificateType to CaCertificateType");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::LeafCertificateType。
+ */
 evse_security::LeafCertificateType from_ocpp(CertificateSigningUseEnum other) {
     switch (other) {
     case CertificateSigningUseEnum::ChargingStationCertificate:
@@ -405,6 +581,12 @@ evse_security::LeafCertificateType from_ocpp(CertificateSigningUseEnum other) {
     throw EnumConversionException("Could not convert CertificateSigningUseEnum to evse_security::LeafCertificateType");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::CertificateType。
+ */
 evse_security::CertificateType from_ocpp(CertificateType other) {
     switch (other) {
     case CertificateType::V2GRootCertificate:
@@ -424,6 +606,12 @@ evse_security::CertificateType from_ocpp(CertificateType other) {
     throw EnumConversionException("Could not convert CertificateType to evse_security::CertificateType");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::HashAlgorithm。
+ */
 evse_security::HashAlgorithm from_ocpp(HashAlgorithmEnumType other) {
     switch (other) {
     case HashAlgorithmEnumType::SHA256:
@@ -436,6 +624,12 @@ evse_security::HashAlgorithm from_ocpp(HashAlgorithmEnumType other) {
     throw EnumConversionException("Could not convert HashAlgorithmEnumType to evse_security::HashAlgorithm");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::InstallCertificateResult。
+ */
 evse_security::InstallCertificateResult from_ocpp(InstallCertificateResult other) {
     switch (other) {
     case InstallCertificateResult::InvalidSignature:
@@ -461,6 +655,12 @@ evse_security::InstallCertificateResult from_ocpp(InstallCertificateResult other
         "Could not convert InstallCertificateResult to evse_security::InstallCertificateResult");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::DeleteCertificateResult。
+ */
 evse_security::DeleteCertificateResult from_ocpp(DeleteCertificateResult other) {
     switch (other) {
     case DeleteCertificateResult::Accepted:
@@ -474,6 +674,12 @@ evse_security::DeleteCertificateResult from_ocpp(DeleteCertificateResult other) 
         "Could not convert DeleteCertificateResult to evse_security::DeleteCertificateResult");
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::CertificateHashData。
+ */
 evse_security::CertificateHashData from_ocpp(CertificateHashDataType other) {
     evse_security::CertificateHashData lhs;
     lhs.hash_algorithm = from_ocpp(other.hashAlgorithm);
@@ -483,6 +689,12 @@ evse_security::CertificateHashData from_ocpp(CertificateHashDataType other) {
     return lhs;
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::CertificateHashDataChain。
+ */
 evse_security::CertificateHashDataChain from_ocpp(CertificateHashDataChain other) {
     evse_security::CertificateHashDataChain lhs;
     lhs.certificate_type = from_ocpp(other.certificateType);
@@ -497,6 +709,12 @@ evse_security::CertificateHashDataChain from_ocpp(CertificateHashDataChain other
     return lhs;
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::OCSPRequestData。
+ */
 evse_security::OCSPRequestData from_ocpp(OCSPRequestData other) {
     evse_security::OCSPRequestData lhs;
     evse_security::CertificateHashData certificate_hash_data;
@@ -509,6 +727,12 @@ evse_security::OCSPRequestData from_ocpp(OCSPRequestData other) {
     return lhs;
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::CertificateOCSP。
+ */
 evse_security::CertificateOCSP from_ocpp(CertificateOCSP other) {
     evse_security::CertificateOCSP lhs;
     lhs.hash = from_ocpp(other.hash);
@@ -516,6 +740,12 @@ evse_security::CertificateOCSP from_ocpp(CertificateOCSP other) {
     return lhs;
 }
 
+/**
+ * from_ocpp - from ocpp
+ * @other: 传入的 other
+ *
+ * 返回 evse_security::CertificateInfo。
+ */
 evse_security::CertificateInfo from_ocpp(CertificateInfo other) {
     evse_security::CertificateInfo lhs;
     lhs.certificate = other.certificate_path;

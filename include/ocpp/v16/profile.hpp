@@ -51,11 +51,39 @@ std::int32_t elapsed_seconds(const ocpp::DateTime& to, const ocpp::DateTime& fro
 /// \brief Rounds down the \param dt to the nearest second
 ocpp::DateTime floor_seconds(const ocpp::DateTime& dt);
 
+/**
+ * calculate_start - calculate start
+ * @now: 计算充电曲线时的当前时间
+ * @end: 计算充电曲线时的结束时间
+ * @session_start: 传入的 session_start
+ * @profile: 传入的 profile
+ *
+ * 返回 std::vector<DateTime>。
+ */
 std::vector<DateTime> calculate_start(const DateTime& now, const DateTime& end,
                                       const std::optional<DateTime>& session_start, const ChargingProfile& profile);
+/**
+ * calculate_profile_entry - calculate profile entry
+ * @now: 计算充电曲线时的当前时间
+ * @end: 计算充电曲线时的结束时间
+ * @session_start: 传入的 session_start
+ * @profile: 传入的 profile
+ * @period_index: 传入的 period_index
+ *
+ * 返回 std::vector<period_entry_t>。
+ */
 std::vector<period_entry_t> calculate_profile_entry(const DateTime& now, const DateTime& end,
                                                     const std::optional<DateTime>& session_start,
                                                     const ChargingProfile& profile, std::size_t period_index);
+/**
+ * calculate_profile - calculate profile
+ * @now: 计算充电曲线时的当前时间
+ * @end: 计算充电曲线时的结束时间
+ * @session_start: 传入的 session_start
+ * @profile: 传入的 profile
+ *
+ * 返回 std::vector<period_entry_t>。
+ */
 std::vector<period_entry_t> calculate_profile(const DateTime& now, const DateTime& end,
                                               const std::optional<DateTime>& session_start,
                                               const ChargingProfile& profile);

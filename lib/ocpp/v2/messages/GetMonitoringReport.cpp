@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v2 {
 
+/**
+ * GetMonitoringReportRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string GetMonitoringReportRequest::get_type() const {
     return "GetMonitoringReport";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const GetMonitoringReportRequest& k) {
     // the required parts of the message
     j = json{
@@ -40,6 +50,11 @@ void to_json(json& j, const GetMonitoringReportRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, GetMonitoringReportRequest& k) {
     // the required parts of the message
     k.requestId = j.at("requestId");
@@ -74,10 +89,20 @@ std::ostream& operator<<(std::ostream& os, const GetMonitoringReportRequest& k) 
     return os;
 }
 
+/**
+ * GetMonitoringReportResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string GetMonitoringReportResponse::get_type() const {
     return "GetMonitoringReportResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const GetMonitoringReportResponse& k) {
     // the required parts of the message
     j = json{
@@ -92,6 +117,11 @@ void to_json(json& j, const GetMonitoringReportResponse& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, GetMonitoringReportResponse& k) {
     // the required parts of the message
     k.status = conversions::string_to_generic_device_model_status_enum(j.at("status"));

@@ -8,6 +8,7 @@
 namespace ocpp {
 namespace v2 {
 namespace {
+/* is avg meas */
 bool is_avg_meas(const SampledValue& sample) {
     if (sample.measurand.has_value() and (sample.measurand == MeasurandEnum::Current_Import) or
         (sample.measurand == MeasurandEnum::Voltage) or (sample.measurand == MeasurandEnum::Power_Active_Import) or
@@ -18,12 +19,19 @@ bool is_avg_meas(const SampledValue& sample) {
 }
 } // namespace
 
+/**
+ * AverageMeterValues::clear_values - clear values
+ */
 void AverageMeterValues::clear_values() {
     const std::lock_guard<std::mutex> lk(this->avg_meter_value_mutex);
     this->aligned_meter_values.clear();
     this->averaged_meter_values.sampledValue.clear();
 }
 
+/**
+ * AverageMeterValues::set_values - set values
+ * @meter_value: 传入的 meter_value
+ */
 void AverageMeterValues::set_values(const MeterValue& meter_value) {
     const std::lock_guard<std::mutex> lk(this->avg_meter_value_mutex);
     // store all the meter values in the struct
@@ -45,12 +53,20 @@ void AverageMeterValues::set_values(const MeterValue& meter_value) {
     }
 }
 
+/**
+ * AverageMeterValues::retrieve_processed_values - retrieve processed values
+ *
+ * 返回 MeterValue。
+ */
 MeterValue AverageMeterValues::retrieve_processed_values() {
     const std::lock_guard<std::mutex> lk(this->avg_meter_value_mutex);
     this->average_meter_value();
     return this->averaged_meter_values;
 }
 
+/**
+ * AverageMeterValues::average_meter_value - average meter value
+ */
 void AverageMeterValues::average_meter_value() {
     for (auto& element : this->averaged_meter_values.sampledValue) {
         if (is_avg_meas(element)) {

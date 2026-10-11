@@ -38,6 +38,10 @@ DeviceModelStorageSqlite::DeviceModelStorageSqlite(const fs::path& db_path) {
     initialize_connection(db_path);
 }
 
+/**
+ * DeviceModelStorageSqlite::initialize_connection - initialize connection
+ * @db_path: 传入的 db_path
+ */
 void DeviceModelStorageSqlite::initialize_connection(const fs::path& db_path) {
     db = std::make_unique<Connection>(db_path);
     if (!db->open_connection()) {
@@ -46,6 +50,12 @@ void DeviceModelStorageSqlite::initialize_connection(const fs::path& db_path) {
     EVLOG_info << "Established connection to device model database: " << db_path;
 }
 
+/**
+ * DeviceModelStorageSqlite::get_component_id - get component id
+ * @component_id: 传入的 component_id
+ *
+ * 返回 int。
+ */
 int DeviceModelStorageSqlite::get_component_id(const Component& component_id) {
     const std::string select_query =
         "SELECT ID FROM COMPONENT WHERE NAME = ? AND INSTANCE IS ? AND EVSE_ID IS ? AND CONNECTOR_ID IS ?";
@@ -75,6 +85,13 @@ int DeviceModelStorageSqlite::get_component_id(const Component& component_id) {
     return -1;
 }
 
+/**
+ * DeviceModelStorageSqlite::get_variable_id - get variable id
+ * @component_id: 传入的 component_id
+ * @variable_id: 传入的 variable_id
+ *
+ * 返回 int。
+ */
 int DeviceModelStorageSqlite::get_variable_id(const Component& component_id, const Variable& variable_id) {
     const auto _component_id = this->get_component_id(component_id);
     if (_component_id == -1) {
@@ -97,6 +114,11 @@ int DeviceModelStorageSqlite::get_variable_id(const Component& component_id, con
     return -1;
 }
 
+/**
+ * DeviceModelStorageSqlite::get_device_model - get device model
+ *
+ * 返回 DeviceModelMap。
+ */
 DeviceModelMap DeviceModelStorageSqlite::get_device_model() {
     std::map<Component, std::map<Variable, VariableMetaData>> device_model;
 
@@ -176,6 +198,14 @@ DeviceModelMap DeviceModelStorageSqlite::get_device_model() {
     return device_model;
 }
 
+/**
+ * DeviceModelStorageSqlite::get_variable_attribute - get variable attribute
+ * @component_id: 传入的 component_id
+ * @variable_id: 传入的 variable_id
+ * @attribute_enum: 传入的 attribute_enum
+ *
+ * 返回 std::optional<VariableAttribute>。
+ */
 std::optional<VariableAttribute> DeviceModelStorageSqlite::get_variable_attribute(const Component& component_id,
                                                                                   const Variable& variable_id,
                                                                                   const AttributeEnum& attribute_enum) {
@@ -225,6 +255,16 @@ DeviceModelStorageSqlite::get_variable_attributes(const Component& component_id,
     return attributes;
 }
 
+/**
+ * DeviceModelStorageSqlite::set_variable_attribute_value - set variable attribute value
+ * @component_id: 传入的 component_id
+ * @variable_id: 传入的 variable_id
+ * @attribute_enum: 传入的 attribute_enum
+ * @value: 传入的 value
+ * @source: 传入的 source
+ *
+ * 返回 SetVariableStatusEnum。
+ */
 SetVariableStatusEnum DeviceModelStorageSqlite::set_variable_attribute_value(const Component& component_id,
                                                                              const Variable& variable_id,
                                                                              const AttributeEnum& attribute_enum,
@@ -255,6 +295,13 @@ SetVariableStatusEnum DeviceModelStorageSqlite::set_variable_attribute_value(con
     return SetVariableStatusEnum::Accepted;
 }
 
+/**
+ * DeviceModelStorageSqlite::update_monitoring_reference - update monitoring reference
+ * @monitor_id: 传入的 monitor_id
+ * @reference_value: 传入的 reference_value
+ *
+ * 返回 bool。
+ */
 bool DeviceModelStorageSqlite::update_monitoring_reference(const std::int32_t monitor_id,
                                                            const std::string& reference_value) {
     auto transaction = this->db->begin_transaction();
@@ -277,6 +324,13 @@ bool DeviceModelStorageSqlite::update_monitoring_reference(const std::int32_t mo
     return (changes == 1);
 }
 
+/**
+ * DeviceModelStorageSqlite::set_monitoring_data - set monitoring data
+ * @data: 传入的 data
+ * @type: 传入的 type
+ *
+ * 返回 std::optional<VariableMonitoringMeta>。
+ */
 std::optional<VariableMonitoringMeta> DeviceModelStorageSqlite::set_monitoring_data(const SetMonitoringData& data,
                                                                                     const VariableMonitorType type) {
     const auto _variable_id = this->get_variable_id(data.component, data.variable);
@@ -411,6 +465,13 @@ DeviceModelStorageSqlite::get_monitoring_data(const std::vector<MonitoringCriter
     return monitors;
 }
 
+/**
+ * DeviceModelStorageSqlite::clear_variable_monitor - clear variable monitor
+ * @monitor_id: 传入的 monitor_id
+ * @allow_protected: 传入的 allow_protected
+ *
+ * 返回 ClearMonitoringStatusEnum。
+ */
 ClearMonitoringStatusEnum DeviceModelStorageSqlite::clear_variable_monitor(int monitor_id, bool allow_protected) {
     const std::string select_query = "SELECT COUNT(*) FROM VARIABLE_MONITORING WHERE ID = ?";
 
@@ -454,6 +515,11 @@ ClearMonitoringStatusEnum DeviceModelStorageSqlite::clear_variable_monitor(int m
     return ((delete_stmt->changes() == 1) ? ClearMonitoringStatusEnum::Accepted : ClearMonitoringStatusEnum::Rejected);
 }
 
+/**
+ * DeviceModelStorageSqlite::clear_custom_variable_monitors - clear custom variable monitors
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t DeviceModelStorageSqlite::clear_custom_variable_monitors() {
     const std::string delete_query = "DELETE FROM VARIABLE_MONITORING WHERE CONFIG_TYPE_ID = ?";
 
@@ -471,6 +537,9 @@ std::int32_t DeviceModelStorageSqlite::clear_custom_variable_monitors() {
     return delete_stmt->changes();
 }
 
+/**
+ * DeviceModelStorageSqlite::check_integrity - check integrity
+ */
 void DeviceModelStorageSqlite::check_integrity() {
     // Function is now empty because checks are already done elsewhere (for example the check for 'required' variables).
 }

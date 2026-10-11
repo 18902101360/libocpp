@@ -19,6 +19,9 @@ DatabaseHandlerCommon::DatabaseHandlerCommon(std::unique_ptr<ConnectionInterface
     target_schema_version(target_schema_version) {
 }
 
+/**
+ * DatabaseHandlerCommon::open_connection - open connection
+ */
 void DatabaseHandlerCommon::open_connection() {
     SchemaUpdater updater{this->database.get()};
 
@@ -33,10 +36,19 @@ void DatabaseHandlerCommon::open_connection() {
     this->init_sql();
 }
 
+/**
+ * DatabaseHandlerCommon::close_connection - close connection
+ */
 void DatabaseHandlerCommon::close_connection() {
     this->database->close_connection();
 }
 
+/**
+ * DatabaseHandlerCommon::get_message_queue_messages - get message queue messages
+ * @queue_type: 传入的 queue_type
+ *
+ * 返回 std::vector<DBTransactionMessage>。
+ */
 std::vector<DBTransactionMessage> DatabaseHandlerCommon::get_message_queue_messages(const QueueType queue_type) {
     std::vector<DBTransactionMessage> messages;
 
@@ -82,6 +94,11 @@ std::vector<DBTransactionMessage> DatabaseHandlerCommon::get_message_queue_messa
     return messages;
 }
 
+/**
+ * DatabaseHandlerCommon::insert_message_queue_message - insert message queue message
+ * @db_message: 传入的 db_message
+ * @queue_type: 传入的 queue_type
+ */
 void DatabaseHandlerCommon::insert_message_queue_message(const DBTransactionMessage& db_message,
                                                          const QueueType queue_type) {
     const std::string table_name = queue_type == QueueType::Normal ? "NORMAL_QUEUE" : "TRANSACTION_QUEUE";
@@ -104,6 +121,11 @@ void DatabaseHandlerCommon::insert_message_queue_message(const DBTransactionMess
     }
 }
 
+/**
+ * DatabaseHandlerCommon::remove_message_queue_message - remove message queue message
+ * @unique_id: 传入的 unique_id
+ * @queue_type: 传入的 queue_type
+ */
 void DatabaseHandlerCommon::remove_message_queue_message(const std::string& unique_id, const QueueType queue_type) {
     const std::string table_name = queue_type == QueueType::Normal ? "NORMAL_QUEUE" : "TRANSACTION_QUEUE";
     const std::string sql = "DELETE FROM " + table_name + " WHERE UNIQUE_ID = @unique_id";
@@ -117,6 +139,10 @@ void DatabaseHandlerCommon::remove_message_queue_message(const std::string& uniq
     }
 }
 
+/**
+ * DatabaseHandlerCommon::clear_message_queue - clear message queue
+ * @queue_type: 传入的 queue_type
+ */
 void DatabaseHandlerCommon::clear_message_queue(const QueueType queue_type) {
     const std::string table_name = queue_type == QueueType::Normal ? "NORMAL_QUEUE" : "TRANSACTION_QUEUE";
     const auto retval = this->database->clear_table(table_name);

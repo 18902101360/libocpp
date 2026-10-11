@@ -120,6 +120,14 @@ public:
                                                   bool is_offline, bool simulate_transaction_active);
 };
 
+/**
+ * validate_schedule - validate schedule
+ * @schedule: 传入的 schedule
+ * @charging_schedule_max_periods: 传入的 charging_schedule_max_periods
+ * @charging_schedule_allowed_charging_rate_units: 传入的 charging_schedule_allowed_charging_rate_units
+ *
+ * 返回 bool。
+ */
 bool validate_schedule(const ChargingSchedule& schedule, const int charging_schedule_max_periods,
                        const std::vector<ChargingRateUnit>& charging_schedule_allowed_charging_rate_units);
 

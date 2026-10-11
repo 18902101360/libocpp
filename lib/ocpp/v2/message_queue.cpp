@@ -7,15 +7,33 @@
 
 namespace ocpp {
 
+/**
+ * is_transaction_message - is transaction message
+ * @message_type: OCPP 报文类型
+ *
+ * 返回 bool。
+ */
 bool is_transaction_message(const ocpp::v2::MessageType message_type) {
     return (message_type == v2::MessageType::TransactionEvent) ||
            (message_type == v2::MessageType::SecurityEventNotification);
 }
 
+/**
+ * is_start_transaction_message - is start transaction message
+ * @/: 见函数签名
+ *
+ * 返回 bool。
+ */
 bool is_start_transaction_message(const ocpp::v2::MessageType /*message_type*/) {
     return false;
 }
 
+/**
+ * is_boot_notification_message - is boot notification message
+ * @message_type: OCPP 报文类型
+ *
+ * 返回 bool。
+ */
 bool is_boot_notification_message(const ocpp::v2::MessageType message_type) {
     return message_type == ocpp::v2::MessageType::BootNotification;
 }

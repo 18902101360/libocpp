@@ -215,6 +215,11 @@ ChargePointConfiguration::ChargePointConfiguration(const std::string& config, co
     this->supported_message_types_receiving.insert(MessageType::ReserveNow);
 }
 
+/**
+ * ChargePointConfiguration::get_user_config - get user config
+ *
+ * 返回 json。
+ */
 json ChargePointConfiguration::get_user_config() {
     if (fs::exists(this->user_config_path)) {
         // reading from and overriding to existing user config
@@ -227,6 +232,12 @@ json ChargePointConfiguration::get_user_config() {
     return json({}, true);
 }
 
+/**
+ * ChargePointConfiguration::setInUserConfig - setInUserConfig
+ * @profile: 传入的 profile
+ * @key: 传入的 key
+ * @value: 传入的 value
+ */
 void ChargePointConfiguration::setInUserConfig(std::string profile, std::string key, const json value) {
     // write to a separate file to minimise corruption and data loss; then rename
     namespace fs = std::filesystem;
@@ -248,6 +259,7 @@ void ChargePointConfiguration::setInUserConfig(std::string profile, std::string 
 }
 
 namespace {
+/* to csl */
 std::string to_csl(const std::vector<std::string>& vec) {
     std::string csl;
     for (auto it = vec.begin(); it != vec.end(); ++it) {
@@ -260,6 +272,9 @@ std::string to_csl(const std::vector<std::string>& vec) {
 }
 } // namespace
 
+/**
+ * ChargePointConfiguration::init_supported_measurands - init supported measurands
+ */
 void ChargePointConfiguration::init_supported_measurands() {
     const auto _supported_measurands = ocpp::split_string(this->config["Internal"]["SupportedMeasurands"], ',');
     for (const auto& measurand : _supported_measurands) {
@@ -303,6 +318,12 @@ void ChargePointConfiguration::init_supported_measurands() {
     }
 }
 
+/**
+ * ChargePointConfiguration::setChargepointInformationProperty - setChargepointInformationProperty
+ * @user_config: 传入的 user_config
+ * @key: 传入的 key
+ * @value: 传入的 value
+ */
 void ChargePointConfiguration::setChargepointInformationProperty(json& user_config, const std::string& key,
                                                                  const std::optional<std::string>& value) {
     // std::nullopt value leaves the current value untouched
@@ -312,6 +333,14 @@ void ChargePointConfiguration::setChargepointInformationProperty(json& user_conf
     }
 }
 
+/**
+ * ChargePointConfiguration::setChargepointInformation - setChargepointInformation
+ * @chargePointVendor: 传入的 chargePointVendor
+ * @chargePointModel: 传入的 chargePointModel
+ * @chargePointSerialNumber: 传入的 chargePointSerialNumber
+ * @chargeBoxSerialNumber: 传入的 chargeBoxSerialNumber
+ * @firmwareVersion: 传入的 firmwareVersion
+ */
 void ChargePointConfiguration::setChargepointInformation(const std::string& chargePointVendor,
                                                          const std::string& chargePointModel,
                                                          const std::optional<std::string>& chargePointSerialNumber,
@@ -336,6 +365,11 @@ void ChargePointConfiguration::setChargepointInformation(const std::string& char
     ofs.close();
 }
 
+/**
+ * ChargePointConfiguration::setChargepointModemInformation - setChargepointModemInformation
+ * @ICCID: 传入的 ICCID
+ * @IMSI: 传入的 IMSI
+ */
 void ChargePointConfiguration::setChargepointModemInformation(const std::optional<std::string>& ICCID,
                                                               const std::optional<std::string>& IMSI) {
     // load current persistent configuration from disk
@@ -349,6 +383,11 @@ void ChargePointConfiguration::setChargepointModemInformation(const std::optiona
     ofs << user_config << std::endl;
     ofs.close();
 }
+/**
+ * ChargePointConfiguration::setChargepointMeterInformation - setChargepointMeterInformation
+ * @meterSerialNumber: 传入的 meterSerialNumber
+ * @meterType: 传入的 meterType
+ */
 void ChargePointConfiguration::setChargepointMeterInformation(const std::optional<std::string>& meterSerialNumber,
                                                               const std::optional<std::string>& meterType) {
     // load current persistent configuration from disk
@@ -367,16 +406,36 @@ void ChargePointConfiguration::setChargepointMeterInformation(const std::optiona
 std::string ChargePointConfiguration::getChargePointId() {
     return this->config["Internal"]["ChargePointId"];
 }
+/**
+ * ChargePointConfiguration::getCentralSystemURI - getCentralSystemURI
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getCentralSystemURI() {
     return this->config["Internal"]["CentralSystemURI"];
 }
+/**
+ * ChargePointConfiguration::getChargeBoxSerialNumber - getChargeBoxSerialNumber
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getChargeBoxSerialNumber() {
     return this->config["Internal"]["ChargeBoxSerialNumber"];
 }
 
+/**
+ * ChargePointConfiguration::getChargePointModel - getChargePointModel
+ *
+ * 返回 CiString<20>。
+ */
 CiString<20> ChargePointConfiguration::getChargePointModel() {
     return CiString<20>(this->config["Internal"]["ChargePointModel"].get<std::string>());
 }
+/**
+ * ChargePointConfiguration::getChargePointSerialNumber - getChargePointSerialNumber
+ *
+ * 返回 std::optional<CiString<25>>。
+ */
 std::optional<CiString<25>> ChargePointConfiguration::getChargePointSerialNumber() {
     std::optional<CiString<25>> charge_point_serial_number = std::nullopt;
     if (this->config["Internal"].contains("ChargePointSerialNumber")) {
@@ -385,12 +444,27 @@ std::optional<CiString<25>> ChargePointConfiguration::getChargePointSerialNumber
     return charge_point_serial_number;
 }
 
+/**
+ * ChargePointConfiguration::getChargePointVendor - getChargePointVendor
+ *
+ * 返回 CiString<20>。
+ */
 CiString<20> ChargePointConfiguration::getChargePointVendor() {
     return CiString<20>(this->config["Internal"]["ChargePointVendor"].get<std::string>());
 }
+/**
+ * ChargePointConfiguration::getFirmwareVersion - getFirmwareVersion
+ *
+ * 返回 CiString<50>。
+ */
 CiString<50> ChargePointConfiguration::getFirmwareVersion() {
     return CiString<50>(this->config["Internal"]["FirmwareVersion"].get<std::string>());
 }
+/**
+ * ChargePointConfiguration::getICCID - getICCID
+ *
+ * 返回 std::optional<CiString<20>>。
+ */
 std::optional<CiString<20>> ChargePointConfiguration::getICCID() {
     std::optional<CiString<20>> iccid = std::nullopt;
     if (this->config["Internal"].contains("ICCID")) {
@@ -398,6 +472,11 @@ std::optional<CiString<20>> ChargePointConfiguration::getICCID() {
     }
     return iccid;
 }
+/**
+ * ChargePointConfiguration::getIMSI - getIMSI
+ *
+ * 返回 std::optional<CiString<20>>。
+ */
 std::optional<CiString<20>> ChargePointConfiguration::getIMSI() {
     std::optional<CiString<20>> imsi = std::nullopt;
     if (this->config["Internal"].contains("IMSI")) {
@@ -405,6 +484,11 @@ std::optional<CiString<20>> ChargePointConfiguration::getIMSI() {
     }
     return imsi;
 }
+/**
+ * ChargePointConfiguration::getMeterSerialNumber - getMeterSerialNumber
+ *
+ * 返回 std::optional<CiString<25>>。
+ */
 std::optional<CiString<25>> ChargePointConfiguration::getMeterSerialNumber() {
     std::optional<CiString<25>> meter_serial_number = std::nullopt;
     if (this->config["Internal"].contains("MeterSerialNumber")) {
@@ -412,6 +496,11 @@ std::optional<CiString<25>> ChargePointConfiguration::getMeterSerialNumber() {
     }
     return meter_serial_number;
 }
+/**
+ * ChargePointConfiguration::getMeterType - getMeterType
+ *
+ * 返回 std::optional<CiString<25>>。
+ */
 std::optional<CiString<25>> ChargePointConfiguration::getMeterType() {
     std::optional<CiString<25>> meter_type = std::nullopt;
     if (this->config["Internal"].contains("MeterType")) {
@@ -419,38 +508,83 @@ std::optional<CiString<25>> ChargePointConfiguration::getMeterType() {
     }
     return meter_type;
 }
+/**
+ * ChargePointConfiguration::getAuthorizeConnectorZeroOnConnectorOne - getAuthorizeConnectorZeroOnConnectorOne
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getAuthorizeConnectorZeroOnConnectorOne() {
     if (this->getNumberOfConnectors() == 1) {
         return this->config["Internal"]["AuthorizeConnectorZeroOnConnectorOne"];
     }
     return false;
 }
+/**
+ * ChargePointConfiguration::getLogMessages - getLogMessages
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getLogMessages() {
     return this->config["Internal"]["LogMessages"];
 }
+/**
+ * ChargePointConfiguration::getLogMessagesRaw - getLogMessagesRaw
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getLogMessagesRaw() {
     return this->config["Internal"]["LogMessagesRaw"];
 }
+/**
+ * ChargePointConfiguration::getLogMessagesFormat - getLogMessagesFormat
+ *
+ * 返回 std::vector<std::string>。
+ */
 std::vector<std::string> ChargePointConfiguration::getLogMessagesFormat() {
     return this->config["Internal"]["LogMessagesFormat"];
 }
 
+/**
+ * ChargePointConfiguration::getLogRotation - getLogRotation
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getLogRotation() {
     return this->config["Internal"]["LogRotation"];
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationDateSuffix - getLogRotationDateSuffix
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getLogRotationDateSuffix() {
     return this->config["Internal"]["LogRotationDateSuffix"];
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationMaximumFileSize - getLogRotationMaximumFileSize
+ *
+ * 返回 std::uint64_t。
+ */
 std::uint64_t ChargePointConfiguration::getLogRotationMaximumFileSize() {
     return this->config["Internal"]["LogRotationMaximumFileSize"];
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationMaximumFileCount - getLogRotationMaximumFileCount
+ *
+ * 返回 std::uint64_t。
+ */
 std::uint64_t ChargePointConfiguration::getLogRotationMaximumFileCount() {
     return this->config["Internal"]["LogRotationMaximumFileCount"];
 }
 
+/**
+ * ChargePointConfiguration::getSupportedChargingProfilePurposeTypes - getSupportedChargingProfilePurposeTypes
+ *
+ * 返回 std::vector<ChargingProfilePurposeType>。
+ */
 std::vector<ChargingProfilePurposeType> ChargePointConfiguration::getSupportedChargingProfilePurposeTypes() {
     std::vector<ChargingProfilePurposeType> supported_purpose_types;
     const auto str_list = this->config["Internal"]["SupportedChargingProfilePurposeTypes"];
@@ -464,6 +598,11 @@ std::vector<ChargingProfilePurposeType> ChargePointConfiguration::getSupportedCh
     return supported_purpose_types;
 }
 
+/**
+ * ChargePointConfiguration::getIgnoredProfilePurposesOffline - getIgnoredProfilePurposesOffline
+ *
+ * 返回 std::vector<ChargingProfilePurposeType>。
+ */
 std::vector<ChargingProfilePurposeType> ChargePointConfiguration::getIgnoredProfilePurposesOffline() {
     if (not this->config["Internal"].contains("IgnoredProfilePurposesOffline")) {
         return {};
@@ -481,6 +620,12 @@ std::vector<ChargingProfilePurposeType> ChargePointConfiguration::getIgnoredProf
     return purpose_types;
 }
 
+/**
+ * ChargePointConfiguration::setIgnoredProfilePurposesOffline - setIgnoredProfilePurposesOffline
+ * @ignored_profile_purposes_offline: 传入的 ignored_profile_purposes_offline
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::setIgnoredProfilePurposesOffline(const std::string& ignored_profile_purposes_offline) {
     if (this->getIgnoredProfilePurposesOfflineKeyValue() == std::nullopt) {
         return false;
@@ -501,10 +646,20 @@ bool ChargePointConfiguration::setIgnoredProfilePurposesOffline(const std::strin
     return true;
 }
 
+/**
+ * ChargePointConfiguration::getMaxCompositeScheduleDuration - getMaxCompositeScheduleDuration
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getMaxCompositeScheduleDuration() {
     return this->config["Internal"]["MaxCompositeScheduleDuration"];
 }
 
+/**
+ * ChargePointConfiguration::getCompositeScheduleDefaultLimitAmps - getCompositeScheduleDefaultLimitAmps
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaultLimitAmps() {
     if (this->config["Internal"].contains("CompositeScheduleDefaultLimitAmps")) {
         return this->config["Internal"]["CompositeScheduleDefaultLimitAmps"];
@@ -512,6 +667,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaul
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getCompositeScheduleDefaultLimitAmpsKeyValue - getCompositeScheduleDefaultLimitAmpsKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultLimitAmpsKeyValue() {
     const auto opt_value = this->getCompositeScheduleDefaultLimitAmps();
     if (opt_value.has_value()) {
@@ -524,6 +684,10 @@ std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultLim
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setCompositeScheduleDefaultLimitAmps - setCompositeScheduleDefaultLimitAmps
+ * @limit_amps: 传入的 limit_amps
+ */
 void ChargePointConfiguration::setCompositeScheduleDefaultLimitAmps(std::int32_t limit_amps) {
     if (this->getCompositeScheduleDefaultLimitAmps() != std::nullopt) {
         this->config["Internal"]["CompositeScheduleDefaultLimitAmps"] = limit_amps;
@@ -531,6 +695,11 @@ void ChargePointConfiguration::setCompositeScheduleDefaultLimitAmps(std::int32_t
     }
 }
 
+/**
+ * ChargePointConfiguration::getCompositeScheduleDefaultLimitWatts - getCompositeScheduleDefaultLimitWatts
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaultLimitWatts() {
     if (this->config["Internal"].contains("CompositeScheduleDefaultLimitWatts")) {
         return this->config["Internal"]["CompositeScheduleDefaultLimitWatts"];
@@ -538,6 +707,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaul
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getCompositeScheduleDefaultLimitWattsKeyValue - getCompositeScheduleDefaultLimitWattsKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultLimitWattsKeyValue() {
     const auto opt_value = this->getCompositeScheduleDefaultLimitWatts();
     if (opt_value.has_value()) {
@@ -550,6 +724,10 @@ std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultLim
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setCompositeScheduleDefaultLimitWatts - setCompositeScheduleDefaultLimitWatts
+ * @limit_watts: 传入的 limit_watts
+ */
 void ChargePointConfiguration::setCompositeScheduleDefaultLimitWatts(std::int32_t limit_watts) {
     if (this->getCompositeScheduleDefaultLimitWatts() != std::nullopt) {
         this->config["Internal"]["CompositeScheduleDefaultLimitWatts"] = limit_watts;
@@ -557,6 +735,11 @@ void ChargePointConfiguration::setCompositeScheduleDefaultLimitWatts(std::int32_
     }
 }
 
+/**
+ * ChargePointConfiguration::getCompositeScheduleDefaultNumberPhases - getCompositeScheduleDefaultNumberPhases
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaultNumberPhases() {
     if (this->config["Internal"].contains("CompositeScheduleDefaultNumberPhases")) {
         return this->config["Internal"]["CompositeScheduleDefaultNumberPhases"];
@@ -564,6 +747,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaul
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getCompositeScheduleDefaultNumberPhasesKeyValue - getCompositeScheduleDefaultNumberPhasesKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultNumberPhasesKeyValue() {
     const auto opt_value = this->getCompositeScheduleDefaultNumberPhases();
     if (opt_value.has_value()) {
@@ -576,6 +764,10 @@ std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultNum
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setCompositeScheduleDefaultNumberPhases - setCompositeScheduleDefaultNumberPhases
+ * @number_phases: 传入的 number_phases
+ */
 void ChargePointConfiguration::setCompositeScheduleDefaultNumberPhases(std::int32_t number_phases) {
     if (this->getCompositeScheduleDefaultNumberPhases() != std::nullopt) {
         this->config["Internal"]["CompositeScheduleDefaultNumberPhases"] = number_phases;
@@ -583,6 +775,11 @@ void ChargePointConfiguration::setCompositeScheduleDefaultNumberPhases(std::int3
     }
 }
 
+/**
+ * ChargePointConfiguration::getSupplyVoltage - getSupplyVoltage
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getSupplyVoltage() {
     if (this->config["Internal"].contains("SupplyVoltage")) {
         return this->config["Internal"]["SupplyVoltage"];
@@ -590,6 +787,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getSupplyVoltage() {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getSupplyVoltageKeyValue - getSupplyVoltageKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getSupplyVoltageKeyValue() {
     const auto opt_value = this->getSupplyVoltage();
     if (opt_value.has_value()) {
@@ -602,6 +804,10 @@ std::optional<KeyValue> ChargePointConfiguration::getSupplyVoltageKeyValue() {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setSupplyVoltage - setSupplyVoltage
+ * @supply_voltage: 传入的 supply_voltage
+ */
 void ChargePointConfiguration::setSupplyVoltage(std::int32_t supply_voltage) {
     if (this->getSupplyVoltage().has_value()) {
         this->config["Internal"]["SupplyVoltage"] = supply_voltage;
@@ -609,45 +815,94 @@ void ChargePointConfiguration::setSupplyVoltage(std::int32_t supply_voltage) {
     }
 }
 
+/**
+ * ChargePointConfiguration::getSupportedCiphers12 - getSupportedCiphers12
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getSupportedCiphers12() {
     const std::vector<std::string> supported_ciphers = this->config["Internal"]["SupportedCiphers12"];
     return boost::algorithm::join(supported_ciphers, ":");
 }
 
+/**
+ * ChargePointConfiguration::getSupportedCiphers13 - getSupportedCiphers13
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getSupportedCiphers13() {
     const std::vector<std::string> supported_ciphers = this->config["Internal"]["SupportedCiphers13"];
     return boost::algorithm::join(supported_ciphers, ":");
 }
 
+/**
+ * ChargePointConfiguration::getUseSslDefaultVerifyPaths - getUseSslDefaultVerifyPaths
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getUseSslDefaultVerifyPaths() {
     return this->config["Internal"]["UseSslDefaultVerifyPaths"];
 }
 
+/**
+ * ChargePointConfiguration::getVerifyCsmsCommonName - getVerifyCsmsCommonName
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getVerifyCsmsCommonName() {
     return this->config["Internal"]["VerifyCsmsCommonName"];
 }
 
+/**
+ * ChargePointConfiguration::getUseTPM - getUseTPM
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getUseTPM() {
     return this->config["Internal"]["UseTPM"];
 }
 
+/**
+ * ChargePointConfiguration::getUseTPMSeccLeafCertificate - getUseTPMSeccLeafCertificate
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getUseTPMSeccLeafCertificate() {
     return this->config["Internal"]["UseTPMSeccLeafCertificate"];
 }
 
+/**
+ * ChargePointConfiguration::getVerifyCsmsAllowWildcards - getVerifyCsmsAllowWildcards
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getVerifyCsmsAllowWildcards() {
     return this->config["Internal"]["VerifyCsmsAllowWildcards"];
 }
 
+/**
+ * ChargePointConfiguration::setVerifyCsmsAllowWildcards - setVerifyCsmsAllowWildcards
+ * @verify_csms_allow_wildcards: 传入的 verify_csms_allow_wildcards
+ */
 void ChargePointConfiguration::setVerifyCsmsAllowWildcards(bool verify_csms_allow_wildcards) {
     this->config["Internal"]["VerifyCsmsAllowWildcards"] = verify_csms_allow_wildcards;
     this->setInUserConfig("Internal", "VerifyCsmsAllowWildcards", verify_csms_allow_wildcards);
 }
 
+/**
+ * ChargePointConfiguration::getSupportedMeasurands - getSupportedMeasurands
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getSupportedMeasurands() {
     return this->config["Internal"]["SupportedMeasurands"];
 }
 
+/**
+ * ChargePointConfiguration::getChargePointIdKeyValue - getChargePointIdKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargePointIdKeyValue() {
     KeyValue kv;
     kv.key = "ChargePointId";
@@ -656,6 +911,11 @@ KeyValue ChargePointConfiguration::getChargePointIdKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getCentralSystemURIKeyValue - getCentralSystemURIKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getCentralSystemURIKeyValue() {
     KeyValue kv;
     kv.key = "CentralSystemURI";
@@ -664,6 +924,11 @@ KeyValue ChargePointConfiguration::getCentralSystemURIKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getChargeBoxSerialNumberKeyValue - getChargeBoxSerialNumberKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargeBoxSerialNumberKeyValue() {
     KeyValue kv;
     kv.key = "ChargeBoxSerialNumber";
@@ -672,6 +937,11 @@ KeyValue ChargePointConfiguration::getChargeBoxSerialNumberKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getChargePointModelKeyValue - getChargePointModelKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargePointModelKeyValue() {
     KeyValue kv;
     kv.key = "ChargePointModel";
@@ -680,6 +950,11 @@ KeyValue ChargePointConfiguration::getChargePointModelKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getChargePointSerialNumberKeyValue - getChargePointSerialNumberKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getChargePointSerialNumberKeyValue() {
     std::optional<KeyValue> charge_point_serial_number_kv = std::nullopt;
     auto charge_point_serial_number = this->getChargePointSerialNumber();
@@ -693,6 +968,11 @@ std::optional<KeyValue> ChargePointConfiguration::getChargePointSerialNumberKeyV
     return charge_point_serial_number_kv;
 }
 
+/**
+ * ChargePointConfiguration::getChargePointVendorKeyValue - getChargePointVendorKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargePointVendorKeyValue() {
     KeyValue kv;
     kv.key = "ChargePointVendor";
@@ -701,6 +981,11 @@ KeyValue ChargePointConfiguration::getChargePointVendorKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getFirmwareVersionKeyValue - getFirmwareVersionKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getFirmwareVersionKeyValue() {
     KeyValue kv;
     kv.key = "FirmwareVersion";
@@ -709,6 +994,11 @@ KeyValue ChargePointConfiguration::getFirmwareVersionKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getICCIDKeyValue - getICCIDKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getICCIDKeyValue() {
     std::optional<KeyValue> kv_opt;
     auto value = this->getICCID();
@@ -722,6 +1012,11 @@ std::optional<KeyValue> ChargePointConfiguration::getICCIDKeyValue() {
     return kv_opt;
 }
 
+/**
+ * ChargePointConfiguration::getIMSIKeyValue - getIMSIKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getIMSIKeyValue() {
     std::optional<KeyValue> kv_opt;
     auto value = this->getIMSI();
@@ -735,6 +1030,11 @@ std::optional<KeyValue> ChargePointConfiguration::getIMSIKeyValue() {
     return kv_opt;
 }
 
+/**
+ * ChargePointConfiguration::getMeterSerialNumberKeyValue - getMeterSerialNumberKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMeterSerialNumberKeyValue() {
     std::optional<KeyValue> kv_opt;
     auto value = this->getMeterSerialNumber();
@@ -748,6 +1048,11 @@ std::optional<KeyValue> ChargePointConfiguration::getMeterSerialNumberKeyValue()
     return kv_opt;
 }
 
+/**
+ * ChargePointConfiguration::getMeterTypeKeyValue - getMeterTypeKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMeterTypeKeyValue() {
     std::optional<KeyValue> kv_opt;
     auto value = this->getMeterType();
@@ -761,6 +1066,11 @@ std::optional<KeyValue> ChargePointConfiguration::getMeterTypeKeyValue() {
     return kv_opt;
 }
 
+/**
+ * ChargePointConfiguration::getAuthorizeConnectorZeroOnConnectorOneKeyValue - getAuthorizeConnectorZeroOnConnectorOneKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getAuthorizeConnectorZeroOnConnectorOneKeyValue() {
     KeyValue kv;
     kv.key = "AuthorizeConnectorZeroOnConnectorOne";
@@ -769,6 +1079,11 @@ KeyValue ChargePointConfiguration::getAuthorizeConnectorZeroOnConnectorOneKeyVal
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogMessagesKeyValue - getLogMessagesKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogMessagesKeyValue() {
     KeyValue kv;
     kv.key = "LogMessages";
@@ -777,6 +1092,11 @@ KeyValue ChargePointConfiguration::getLogMessagesKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogMessagesRawKeyValue - getLogMessagesRawKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogMessagesRawKeyValue() {
     KeyValue kv;
     kv.key = "LogMessagesRaw";
@@ -785,6 +1105,11 @@ KeyValue ChargePointConfiguration::getLogMessagesRawKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogMessagesFormatKeyValue - getLogMessagesFormatKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogMessagesFormatKeyValue() {
     KeyValue kv;
     kv.key = "LogMessagesFormat";
@@ -793,6 +1118,11 @@ KeyValue ChargePointConfiguration::getLogMessagesFormatKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationKeyValue - getLogRotationKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogRotationKeyValue() {
     KeyValue kv;
     kv.key = "LogRotation";
@@ -801,6 +1131,11 @@ KeyValue ChargePointConfiguration::getLogRotationKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationDateSuffixKeyValue - getLogRotationDateSuffixKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogRotationDateSuffixKeyValue() {
     KeyValue kv;
     kv.key = "LogRotationDateSuffix";
@@ -809,6 +1144,11 @@ KeyValue ChargePointConfiguration::getLogRotationDateSuffixKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationMaximumFileSizeKeyValue - getLogRotationMaximumFileSizeKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogRotationMaximumFileSizeKeyValue() {
     KeyValue kv;
     kv.key = "LogRotationMaximumFileSize";
@@ -817,6 +1157,11 @@ KeyValue ChargePointConfiguration::getLogRotationMaximumFileSizeKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getLogRotationMaximumFileCountKeyValue - getLogRotationMaximumFileCountKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLogRotationMaximumFileCountKeyValue() {
     KeyValue kv;
     kv.key = "LogRotationMaximumFileCount";
@@ -825,6 +1170,11 @@ KeyValue ChargePointConfiguration::getLogRotationMaximumFileCountKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedChargingProfilePurposeTypesKeyValue - getSupportedChargingProfilePurposeTypesKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSupportedChargingProfilePurposeTypesKeyValue() {
     KeyValue kv;
     kv.key = "SupportedChargingProfilePurposeTypes";
@@ -841,6 +1191,11 @@ KeyValue ChargePointConfiguration::getSupportedChargingProfilePurposeTypesKeyVal
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getIgnoredProfilePurposesOfflineKeyValue - getIgnoredProfilePurposesOfflineKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getIgnoredProfilePurposesOfflineKeyValue() {
     if (not this->config["Internal"].contains("IgnoredProfilePurposesOffline")) {
         return std::nullopt;
@@ -861,6 +1216,11 @@ std::optional<KeyValue> ChargePointConfiguration::getIgnoredProfilePurposesOffli
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getMaxCompositeScheduleDurationKeyValue - getMaxCompositeScheduleDurationKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getMaxCompositeScheduleDurationKeyValue() {
     KeyValue kv;
     kv.key = "MaxCompositeScheduleDuration";
@@ -869,6 +1229,11 @@ KeyValue ChargePointConfiguration::getMaxCompositeScheduleDurationKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedCiphers12KeyValue - getSupportedCiphers12KeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSupportedCiphers12KeyValue() {
     KeyValue kv;
     kv.key = "SupportedCiphers12";
@@ -877,6 +1242,11 @@ KeyValue ChargePointConfiguration::getSupportedCiphers12KeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedCiphers13KeyValue - getSupportedCiphers13KeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSupportedCiphers13KeyValue() {
     KeyValue kv;
     kv.key = "SupportedCiphers13";
@@ -885,6 +1255,11 @@ KeyValue ChargePointConfiguration::getSupportedCiphers13KeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getUseSslDefaultVerifyPathsKeyValue - getUseSslDefaultVerifyPathsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getUseSslDefaultVerifyPathsKeyValue() {
     KeyValue kv;
     kv.key = "UseSslDefaultVerifyPaths";
@@ -893,6 +1268,11 @@ KeyValue ChargePointConfiguration::getUseSslDefaultVerifyPathsKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getVerifyCsmsCommonNameKeyValue - getVerifyCsmsCommonNameKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getVerifyCsmsCommonNameKeyValue() {
     KeyValue kv;
     kv.key = "VerifyCsmsCommonName";
@@ -901,6 +1281,11 @@ KeyValue ChargePointConfiguration::getVerifyCsmsCommonNameKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getVerifyCsmsAllowWildcardsKeyValue - getVerifyCsmsAllowWildcardsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getVerifyCsmsAllowWildcardsKeyValue() {
     KeyValue kv;
     kv.key = "VerifyCsmsAllowWildcards";
@@ -909,6 +1294,11 @@ KeyValue ChargePointConfiguration::getVerifyCsmsAllowWildcardsKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedMeasurandsKeyValue - getSupportedMeasurandsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSupportedMeasurandsKeyValue() {
     KeyValue kv;
     kv.key = "SupportedMeasurands";
@@ -917,10 +1307,20 @@ KeyValue ChargePointConfiguration::getSupportedMeasurandsKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getMaxMessageSize - getMaxMessageSize
+ *
+ * 返回 int。
+ */
 int ChargePointConfiguration::getMaxMessageSize() {
     return this->config["Internal"]["MaxMessageSize"];
 }
 
+/**
+ * ChargePointConfiguration::getMaxMessageSizeKeyValue - getMaxMessageSizeKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getMaxMessageSizeKeyValue() {
     KeyValue kv;
     kv.key = "MaxMessageSize";
@@ -929,23 +1329,47 @@ KeyValue ChargePointConfiguration::getMaxMessageSizeKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getEnableTLSKeylog - getEnableTLSKeylog
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getEnableTLSKeylog() {
     return this->config["Internal"]["EnableTLSKeylog"];
 }
 
+/**
+ * ChargePointConfiguration::getTLSKeylogFile - getTLSKeylogFile
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getTLSKeylogFile() {
     return this->config["Internal"]["TLSKeylogFile"];
 }
 
+/**
+ * ChargePointConfiguration::getStopTransactionIfUnlockNotSupported - getStopTransactionIfUnlockNotSupported
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getStopTransactionIfUnlockNotSupported() {
     return this->config["Internal"]["StopTransactionIfUnlockNotSupported"];
 }
 
+/**
+ * ChargePointConfiguration::setStopTransactionIfUnlockNotSupported - setStopTransactionIfUnlockNotSupported
+ * @stop_transaction_if_unlock_not_supported: 传入的 stop_transaction_if_unlock_not_supported
+ */
 void ChargePointConfiguration::setStopTransactionIfUnlockNotSupported(bool stop_transaction_if_unlock_not_supported) {
     this->config["Internal"]["StopTransactionIfUnlockNotSupported"] = stop_transaction_if_unlock_not_supported;
     this->setInUserConfig("Internal", "StopTransactionIfUnlockNotSupported", stop_transaction_if_unlock_not_supported);
 }
 
+/**
+ * ChargePointConfiguration::getStopTransactionIfUnlockNotSupportedKeyValue - getStopTransactionIfUnlockNotSupportedKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getStopTransactionIfUnlockNotSupportedKeyValue() {
     KeyValue kv;
     kv.key = "StopTransactionIfUnlockNotSupported";
@@ -954,6 +1378,11 @@ KeyValue ChargePointConfiguration::getStopTransactionIfUnlockNotSupportedKeyValu
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getWebsocketPingPayloadKeyValue - getWebsocketPingPayloadKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getWebsocketPingPayloadKeyValue() {
     KeyValue kv;
     kv.key = "WebsocketPingPayload";
@@ -962,6 +1391,11 @@ KeyValue ChargePointConfiguration::getWebsocketPingPayloadKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getWebsocketPongTimeoutKeyValue - getWebsocketPongTimeoutKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getWebsocketPongTimeoutKeyValue() {
     KeyValue kv;
     kv.key = "WebsocketPongTimeout";
@@ -970,15 +1404,29 @@ KeyValue ChargePointConfiguration::getWebsocketPongTimeoutKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getRetryBackoffRandomRange - getRetryBackoffRandomRange
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getRetryBackoffRandomRange() {
     return this->config["Internal"]["RetryBackoffRandomRange"];
 }
 
+/**
+ * ChargePointConfiguration::setRetryBackoffRandomRange - setRetryBackoffRandomRange
+ * @retry_backoff_random_range: 传入的 retry_backoff_random_range
+ */
 void ChargePointConfiguration::setRetryBackoffRandomRange(std::int32_t retry_backoff_random_range) {
     this->config["Internal"]["RetryBackoffRandomRange"] = retry_backoff_random_range;
     this->setInUserConfig("Internal", "RetryBackoffRandomRange", retry_backoff_random_range);
 }
 
+/**
+ * ChargePointConfiguration::getRetryBackoffRandomRangeKeyValue - getRetryBackoffRandomRangeKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getRetryBackoffRandomRangeKeyValue() {
     KeyValue kv;
     kv.key = "RetryBackoffRandomRange";
@@ -987,15 +1435,29 @@ KeyValue ChargePointConfiguration::getRetryBackoffRandomRangeKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getRetryBackoffRepeatTimes - getRetryBackoffRepeatTimes
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getRetryBackoffRepeatTimes() {
     return this->config["Internal"]["RetryBackoffRepeatTimes"];
 }
 
+/**
+ * ChargePointConfiguration::setRetryBackoffRepeatTimes - setRetryBackoffRepeatTimes
+ * @retry_backoff_repeat_times: 传入的 retry_backoff_repeat_times
+ */
 void ChargePointConfiguration::setRetryBackoffRepeatTimes(std::int32_t retry_backoff_repeat_times) {
     this->config["Internal"]["RetryBackoffRepeatTimes"] = retry_backoff_repeat_times;
     this->setInUserConfig("Internal", "RetryBackoffRepeatTimes", retry_backoff_repeat_times);
 }
 
+/**
+ * ChargePointConfiguration::getRetryBackoffRepeatTimesKeyValue - getRetryBackoffRepeatTimesKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getRetryBackoffRepeatTimesKeyValue() {
     KeyValue kv;
     kv.key = "RetryBackoffRepeatTimes";
@@ -1004,15 +1466,29 @@ KeyValue ChargePointConfiguration::getRetryBackoffRepeatTimesKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getRetryBackoffWaitMinimum - getRetryBackoffWaitMinimum
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getRetryBackoffWaitMinimum() {
     return this->config["Internal"]["RetryBackoffWaitMinimum"];
 }
 
+/**
+ * ChargePointConfiguration::setRetryBackoffWaitMinimum - setRetryBackoffWaitMinimum
+ * @retry_backoff_wait_minimum: 传入的 retry_backoff_wait_minimum
+ */
 void ChargePointConfiguration::setRetryBackoffWaitMinimum(std::int32_t retry_backoff_wait_minimum) {
     this->config["Internal"]["RetryBackoffWaitMinimum"] = retry_backoff_wait_minimum;
     this->setInUserConfig("Internal", "RetryBackoffWaitMinimum", retry_backoff_wait_minimum);
 }
 
+/**
+ * ChargePointConfiguration::getRetryBackoffWaitMinimumKeyValue - getRetryBackoffWaitMinimumKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getRetryBackoffWaitMinimumKeyValue() {
     KeyValue kv;
     kv.key = "RetryBackoffWaitMinimum";
@@ -1021,6 +1497,12 @@ KeyValue ChargePointConfiguration::getRetryBackoffWaitMinimumKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::csv_to_measurand_with_phase_vector - csv to measurand with phase vector
+ * @csv: 传入的 csv
+ *
+ * 返回 std::vector<MeasurandWithPhase>。
+ */
 std::vector<MeasurandWithPhase> ChargePointConfiguration::csv_to_measurand_with_phase_vector(std::string csv) {
     std::vector<std::string> components;
 
@@ -1066,6 +1548,12 @@ std::vector<MeasurandWithPhase> ChargePointConfiguration::csv_to_measurand_with_
     return measurand_with_phase_vector;
 }
 
+/**
+ * ChargePointConfiguration::validate_measurands - validate measurands
+ * @config: 库配置，通常是 JSON 或配置文件路径
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::validate_measurands(const json& config) {
     std::vector<std::string> measurands_vector;
 
@@ -1084,6 +1572,7 @@ bool ChargePointConfiguration::validate_measurands(const json& config) {
 }
 
 namespace {
+/* validate connector evse ids */
 bool validate_connector_evse_ids(const std::string& value) {
     if (value.length() > CONNECTOR_EVSE_IDS_MAX_LENGTH) {
         return false;
@@ -1101,6 +1590,12 @@ bool validate_connector_evse_ids(const std::string& value) {
 }
 } // namespace
 
+/**
+ * ChargePointConfiguration::measurands_supported - measurands supported
+ * @csv: 传入的 csv
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::measurands_supported(std::string csv) {
 
     if (csv.empty()) {
@@ -1139,22 +1634,47 @@ bool ChargePointConfiguration::measurands_supported(std::string csv) {
     return true;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedMessageTypesSending - getSupportedMessageTypesSending
+ *
+ * 返回 std::set<MessageType>。
+ */
 std::set<MessageType> ChargePointConfiguration::getSupportedMessageTypesSending() {
     return this->supported_message_types_sending;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedMessageTypesReceiving - getSupportedMessageTypesReceiving
+ *
+ * 返回 std::set<MessageType>。
+ */
 std::set<MessageType> ChargePointConfiguration::getSupportedMessageTypesReceiving() {
     return this->supported_message_types_receiving;
 }
 
+/**
+ * ChargePointConfiguration::getWebsocketPingPayload - getWebsocketPingPayload
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getWebsocketPingPayload() {
     return this->config["Internal"]["WebsocketPingPayload"];
 }
 
+/**
+ * ChargePointConfiguration::getWebsocketPongTimeout - getWebsocketPongTimeout
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getWebsocketPongTimeout() {
     return this->config["Internal"]["WebsocketPongTimeout"];
 }
 
+/**
+ * ChargePointConfiguration::getHostName - getHostName
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getHostName() {
     std::optional<std::string> hostName_key = std::nullopt;
     if (this->config["Internal"].contains("HostName")) {
@@ -1163,6 +1683,11 @@ std::optional<std::string> ChargePointConfiguration::getHostName() {
     return hostName_key;
 }
 
+/**
+ * ChargePointConfiguration::getIFace - getIFace
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getIFace() {
     std::optional<std::string> iFace_key = std::nullopt;
     if (this->config["Internal"].contains("IFace")) {
@@ -1171,6 +1696,11 @@ std::optional<std::string> ChargePointConfiguration::getIFace() {
     return iFace_key;
 }
 
+/**
+ * ChargePointConfiguration::getQueueAllMessages - getQueueAllMessages
+ *
+ * 返回 std::optional<bool>。
+ */
 std::optional<bool> ChargePointConfiguration::getQueueAllMessages() {
     std::optional<bool> queue_all_messages = std::nullopt;
     if (this->config["Internal"].contains("QueueAllMessages")) {
@@ -1179,6 +1709,11 @@ std::optional<bool> ChargePointConfiguration::getQueueAllMessages() {
     return queue_all_messages;
 }
 
+/**
+ * ChargePointConfiguration::getQueueAllMessagesKeyValue - getQueueAllMessagesKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getQueueAllMessagesKeyValue() {
     std::optional<KeyValue> queue_all_messages_kv = std::nullopt;
     auto queue_all_messages = this->getQueueAllMessages();
@@ -1192,6 +1727,11 @@ std::optional<KeyValue> ChargePointConfiguration::getQueueAllMessagesKeyValue() 
     return queue_all_messages_kv;
 }
 
+/**
+ * ChargePointConfiguration::getMessageTypesDiscardForQueueing - getMessageTypesDiscardForQueueing
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getMessageTypesDiscardForQueueing() {
     if (this->config["Internal"].contains("MessageTypesDiscardForQueueing")) {
         return this->config["Internal"]["MessageTypesDiscardForQueueing"];
@@ -1199,6 +1739,11 @@ std::optional<std::string> ChargePointConfiguration::getMessageTypesDiscardForQu
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getMessageTypesDiscardForQueueingKeyValue - getMessageTypesDiscardForQueueingKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMessageTypesDiscardForQueueingKeyValue() {
     std::optional<KeyValue> message_types_discard_for_queueing_kv = std::nullopt;
     auto message_types_discard_for_queueing = this->getMessageTypesDiscardForQueueing();
@@ -1212,6 +1757,11 @@ std::optional<KeyValue> ChargePointConfiguration::getMessageTypesDiscardForQueue
     return message_types_discard_for_queueing_kv;
 }
 
+/**
+ * ChargePointConfiguration::getMessageQueueSizeThreshold - getMessageQueueSizeThreshold
+ *
+ * 返回 std::optional<int>。
+ */
 std::optional<int> ChargePointConfiguration::getMessageQueueSizeThreshold() {
     std::optional<int> message_queue_size_threshold = std::nullopt;
     if (this->config["Internal"].contains("MessageQueueSizeThreshold")) {
@@ -1220,6 +1770,11 @@ std::optional<int> ChargePointConfiguration::getMessageQueueSizeThreshold() {
     return message_queue_size_threshold;
 }
 
+/**
+ * ChargePointConfiguration::getMessageQueueSizeThresholdKeyValue - getMessageQueueSizeThresholdKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMessageQueueSizeThresholdKeyValue() {
     std::optional<KeyValue> message_queue_size_threshold_kv = std::nullopt;
     auto message_queue_size_threshold = this->getMessageQueueSizeThreshold();
@@ -1241,12 +1796,21 @@ std::optional<bool> ChargePointConfiguration::getAllowOfflineTxForUnknownId() {
     }
     return unknown_offline_auth;
 }
+/**
+ * ChargePointConfiguration::setAllowOfflineTxForUnknownId - setAllowOfflineTxForUnknownId
+ * @enabled: 传入的 enabled
+ */
 void ChargePointConfiguration::setAllowOfflineTxForUnknownId(bool enabled) {
     if (this->getAllowOfflineTxForUnknownId() != std::nullopt) {
         this->config["Core"]["AllowOfflineTxForUnknownId"] = enabled;
         this->setInUserConfig("Core", "AllowOfflineTxForUnknownId", enabled);
     }
 }
+/**
+ * ChargePointConfiguration::getAllowOfflineTxForUnknownIdKeyValue - getAllowOfflineTxForUnknownIdKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getAllowOfflineTxForUnknownIdKeyValue() {
     std::optional<KeyValue> unknown_offline_auth_kv = std::nullopt;
     auto unknown_offline_auth = this->getAllowOfflineTxForUnknownId();
@@ -1268,12 +1832,21 @@ std::optional<bool> ChargePointConfiguration::getAuthorizationCacheEnabled() {
     }
     return enabled;
 }
+/**
+ * ChargePointConfiguration::setAuthorizationCacheEnabled - setAuthorizationCacheEnabled
+ * @enabled: 传入的 enabled
+ */
 void ChargePointConfiguration::setAuthorizationCacheEnabled(bool enabled) {
     if (this->getAuthorizationCacheEnabled() != std::nullopt) {
         this->config["Core"]["AuthorizationCacheEnabled"] = enabled;
         this->setInUserConfig("Core", "AuthorizationCacheEnabled", enabled);
     }
 }
+/**
+ * ChargePointConfiguration::getAuthorizationCacheEnabledKeyValue - getAuthorizationCacheEnabledKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getAuthorizationCacheEnabledKeyValue() {
     std::optional<KeyValue> enabled_kv = std::nullopt;
     auto enabled = this->getAuthorizationCacheEnabled();
@@ -1291,10 +1864,19 @@ std::optional<KeyValue> ChargePointConfiguration::getAuthorizationCacheEnabledKe
 bool ChargePointConfiguration::getAuthorizeRemoteTxRequests() {
     return this->config["Core"]["AuthorizeRemoteTxRequests"];
 }
+/**
+ * ChargePointConfiguration::setAuthorizeRemoteTxRequests - setAuthorizeRemoteTxRequests
+ * @enabled: 传入的 enabled
+ */
 void ChargePointConfiguration::setAuthorizeRemoteTxRequests(bool enabled) {
     this->config["Core"]["AuthorizeRemoteTxRequests"] = enabled;
     this->setInUserConfig("Core", "AuthorizeRemoteTxRequests", enabled);
 }
+/**
+ * ChargePointConfiguration::getAuthorizeRemoteTxRequestsKeyValue - getAuthorizeRemoteTxRequestsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getAuthorizeRemoteTxRequestsKeyValue() {
     KeyValue kv;
     kv.key = "AuthorizeRemoteTxRequests";
@@ -1311,12 +1893,21 @@ std::optional<std::int32_t> ChargePointConfiguration::getBlinkRepeat() {
     }
     return blink_repeat;
 }
+/**
+ * ChargePointConfiguration::setBlinkRepeat - setBlinkRepeat
+ * @blink_repeat: 传入的 blink_repeat
+ */
 void ChargePointConfiguration::setBlinkRepeat(std::int32_t blink_repeat) {
     if (this->getBlinkRepeat() != std::nullopt) {
         this->config["Core"]["BlinkRepeat"] = blink_repeat;
         this->setInUserConfig("Core", "BlinkRepeat", blink_repeat);
     }
 }
+/**
+ * ChargePointConfiguration::getBlinkRepeatKeyValue - getBlinkRepeatKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getBlinkRepeatKeyValue() {
     std::optional<KeyValue> blink_repeat_kv = std::nullopt;
     auto blink_repeat = this->getBlinkRepeat();
@@ -1334,10 +1925,19 @@ std::optional<KeyValue> ChargePointConfiguration::getBlinkRepeatKeyValue() {
 std::int32_t ChargePointConfiguration::getClockAlignedDataInterval() {
     return this->config["Core"]["ClockAlignedDataInterval"];
 }
+/**
+ * ChargePointConfiguration::setClockAlignedDataInterval - setClockAlignedDataInterval
+ * @interval: 传入的 interval
+ */
 void ChargePointConfiguration::setClockAlignedDataInterval(std::int32_t interval) {
     this->config["Core"]["ClockAlignedDataInterval"] = interval;
     this->setInUserConfig("Core", "ClockAlignedDataInterval", interval);
 }
+/**
+ * ChargePointConfiguration::getClockAlignedDataIntervalKeyValue - getClockAlignedDataIntervalKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getClockAlignedDataIntervalKeyValue() {
     KeyValue kv;
     kv.key = "ClockAlignedDataInterval";
@@ -1350,10 +1950,19 @@ KeyValue ChargePointConfiguration::getClockAlignedDataIntervalKeyValue() {
 std::int32_t ChargePointConfiguration::getConnectionTimeOut() {
     return this->config["Core"]["ConnectionTimeOut"];
 }
+/**
+ * ChargePointConfiguration::setConnectionTimeOut - setConnectionTimeOut
+ * @timeout: 传入的 timeout
+ */
 void ChargePointConfiguration::setConnectionTimeOut(std::int32_t timeout) {
     this->config["Core"]["ConnectionTimeOut"] = timeout;
     this->setInUserConfig("Core", "ConnectionTimeOut", timeout);
 }
+/**
+ * ChargePointConfiguration::getConnectionTimeOutKeyValue - getConnectionTimeOutKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getConnectionTimeOutKeyValue() {
     KeyValue kv;
     kv.key = "ConnectionTimeOut";
@@ -1366,10 +1975,19 @@ KeyValue ChargePointConfiguration::getConnectionTimeOutKeyValue() {
 std::string ChargePointConfiguration::getConnectorPhaseRotation() {
     return this->config["Core"]["ConnectorPhaseRotation"];
 }
+/**
+ * ChargePointConfiguration::setConnectorPhaseRotation - setConnectorPhaseRotation
+ * @connector_phase_rotation: 传入的 connector_phase_rotation
+ */
 void ChargePointConfiguration::setConnectorPhaseRotation(std::string connector_phase_rotation) {
     this->config["Core"]["ConnectorPhaseRotation"] = connector_phase_rotation;
     this->setInUserConfig("Core", "ConnectorPhaseRotation", connector_phase_rotation);
 }
+/**
+ * ChargePointConfiguration::getConnectorPhaseRotationKeyValue - getConnectorPhaseRotationKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getConnectorPhaseRotationKeyValue() {
     KeyValue kv;
     kv.key = "ConnectorPhaseRotation";
@@ -1386,6 +2004,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getConnectorPhaseRotationM
     }
     return max_length;
 }
+/**
+ * ChargePointConfiguration::getConnectorPhaseRotationMaxLengthKeyValue - getConnectorPhaseRotationMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getConnectorPhaseRotationMaxLengthKeyValue() {
     std::optional<KeyValue> max_length_kv = std::nullopt;
     auto max_length = this->getConnectorPhaseRotationMaxLength();
@@ -1403,6 +2026,11 @@ std::optional<KeyValue> ChargePointConfiguration::getConnectorPhaseRotationMaxLe
 std::int32_t ChargePointConfiguration::getGetConfigurationMaxKeys() {
     return this->config["Core"]["GetConfigurationMaxKeys"];
 }
+/**
+ * ChargePointConfiguration::getGetConfigurationMaxKeysKeyValue - getGetConfigurationMaxKeysKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getGetConfigurationMaxKeysKeyValue() {
     KeyValue kv;
     kv.key = "GetConfigurationMaxKeys";
@@ -1415,10 +2043,19 @@ KeyValue ChargePointConfiguration::getGetConfigurationMaxKeysKeyValue() {
 std::int32_t ChargePointConfiguration::getHeartbeatInterval() {
     return this->config["Core"]["HeartbeatInterval"];
 }
+/**
+ * ChargePointConfiguration::setHeartbeatInterval - setHeartbeatInterval
+ * @interval: 传入的 interval
+ */
 void ChargePointConfiguration::setHeartbeatInterval(std::int32_t interval) {
     this->config["Core"]["HeartbeatInterval"] = interval;
     this->setInUserConfig("Core", "HeartbeatInterval", interval);
 }
+/**
+ * ChargePointConfiguration::getHeartbeatIntervalKeyValue - getHeartbeatIntervalKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getHeartbeatIntervalKeyValue() {
     KeyValue kv;
     kv.key = "HeartbeatInterval";
@@ -1435,12 +2072,21 @@ std::optional<std::int32_t> ChargePointConfiguration::getLightIntensity() {
     }
     return light_intensity;
 }
+/**
+ * ChargePointConfiguration::setLightIntensity - setLightIntensity
+ * @light_intensity: 传入的 light_intensity
+ */
 void ChargePointConfiguration::setLightIntensity(std::int32_t light_intensity) {
     if (this->getLightIntensity() != std::nullopt) {
         this->config["Core"]["LightIntensity"] = light_intensity;
         this->setInUserConfig("Core", "LightIntensity", light_intensity);
     }
 }
+/**
+ * ChargePointConfiguration::getLightIntensityKeyValue - getLightIntensityKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getLightIntensityKeyValue() {
     std::optional<KeyValue> light_intensity_kv = std::nullopt;
     auto light_intensity = this->getLightIntensity();
@@ -1458,10 +2104,19 @@ std::optional<KeyValue> ChargePointConfiguration::getLightIntensityKeyValue() {
 bool ChargePointConfiguration::getLocalAuthorizeOffline() {
     return this->config["Core"]["LocalAuthorizeOffline"];
 }
+/**
+ * ChargePointConfiguration::setLocalAuthorizeOffline - setLocalAuthorizeOffline
+ * @local_authorize_offline: 传入的 local_authorize_offline
+ */
 void ChargePointConfiguration::setLocalAuthorizeOffline(bool local_authorize_offline) {
     this->config["Core"]["LocalAuthorizeOffline"] = local_authorize_offline;
     this->setInUserConfig("Core", "LocalAuthorizeOffline", local_authorize_offline);
 }
+/**
+ * ChargePointConfiguration::getLocalAuthorizeOfflineKeyValue - getLocalAuthorizeOfflineKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLocalAuthorizeOfflineKeyValue() {
     KeyValue kv;
     kv.key = "LocalAuthorizeOffline";
@@ -1474,10 +2129,19 @@ KeyValue ChargePointConfiguration::getLocalAuthorizeOfflineKeyValue() {
 bool ChargePointConfiguration::getLocalPreAuthorize() {
     return this->config["Core"]["LocalPreAuthorize"];
 }
+/**
+ * ChargePointConfiguration::setLocalPreAuthorize - setLocalPreAuthorize
+ * @local_pre_authorize: 传入的 local_pre_authorize
+ */
 void ChargePointConfiguration::setLocalPreAuthorize(bool local_pre_authorize) {
     this->config["Core"]["LocalPreAuthorize"] = local_pre_authorize;
     this->setInUserConfig("Core", "LocalPreAuthorize", local_pre_authorize);
 }
+/**
+ * ChargePointConfiguration::getLocalPreAuthorizeKeyValue - getLocalPreAuthorizeKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLocalPreAuthorizeKeyValue() {
     KeyValue kv;
     kv.key = "LocalPreAuthorize";
@@ -1494,12 +2158,21 @@ std::optional<std::int32_t> ChargePointConfiguration::getMaxEnergyOnInvalidId() 
     }
     return max_energy;
 }
+/**
+ * ChargePointConfiguration::setMaxEnergyOnInvalidId - setMaxEnergyOnInvalidId
+ * @max_energy: 传入的 max_energy
+ */
 void ChargePointConfiguration::setMaxEnergyOnInvalidId(std::int32_t max_energy) {
     if (this->getMaxEnergyOnInvalidId() != std::nullopt) {
         this->config["Core"]["MaxEnergyOnInvalidId"] = max_energy;
         this->setInUserConfig("Core", "MaxEnergyOnInvalidId", max_energy);
     }
 }
+/**
+ * ChargePointConfiguration::getMaxEnergyOnInvalidIdKeyValue - getMaxEnergyOnInvalidIdKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMaxEnergyOnInvalidIdKeyValue() {
     std::optional<KeyValue> max_energy_kv = std::nullopt;
     auto max_energy = this->getMaxEnergyOnInvalidId();
@@ -1517,6 +2190,12 @@ std::optional<KeyValue> ChargePointConfiguration::getMaxEnergyOnInvalidIdKeyValu
 std::string ChargePointConfiguration::getMeterValuesAlignedData() {
     return this->config["Core"]["MeterValuesAlignedData"];
 }
+/**
+ * ChargePointConfiguration::setMeterValuesAlignedData - setMeterValuesAlignedData
+ * @meter_values_aligned_data: 传入的 meter_values_aligned_data
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::setMeterValuesAlignedData(std::string meter_values_aligned_data) {
     if (!this->measurands_supported(meter_values_aligned_data)) {
         return false;
@@ -1525,6 +2204,11 @@ bool ChargePointConfiguration::setMeterValuesAlignedData(std::string meter_value
     this->setInUserConfig("Core", "MeterValuesAlignedData", meter_values_aligned_data);
     return true;
 }
+/**
+ * ChargePointConfiguration::getMeterValuesAlignedDataKeyValue - getMeterValuesAlignedDataKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getMeterValuesAlignedDataKeyValue() {
     KeyValue kv;
     kv.key = "MeterValuesAlignedData";
@@ -1532,6 +2216,11 @@ KeyValue ChargePointConfiguration::getMeterValuesAlignedDataKeyValue() {
     kv.value.emplace(this->getMeterValuesAlignedData());
     return kv;
 }
+/**
+ * ChargePointConfiguration::getMeterValuesAlignedDataVector - getMeterValuesAlignedDataVector
+ *
+ * 返回 std::vector<MeasurandWithPhase>。
+ */
 std::vector<MeasurandWithPhase> ChargePointConfiguration::getMeterValuesAlignedDataVector() {
     return this->csv_to_measurand_with_phase_vector(this->getMeterValuesAlignedData());
 }
@@ -1544,6 +2233,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getMeterValuesAlignedDataM
     }
     return max_length;
 }
+/**
+ * ChargePointConfiguration::getMeterValuesAlignedDataMaxLengthKeyValue - getMeterValuesAlignedDataMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMeterValuesAlignedDataMaxLengthKeyValue() {
     std::optional<KeyValue> max_length_kv = std::nullopt;
     auto max_length = this->getMeterValuesAlignedDataMaxLength();
@@ -1561,6 +2255,12 @@ std::optional<KeyValue> ChargePointConfiguration::getMeterValuesAlignedDataMaxLe
 std::string ChargePointConfiguration::getMeterValuesSampledData() {
     return this->config["Core"]["MeterValuesSampledData"];
 }
+/**
+ * ChargePointConfiguration::setMeterValuesSampledData - setMeterValuesSampledData
+ * @meter_values_sampled_data: 传入的 meter_values_sampled_data
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::setMeterValuesSampledData(std::string meter_values_sampled_data) {
     if (!this->measurands_supported(meter_values_sampled_data)) {
         return false;
@@ -1569,6 +2269,11 @@ bool ChargePointConfiguration::setMeterValuesSampledData(std::string meter_value
     this->setInUserConfig("Core", "MeterValuesSampledData", meter_values_sampled_data);
     return true;
 }
+/**
+ * ChargePointConfiguration::getMeterValuesSampledDataKeyValue - getMeterValuesSampledDataKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getMeterValuesSampledDataKeyValue() {
     KeyValue kv;
     kv.key = "MeterValuesSampledData";
@@ -1576,6 +2281,11 @@ KeyValue ChargePointConfiguration::getMeterValuesSampledDataKeyValue() {
     kv.value.emplace(this->getMeterValuesSampledData());
     return kv;
 }
+/**
+ * ChargePointConfiguration::getMeterValuesSampledDataVector - getMeterValuesSampledDataVector
+ *
+ * 返回 std::vector<MeasurandWithPhase>。
+ */
 std::vector<MeasurandWithPhase> ChargePointConfiguration::getMeterValuesSampledDataVector() {
     return this->csv_to_measurand_with_phase_vector(this->getMeterValuesSampledData());
 }
@@ -1588,6 +2298,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getMeterValuesSampledDataM
     }
     return max_length;
 }
+/**
+ * ChargePointConfiguration::getMeterValuesSampledDataMaxLengthKeyValue - getMeterValuesSampledDataMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMeterValuesSampledDataMaxLengthKeyValue() {
     std::optional<KeyValue> max_length_kv = std::nullopt;
     auto max_length = this->getMeterValuesSampledDataMaxLength();
@@ -1605,10 +2320,19 @@ std::optional<KeyValue> ChargePointConfiguration::getMeterValuesSampledDataMaxLe
 std::int32_t ChargePointConfiguration::getMeterValueSampleInterval() {
     return this->config["Core"]["MeterValueSampleInterval"];
 }
+/**
+ * ChargePointConfiguration::setMeterValueSampleInterval - setMeterValueSampleInterval
+ * @interval: 传入的 interval
+ */
 void ChargePointConfiguration::setMeterValueSampleInterval(std::int32_t interval) {
     this->config["Core"]["MeterValueSampleInterval"] = interval;
     this->setInUserConfig("Core", "MeterValueSampleInterval", interval);
 }
+/**
+ * ChargePointConfiguration::getMeterValueSampleIntervalKeyValue - getMeterValueSampleIntervalKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getMeterValueSampleIntervalKeyValue() {
     KeyValue kv;
     kv.key = "MeterValueSampleInterval";
@@ -1625,12 +2349,21 @@ std::optional<std::int32_t> ChargePointConfiguration::getMinimumStatusDuration()
     }
     return minimum_status_duration;
 }
+/**
+ * ChargePointConfiguration::setMinimumStatusDuration - setMinimumStatusDuration
+ * @minimum_status_duration: 传入的 minimum_status_duration
+ */
 void ChargePointConfiguration::setMinimumStatusDuration(std::int32_t minimum_status_duration) {
     if (this->getMinimumStatusDuration() != std::nullopt) {
         this->config["Core"]["MinimumStatusDuration"] = minimum_status_duration;
         this->setInUserConfig("Core", "MinimumStatusDuration", minimum_status_duration);
     }
 }
+/**
+ * ChargePointConfiguration::getMinimumStatusDurationKeyValue - getMinimumStatusDurationKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMinimumStatusDurationKeyValue() {
     std::optional<KeyValue> minimum_status_duration_kv = std::nullopt;
     auto minimum_status_duration = this->getMinimumStatusDuration();
@@ -1648,6 +2381,11 @@ std::optional<KeyValue> ChargePointConfiguration::getMinimumStatusDurationKeyVal
 std::int32_t ChargePointConfiguration::getNumberOfConnectors() {
     return this->config["Core"]["NumberOfConnectors"];
 }
+/**
+ * ChargePointConfiguration::getNumberOfConnectorsKeyValue - getNumberOfConnectorsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getNumberOfConnectorsKeyValue() {
     KeyValue kv;
     kv.key = "NumberOfConnectors";
@@ -1666,6 +2404,11 @@ std::optional<bool> ChargePointConfiguration::getReserveConnectorZeroSupported()
     return reserve_connector_zero_supported;
 }
 
+/**
+ * ChargePointConfiguration::getReserveConnectorZeroSupportedKeyValue - getReserveConnectorZeroSupportedKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getReserveConnectorZeroSupportedKeyValue() {
     std::optional<KeyValue> reserve_connector_zero_supported_kv = std::nullopt;
     auto reserve_connector_zero_supported = this->getReserveConnectorZeroSupported();
@@ -1683,10 +2426,19 @@ std::optional<KeyValue> ChargePointConfiguration::getReserveConnectorZeroSupport
 std::int32_t ChargePointConfiguration::getResetRetries() {
     return this->config["Core"]["ResetRetries"];
 }
+/**
+ * ChargePointConfiguration::setResetRetries - setResetRetries
+ * @retries: 传入的 retries
+ */
 void ChargePointConfiguration::setResetRetries(std::int32_t retries) {
     this->config["Core"]["ResetRetries"] = retries;
     this->setInUserConfig("Core", "ResetRetries", retries);
 }
+/**
+ * ChargePointConfiguration::getResetRetriesKeyValue - getResetRetriesKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getResetRetriesKeyValue() {
     KeyValue kv;
     kv.key = "ResetRetries";
@@ -1703,6 +2455,11 @@ std::optional<bool> ChargePointConfiguration::getStopTransactionOnEVSideDisconne
     }
     return stop_transaction_on_ev_side_disconnect;
 }
+/**
+ * ChargePointConfiguration::getStopTransactionOnEVSideDisconnectKeyValue - getStopTransactionOnEVSideDisconnectKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getStopTransactionOnEVSideDisconnectKeyValue() {
     std::optional<KeyValue> stop_transaction_on_ev_side_disconnect_kv = std::nullopt;
     auto stop_transaction_on_ev_side_disconnect = this->getStopTransactionOnEVSideDisconnect();
@@ -1720,10 +2477,19 @@ std::optional<KeyValue> ChargePointConfiguration::getStopTransactionOnEVSideDisc
 bool ChargePointConfiguration::getStopTransactionOnInvalidId() {
     return this->config["Core"]["StopTransactionOnInvalidId"];
 }
+/**
+ * ChargePointConfiguration::setStopTransactionOnInvalidId - setStopTransactionOnInvalidId
+ * @stop_transaction_on_invalid_id: 传入的 stop_transaction_on_invalid_id
+ */
 void ChargePointConfiguration::setStopTransactionOnInvalidId(bool stop_transaction_on_invalid_id) {
     this->config["Core"]["StopTransactionOnInvalidId"] = stop_transaction_on_invalid_id;
     this->setInUserConfig("Core", "StopTransactionOnInvalidId", stop_transaction_on_invalid_id);
 }
+/**
+ * ChargePointConfiguration::getStopTransactionOnInvalidIdKeyValue - getStopTransactionOnInvalidIdKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getStopTransactionOnInvalidIdKeyValue() {
     KeyValue kv;
     kv.key = "StopTransactionOnInvalidId";
@@ -1736,6 +2502,12 @@ KeyValue ChargePointConfiguration::getStopTransactionOnInvalidIdKeyValue() {
 std::string ChargePointConfiguration::getStopTxnAlignedData() {
     return this->config["Core"]["StopTxnAlignedData"];
 }
+/**
+ * ChargePointConfiguration::setStopTxnAlignedData - setStopTxnAlignedData
+ * @stop_txn_aligned_data: 传入的 stop_txn_aligned_data
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::setStopTxnAlignedData(std::string stop_txn_aligned_data) {
     if (!this->measurands_supported(stop_txn_aligned_data)) {
         return false;
@@ -1744,6 +2516,11 @@ bool ChargePointConfiguration::setStopTxnAlignedData(std::string stop_txn_aligne
     this->setInUserConfig("Core", "StopTxnAlignedData", stop_txn_aligned_data);
     return true;
 }
+/**
+ * ChargePointConfiguration::getStopTxnAlignedDataKeyValue - getStopTxnAlignedDataKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getStopTxnAlignedDataKeyValue() {
     KeyValue kv;
     kv.key = "StopTxnAlignedData";
@@ -1760,6 +2537,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getStopTxnAlignedDataMaxLe
     }
     return max_length;
 }
+/**
+ * ChargePointConfiguration::getStopTxnAlignedDataMaxLengthKeyValue - getStopTxnAlignedDataMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getStopTxnAlignedDataMaxLengthKeyValue() {
     std::optional<KeyValue> max_length_kv = std::nullopt;
     auto max_length = this->getStopTxnAlignedDataMaxLength();
@@ -1777,6 +2559,12 @@ std::optional<KeyValue> ChargePointConfiguration::getStopTxnAlignedDataMaxLength
 std::string ChargePointConfiguration::getStopTxnSampledData() {
     return this->config["Core"]["StopTxnSampledData"];
 }
+/**
+ * ChargePointConfiguration::setStopTxnSampledData - setStopTxnSampledData
+ * @stop_txn_sampled_data: 传入的 stop_txn_sampled_data
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::setStopTxnSampledData(std::string stop_txn_sampled_data) {
     if (!this->measurands_supported(stop_txn_sampled_data)) {
         return false;
@@ -1786,6 +2574,11 @@ bool ChargePointConfiguration::setStopTxnSampledData(std::string stop_txn_sample
 
     return true;
 }
+/**
+ * ChargePointConfiguration::getStopTxnSampledDataKeyValue - getStopTxnSampledDataKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getStopTxnSampledDataKeyValue() {
     KeyValue kv;
     kv.key = "StopTxnSampledData";
@@ -1802,6 +2595,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getStopTxnSampledDataMaxLe
     }
     return max_length;
 }
+/**
+ * ChargePointConfiguration::getStopTxnSampledDataMaxLengthKeyValue - getStopTxnSampledDataMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getStopTxnSampledDataMaxLengthKeyValue() {
     std::optional<KeyValue> max_length_kv = std::nullopt;
     auto max_length = this->getStopTxnSampledDataMaxLength();
@@ -1819,6 +2617,11 @@ std::optional<KeyValue> ChargePointConfiguration::getStopTxnSampledDataMaxLength
 std::string ChargePointConfiguration::getSupportedFeatureProfiles() {
     return this->config["Core"]["SupportedFeatureProfiles"];
 }
+/**
+ * ChargePointConfiguration::getSupportedFeatureProfilesKeyValue - getSupportedFeatureProfilesKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSupportedFeatureProfilesKeyValue() {
     KeyValue kv;
     kv.key = "SupportedFeatureProfiles";
@@ -1826,6 +2629,11 @@ KeyValue ChargePointConfiguration::getSupportedFeatureProfilesKeyValue() {
     kv.value.emplace(this->getSupportedFeatureProfiles());
     return kv;
 }
+/**
+ * ChargePointConfiguration::getSupportedFeatureProfilesSet - getSupportedFeatureProfilesSet
+ *
+ * 返回 std::set<SupportedFeatureProfiles>。
+ */
 std::set<SupportedFeatureProfiles> ChargePointConfiguration::getSupportedFeatureProfilesSet() {
     return this->supported_feature_profiles;
 }
@@ -1838,6 +2646,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getSupportedFeatureProfile
     }
     return max_length;
 }
+/**
+ * ChargePointConfiguration::getSupportedFeatureProfilesMaxLengthKeyValue - getSupportedFeatureProfilesMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getSupportedFeatureProfilesMaxLengthKeyValue() {
     std::optional<KeyValue> max_length_kv = std::nullopt;
     auto max_length = this->getSupportedFeatureProfilesMaxLength();
@@ -1855,10 +2668,19 @@ std::optional<KeyValue> ChargePointConfiguration::getSupportedFeatureProfilesMax
 std::int32_t ChargePointConfiguration::getTransactionMessageAttempts() {
     return this->config["Core"]["TransactionMessageAttempts"];
 }
+/**
+ * ChargePointConfiguration::setTransactionMessageAttempts - setTransactionMessageAttempts
+ * @attempts: 传入的 attempts
+ */
 void ChargePointConfiguration::setTransactionMessageAttempts(std::int32_t attempts) {
     this->config["Core"]["TransactionMessageAttempts"] = attempts;
     this->setInUserConfig("Core", "TransactionMessageAttempts", attempts);
 }
+/**
+ * ChargePointConfiguration::getTransactionMessageAttemptsKeyValue - getTransactionMessageAttemptsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getTransactionMessageAttemptsKeyValue() {
     KeyValue kv;
     kv.key = "TransactionMessageAttempts";
@@ -1871,10 +2693,19 @@ KeyValue ChargePointConfiguration::getTransactionMessageAttemptsKeyValue() {
 std::int32_t ChargePointConfiguration::getTransactionMessageRetryInterval() {
     return this->config["Core"]["TransactionMessageRetryInterval"];
 }
+/**
+ * ChargePointConfiguration::setTransactionMessageRetryInterval - setTransactionMessageRetryInterval
+ * @retry_interval: 传入的 retry_interval
+ */
 void ChargePointConfiguration::setTransactionMessageRetryInterval(std::int32_t retry_interval) {
     this->config["Core"]["TransactionMessageRetryInterval"] = retry_interval;
     this->setInUserConfig("Core", "TransactionMessageRetryInterval", retry_interval);
 }
+/**
+ * ChargePointConfiguration::getTransactionMessageRetryIntervalKeyValue - getTransactionMessageRetryIntervalKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getTransactionMessageRetryIntervalKeyValue() {
     KeyValue kv;
     kv.key = "TransactionMessageRetryInterval";
@@ -1887,10 +2718,19 @@ KeyValue ChargePointConfiguration::getTransactionMessageRetryIntervalKeyValue() 
 bool ChargePointConfiguration::getUnlockConnectorOnEVSideDisconnect() {
     return this->config["Core"]["UnlockConnectorOnEVSideDisconnect"];
 }
+/**
+ * ChargePointConfiguration::setUnlockConnectorOnEVSideDisconnect - setUnlockConnectorOnEVSideDisconnect
+ * @unlock_connector_on_ev_side_disconnect: 传入的 unlock_connector_on_ev_side_disconnect
+ */
 void ChargePointConfiguration::setUnlockConnectorOnEVSideDisconnect(bool unlock_connector_on_ev_side_disconnect) {
     this->config["Core"]["UnlockConnectorOnEVSideDisconnect"] = unlock_connector_on_ev_side_disconnect;
     this->setInUserConfig("Core", "UnlockConnectorOnEVSideDisconnect", unlock_connector_on_ev_side_disconnect);
 }
+/**
+ * ChargePointConfiguration::getUnlockConnectorOnEVSideDisconnectKeyValue - getUnlockConnectorOnEVSideDisconnectKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getUnlockConnectorOnEVSideDisconnectKeyValue() {
     KeyValue kv;
     kv.key = "UnlockConnectorOnEVSideDisconnect";
@@ -1907,12 +2747,21 @@ std::optional<std::int32_t> ChargePointConfiguration::getWebsocketPingInterval()
     }
     return websocket_ping_interval;
 }
+/**
+ * ChargePointConfiguration::setWebsocketPingInterval - setWebsocketPingInterval
+ * @websocket_ping_interval: 传入的 websocket_ping_interval
+ */
 void ChargePointConfiguration::setWebsocketPingInterval(std::int32_t websocket_ping_interval) {
     if (this->getWebsocketPingInterval() != std::nullopt) {
         this->config["Core"]["WebSocketPingInterval"] = websocket_ping_interval;
         this->setInUserConfig("Core", "WebSocketPingInterval", websocket_ping_interval);
     }
 }
+/**
+ * ChargePointConfiguration::getWebsocketPingIntervalKeyValue - getWebsocketPingIntervalKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getWebsocketPingIntervalKeyValue() {
     std::optional<KeyValue> websocket_ping_interval_kv = std::nullopt;
     auto websocket_ping_interval = this->getWebsocketPingInterval();
@@ -1926,6 +2775,11 @@ std::optional<KeyValue> ChargePointConfiguration::getWebsocketPingIntervalKeyVal
     return websocket_ping_interval_kv;
 }
 
+/**
+ * ChargePointConfiguration::getHostNameKeyValue - getHostNameKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getHostNameKeyValue() {
     std::optional<KeyValue> host_name_kv = std::nullopt;
     auto host_name = this->getHostName();
@@ -1939,6 +2793,11 @@ std::optional<KeyValue> ChargePointConfiguration::getHostNameKeyValue() {
     return host_name_kv;
 }
 
+/**
+ * ChargePointConfiguration::getIFaceKeyValue - getIFaceKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getIFaceKeyValue() {
     std::optional<KeyValue> iface_name_kv = std::nullopt;
     auto iface = this->getIFace();
@@ -1963,6 +2822,11 @@ std::optional<std::string> ChargePointConfiguration::getSupportedFileTransferPro
     return supported_file_transfer_protocols;
 }
 
+/**
+ * ChargePointConfiguration::getSupportedFileTransferProtocolsKeyValue - getSupportedFileTransferProtocolsKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getSupportedFileTransferProtocolsKeyValue() {
     std::optional<KeyValue> supported_file_transfer_protocols_kv = std::nullopt;
     auto supported_file_transfer_protocols = this->getSupportedFileTransferProtocols();
@@ -1981,6 +2845,11 @@ std::optional<KeyValue> ChargePointConfiguration::getSupportedFileTransferProtoc
 std::int32_t ChargePointConfiguration::getChargeProfileMaxStackLevel() {
     return this->config["SmartCharging"]["ChargeProfileMaxStackLevel"];
 }
+/**
+ * ChargePointConfiguration::getChargeProfileMaxStackLevelKeyValue - getChargeProfileMaxStackLevelKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargeProfileMaxStackLevelKeyValue() {
     KeyValue kv;
     kv.key = "ChargeProfileMaxStackLevel";
@@ -1989,9 +2858,19 @@ KeyValue ChargePointConfiguration::getChargeProfileMaxStackLevelKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnit - getChargingScheduleAllowedChargingRateUnit
+ *
+ * 返回 std::string。
+ */
 std::string ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnit() {
     return this->config["SmartCharging"]["ChargingScheduleAllowedChargingRateUnit"];
 }
+/**
+ * ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnitKeyValue - getChargingScheduleAllowedChargingRateUnitKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnitKeyValue() {
     KeyValue kv;
     kv.key = "ChargingScheduleAllowedChargingRateUnit";
@@ -1999,6 +2878,11 @@ KeyValue ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnitKey
     kv.value.emplace(this->getChargingScheduleAllowedChargingRateUnit());
     return kv;
 }
+/**
+ * ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnitVector - getChargingScheduleAllowedChargingRateUnitVector
+ *
+ * 返回 std::vector<ChargingRateUnit>。
+ */
 std::vector<ChargingRateUnit> ChargePointConfiguration::getChargingScheduleAllowedChargingRateUnitVector() {
     std::vector<std::string> components;
     auto csv = this->getChargingScheduleAllowedChargingRateUnit();
@@ -2014,9 +2898,19 @@ std::vector<ChargingRateUnit> ChargePointConfiguration::getChargingScheduleAllow
     return charging_rate_unit_vector;
 }
 
+/**
+ * ChargePointConfiguration::getChargingScheduleMaxPeriods - getChargingScheduleMaxPeriods
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getChargingScheduleMaxPeriods() {
     return this->config["SmartCharging"]["ChargingScheduleMaxPeriods"];
 }
+/**
+ * ChargePointConfiguration::getChargingScheduleMaxPeriodsKeyValue - getChargingScheduleMaxPeriodsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getChargingScheduleMaxPeriodsKeyValue() {
     KeyValue kv;
     kv.key = "ChargingScheduleMaxPeriods";
@@ -2025,6 +2919,11 @@ KeyValue ChargePointConfiguration::getChargingScheduleMaxPeriodsKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getConnectorSwitch3to1PhaseSupported - getConnectorSwitch3to1PhaseSupported
+ *
+ * 返回 std::optional<bool>。
+ */
 std::optional<bool> ChargePointConfiguration::getConnectorSwitch3to1PhaseSupported() {
     std::optional<bool> connector_switch_3_to_1_phase_supported = std::nullopt;
     if (this->config["SmartCharging"].contains("ConnectorSwitch3to1PhaseSupported")) {
@@ -2033,6 +2932,11 @@ std::optional<bool> ChargePointConfiguration::getConnectorSwitch3to1PhaseSupport
     }
     return connector_switch_3_to_1_phase_supported;
 }
+/**
+ * ChargePointConfiguration::getConnectorSwitch3to1PhaseSupportedKeyValue - getConnectorSwitch3to1PhaseSupportedKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getConnectorSwitch3to1PhaseSupportedKeyValue() {
     std::optional<KeyValue> connector_switch_3_to_1_phase_supported_kv = std::nullopt;
 
@@ -2047,9 +2951,19 @@ std::optional<KeyValue> ChargePointConfiguration::getConnectorSwitch3to1PhaseSup
     return connector_switch_3_to_1_phase_supported_kv;
 }
 
+/**
+ * ChargePointConfiguration::getMaxChargingProfilesInstalled - getMaxChargingProfilesInstalled
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getMaxChargingProfilesInstalled() {
     return this->config["SmartCharging"]["MaxChargingProfilesInstalled"];
 }
+/**
+ * ChargePointConfiguration::getMaxChargingProfilesInstalledKeyValue - getMaxChargingProfilesInstalledKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getMaxChargingProfilesInstalledKeyValue() {
     KeyValue kv;
     kv.key = "MaxChargingProfilesInstalled";
@@ -2067,6 +2981,11 @@ std::optional<bool> ChargePointConfiguration::getAdditionalRootCertificateCheck(
     return additional_root_certificate_check;
 }
 
+/**
+ * ChargePointConfiguration::getAdditionalRootCertificateCheckKeyValue - getAdditionalRootCertificateCheckKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getAdditionalRootCertificateCheckKeyValue() {
     std::optional<KeyValue> additional_root_certificate_check_kv = std::nullopt;
 
@@ -2091,6 +3010,7 @@ std::optional<std::string> ChargePointConfiguration::getAuthorizationKey() {
 }
 
 namespace {
+/* hexToString */
 std::string hexToString(const std::string& s) {
     std::string str;
     for (size_t i = 0; i < s.length(); i += 2) {
@@ -2101,6 +3021,7 @@ std::string hexToString(const std::string& s) {
     return str;
 }
 
+/* isHexNotation */
 bool isHexNotation(const std::string& s) {
     const bool is_hex = s.size() > 2 and s.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
 
@@ -2120,6 +3041,10 @@ bool isHexNotation(const std::string& s) {
 }
 } // namespace
 
+/**
+ * ChargePointConfiguration::setAuthorizationKey - setAuthorizationKey
+ * @authorization_key: 传入的 authorization_key
+ */
 void ChargePointConfiguration::setAuthorizationKey(std::string authorization_key) {
 
     // TODO(piet): SecurityLog entry
@@ -2135,6 +3060,12 @@ void ChargePointConfiguration::setAuthorizationKey(std::string authorization_key
     this->setInUserConfig("Security", "AuthorizationKey", str);
 }
 
+/**
+ * ChargePointConfiguration::isConnectorPhaseRotationValid - isConnectorPhaseRotationValid
+ * @str: 传入的 str
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::isConnectorPhaseRotationValid(std::string str) {
     std::vector<std::string> elements;
 
@@ -2175,6 +3106,7 @@ bool ChargePointConfiguration::isConnectorPhaseRotationValid(std::string str) {
 }
 
 namespace {
+/* checkTimeOffset */
 bool checkTimeOffset(const std::string& offset) {
     const std::vector<std::string> times = split_string(offset, ':');
     if (times.size() != 2) {
@@ -2211,6 +3143,7 @@ bool checkTimeOffset(const std::string& offset) {
     return true;
 }
 
+/* isBool */
 bool isBool(const std::string& str) {
     std::string out = str;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
@@ -2218,6 +3151,11 @@ bool isBool(const std::string& str) {
 }
 } // namespace
 
+/**
+ * ChargePointConfiguration::getAuthorizationKeyKeyValue - getAuthorizationKeyKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getAuthorizationKeyKeyValue() {
     std::optional<KeyValue> enabled_kv = std::nullopt;
     std::optional<std::string> enabled = std::nullopt;
@@ -2244,6 +3182,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getCertificateSignedMaxCha
     return certificate_max_chain_size;
 }
 
+/**
+ * ChargePointConfiguration::getCertificateSignedMaxChainSizeKeyValue - getCertificateSignedMaxChainSizeKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCertificateSignedMaxChainSizeKeyValue() {
     std::optional<KeyValue> certificate_max_chain_size_kv = std::nullopt;
     auto certificate_max_chain_size = this->getCertificateSignedMaxChainSize();
@@ -2266,6 +3209,11 @@ std::optional<std::int32_t> ChargePointConfiguration::getCertificateStoreMaxLeng
     return certificate_store_max_length;
 }
 
+/**
+ * ChargePointConfiguration::getCertificateStoreMaxLengthKeyValue - getCertificateStoreMaxLengthKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCertificateStoreMaxLengthKeyValue() {
     std::optional<KeyValue> certificate_store_max_length_kv = std::nullopt;
     auto certificate_store_max_length = this->getCertificateStoreMaxLength();
@@ -2288,11 +3236,20 @@ std::optional<std::string> ChargePointConfiguration::getCpoName() {
     return cpo_name;
 }
 
+/**
+ * ChargePointConfiguration::setCpoName - setCpoName
+ * @cpo_name: 传入的 cpo_name
+ */
 void ChargePointConfiguration::setCpoName(std::string cpo_name) {
     this->config["Security"]["CpoName"] = cpo_name;
     this->setInUserConfig("Security", "CpoName", cpo_name);
 }
 
+/**
+ * ChargePointConfiguration::getCpoNameKeyValue - getCpoNameKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCpoNameKeyValue() {
     std::optional<KeyValue> cpo_name_kv = std::nullopt;
     auto cpo_name = this->getCpoName();
@@ -2311,6 +3268,10 @@ std::int32_t ChargePointConfiguration::getSecurityProfile() {
     return this->config["Security"]["SecurityProfile"];
 }
 
+/**
+ * ChargePointConfiguration::setSecurityProfile - setSecurityProfile
+ * @security_profile: 传入的 security_profile
+ */
 void ChargePointConfiguration::setSecurityProfile(std::int32_t security_profile) {
     // TODO(piet): add boundaries for value of security profile
     this->config["Security"]["SecurityProfile"] = security_profile;
@@ -2318,6 +3279,11 @@ void ChargePointConfiguration::setSecurityProfile(std::int32_t security_profile)
     this->setInUserConfig("Security", "SecurityProfile", security_profile);
 }
 
+/**
+ * ChargePointConfiguration::getSecurityProfileKeyValue - getSecurityProfileKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSecurityProfileKeyValue() {
     KeyValue kv;
     auto security_profile = this->getSecurityProfile();
@@ -2327,15 +3293,29 @@ KeyValue ChargePointConfiguration::getSecurityProfileKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getDisableSecurityEventNotifications - getDisableSecurityEventNotifications
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getDisableSecurityEventNotifications() {
     return this->config["Security"]["DisableSecurityEventNotifications"];
 }
 
+/**
+ * ChargePointConfiguration::setDisableSecurityEventNotifications - setDisableSecurityEventNotifications
+ * @disable_security_event_notifications: 传入的 disable_security_event_notifications
+ */
 void ChargePointConfiguration::setDisableSecurityEventNotifications(bool disable_security_event_notifications) {
     this->config["Security"]["DisableSecurityEventNotifications"] = disable_security_event_notifications;
     this->setInUserConfig("Security", "DisableSecurityEventNotifications", disable_security_event_notifications);
 }
 
+/**
+ * ChargePointConfiguration::getDisableSecurityEventNotificationsKeyValue - getDisableSecurityEventNotificationsKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getDisableSecurityEventNotificationsKeyValue() {
     KeyValue kv;
     kv.key = "DisableSecurityEventNotifications";
@@ -2352,10 +3332,19 @@ bool ChargePointConfiguration::getLocalAuthListEnabled() {
     return false;
 }
 
+/**
+ * ChargePointConfiguration::setLocalAuthListEnabled - setLocalAuthListEnabled
+ * @local_auth_list_enabled: 传入的 local_auth_list_enabled
+ */
 void ChargePointConfiguration::setLocalAuthListEnabled(bool local_auth_list_enabled) {
     this->config["LocalAuthListManagement"]["LocalAuthListEnabled"] = local_auth_list_enabled;
     this->setInUserConfig("LocalAuthListManagement", "LocalAuthListEnabled", local_auth_list_enabled);
 }
+/**
+ * ChargePointConfiguration::getLocalAuthListEnabledKeyValue - getLocalAuthListEnabledKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLocalAuthListEnabledKeyValue() {
     KeyValue kv;
     kv.key = "LocalAuthListEnabled";
@@ -2368,6 +3357,11 @@ KeyValue ChargePointConfiguration::getLocalAuthListEnabledKeyValue() {
 std::int32_t ChargePointConfiguration::getLocalAuthListMaxLength() {
     return this->config["LocalAuthListManagement"]["LocalAuthListMaxLength"];
 }
+/**
+ * ChargePointConfiguration::getLocalAuthListMaxLengthKeyValue - getLocalAuthListMaxLengthKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getLocalAuthListMaxLengthKeyValue() {
     KeyValue kv;
     kv.key = "LocalAuthListMaxLength";
@@ -2380,6 +3374,11 @@ KeyValue ChargePointConfiguration::getLocalAuthListMaxLengthKeyValue() {
 std::int32_t ChargePointConfiguration::getSendLocalListMaxLength() {
     return this->config["LocalAuthListManagement"]["SendLocalListMaxLength"];
 }
+/**
+ * ChargePointConfiguration::getSendLocalListMaxLengthKeyValue - getSendLocalListMaxLengthKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getSendLocalListMaxLengthKeyValue() {
     KeyValue kv;
     kv.key = "SendLocalListMaxLength";
@@ -2393,12 +3392,21 @@ bool ChargePointConfiguration::getISO15118CertificateManagementEnabled() {
     return this->config["PnC"]["ISO15118CertificateManagementEnabled"];
 }
 
+/**
+ * ChargePointConfiguration::setISO15118CertificateManagementEnabled - setISO15118CertificateManagementEnabled
+ * @iso15118_certificate_management_enabled: 传入的 iso15118_certificate_management_enabled
+ */
 void ChargePointConfiguration::setISO15118CertificateManagementEnabled(
     const bool iso15118_certificate_management_enabled) {
     this->config["PnC"]["ISO15118CertificateManagementEnabled"] = iso15118_certificate_management_enabled;
     this->setInUserConfig("PnC", "ISO15118CertificateManagementEnabled", iso15118_certificate_management_enabled);
 }
 
+/**
+ * ChargePointConfiguration::getISO15118CertificateManagementEnabledKeyValue - getISO15118CertificateManagementEnabledKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getISO15118CertificateManagementEnabledKeyValue() {
     KeyValue kv;
     kv.key = "ISO15118CertificateManagementEnabled";
@@ -2407,15 +3415,29 @@ KeyValue ChargePointConfiguration::getISO15118CertificateManagementEnabledKeyVal
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getISO15118PnCEnabled - getISO15118PnCEnabled
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getISO15118PnCEnabled() {
     return this->config["PnC"]["ISO15118PnCEnabled"];
 }
 
+/**
+ * ChargePointConfiguration::setISO15118PnCEnabled - setISO15118PnCEnabled
+ * @iso15118_pnc_enabled: 传入的 iso15118_pnc_enabled
+ */
 void ChargePointConfiguration::setISO15118PnCEnabled(const bool iso15118_pnc_enabled) {
     this->config["PnC"]["ISO15118PnCEnabled"] = iso15118_pnc_enabled;
     this->setInUserConfig("PnC", "ISO15118PnCEnabled", iso15118_pnc_enabled);
 }
 
+/**
+ * ChargePointConfiguration::getISO15118PnCEnabledKeyValue - getISO15118PnCEnabledKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getISO15118PnCEnabledKeyValue() {
     KeyValue kv;
     kv.key = "ISO15118PnCEnabled";
@@ -2424,6 +3446,11 @@ KeyValue ChargePointConfiguration::getISO15118PnCEnabledKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getCentralContractValidationAllowed - getCentralContractValidationAllowed
+ *
+ * 返回 std::optional<bool>。
+ */
 std::optional<bool> ChargePointConfiguration::getCentralContractValidationAllowed() {
     std::optional<bool> central_contract_validation_allowed = std::nullopt;
     if (this->config["PnC"].contains("CentralContractValidationAllowed")) {
@@ -2432,12 +3459,21 @@ std::optional<bool> ChargePointConfiguration::getCentralContractValidationAllowe
     return central_contract_validation_allowed;
 }
 
+/**
+ * ChargePointConfiguration::setCentralContractValidationAllowed - setCentralContractValidationAllowed
+ * @central_contract_validation_allowed: 传入的 central_contract_validation_allowed
+ */
 void ChargePointConfiguration::setCentralContractValidationAllowed(const bool central_contract_validation_allowed) {
     if (this->getCentralContractValidationAllowed() != std::nullopt) {
         this->config["PnC"]["CentralContractValidationAllowed"] = central_contract_validation_allowed;
         this->setInUserConfig("PnC", "CentralContractValidationAllowed", central_contract_validation_allowed);
     }
 }
+/**
+ * ChargePointConfiguration::getCentralContractValidationAllowedKeyValue - getCentralContractValidationAllowedKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCentralContractValidationAllowedKeyValue() {
     std::optional<KeyValue> central_contract_validation_allowed_kv = std::nullopt;
     auto central_contract_validation_allowed = this->getCentralContractValidationAllowed();
@@ -2451,6 +3487,11 @@ std::optional<KeyValue> ChargePointConfiguration::getCentralContractValidationAl
     return central_contract_validation_allowed_kv;
 }
 
+/**
+ * ChargePointConfiguration::getCertSigningWaitMinimum - getCertSigningWaitMinimum
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getCertSigningWaitMinimum() {
     std::optional<std::int32_t> cert_signing_wait_minimum = std::nullopt;
     if (this->config["PnC"].contains("CertSigningWaitMinimum")) {
@@ -2459,6 +3500,10 @@ std::optional<std::int32_t> ChargePointConfiguration::getCertSigningWaitMinimum(
     return cert_signing_wait_minimum;
 }
 
+/**
+ * ChargePointConfiguration::setCertSigningWaitMinimum - setCertSigningWaitMinimum
+ * @cert_signing_wait_minimum: 传入的 cert_signing_wait_minimum
+ */
 void ChargePointConfiguration::setCertSigningWaitMinimum(const std::int32_t cert_signing_wait_minimum) {
     if (this->getCertSigningWaitMinimum() != std::nullopt) {
         this->config["PnC"]["CertSigningWaitMinimum"] = cert_signing_wait_minimum;
@@ -2466,6 +3511,11 @@ void ChargePointConfiguration::setCertSigningWaitMinimum(const std::int32_t cert
     }
 }
 
+/**
+ * ChargePointConfiguration::getCertSigningWaitMinimumKeyValue - getCertSigningWaitMinimumKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCertSigningWaitMinimumKeyValue() {
     std::optional<KeyValue> cert_signing_wait_minimum_kv = std::nullopt;
     auto cert_signing_wait_minimum = this->getCertSigningWaitMinimum();
@@ -2479,6 +3529,11 @@ std::optional<KeyValue> ChargePointConfiguration::getCertSigningWaitMinimumKeyVa
     return cert_signing_wait_minimum_kv;
 }
 
+/**
+ * ChargePointConfiguration::getCertSigningRepeatTimes - getCertSigningRepeatTimes
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getCertSigningRepeatTimes() {
     std::optional<std::int32_t> get_cert_signing_repeat_times = std::nullopt;
     if (this->config["PnC"].contains("CertSigningRepeatTimes")) {
@@ -2486,6 +3541,10 @@ std::optional<std::int32_t> ChargePointConfiguration::getCertSigningRepeatTimes(
     }
     return get_cert_signing_repeat_times;
 }
+/**
+ * ChargePointConfiguration::setCertSigningRepeatTimes - setCertSigningRepeatTimes
+ * @cert_signing_repeat_times: 传入的 cert_signing_repeat_times
+ */
 void ChargePointConfiguration::setCertSigningRepeatTimes(const std::int32_t cert_signing_repeat_times) {
     if (this->getCertSigningRepeatTimes() != std::nullopt) {
         this->config["PnC"]["CertSigningRepeatTimes"] = cert_signing_repeat_times;
@@ -2493,6 +3552,11 @@ void ChargePointConfiguration::setCertSigningRepeatTimes(const std::int32_t cert
     }
 }
 
+/**
+ * ChargePointConfiguration::getCertSigningRepeatTimesKeyValue - getCertSigningRepeatTimesKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCertSigningRepeatTimesKeyValue() {
     std::optional<KeyValue> cert_signing_repeat_times_kv = std::nullopt;
     auto cert_signing_repeat_times = this->getCertSigningRepeatTimes();
@@ -2506,15 +3570,29 @@ std::optional<KeyValue> ChargePointConfiguration::getCertSigningRepeatTimesKeyVa
     return cert_signing_repeat_times_kv;
 }
 
+/**
+ * ChargePointConfiguration::getContractValidationOffline - getContractValidationOffline
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::getContractValidationOffline() {
     return this->config["PnC"]["ContractValidationOffline"];
 }
 
+/**
+ * ChargePointConfiguration::setContractValidationOffline - setContractValidationOffline
+ * @contract_validation_offline: 传入的 contract_validation_offline
+ */
 void ChargePointConfiguration::setContractValidationOffline(const bool contract_validation_offline) {
     this->config["PnC"]["ContractValidationOffline"] = contract_validation_offline;
     this->setInUserConfig("PnC", "ContractValidationOffline", contract_validation_offline);
 }
 
+/**
+ * ChargePointConfiguration::getContractValidationOfflineKeyValue - getContractValidationOfflineKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getContractValidationOfflineKeyValue() {
     KeyValue kv;
     kv.key = "ContractValidationOffline";
@@ -2523,15 +3601,29 @@ KeyValue ChargePointConfiguration::getContractValidationOfflineKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getOcspRequestInterval - getOcspRequestInterval
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getOcspRequestInterval() {
     return this->config["Internal"]["OcspRequestInterval"];
 }
 
+/**
+ * ChargePointConfiguration::setOcspRequestInterval - setOcspRequestInterval
+ * @ocsp_request_interval: 传入的 ocsp_request_interval
+ */
 void ChargePointConfiguration::setOcspRequestInterval(const std::int32_t ocsp_request_interval) {
     this->config["Internal"]["OcspRequestInterval"] = ocsp_request_interval;
     this->setInUserConfig("Internal", "OcspRequestInterval", ocsp_request_interval);
 }
 
+/**
+ * ChargePointConfiguration::getOcspRequestIntervalKeyValue - getOcspRequestIntervalKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getOcspRequestIntervalKeyValue() {
     KeyValue kv;
     kv.key = "OcspRequestInterval";
@@ -2540,6 +3632,11 @@ KeyValue ChargePointConfiguration::getOcspRequestIntervalKeyValue() {
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getSeccLeafSubjectCommonName - getSeccLeafSubjectCommonName
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getSeccLeafSubjectCommonName() {
     std::optional<std::string> secc_leaf_subject_common_name = std::nullopt;
     if (this->config["Internal"].contains("SeccLeafSubjectCommonName")) {
@@ -2548,6 +3645,10 @@ std::optional<std::string> ChargePointConfiguration::getSeccLeafSubjectCommonNam
     return secc_leaf_subject_common_name;
 }
 
+/**
+ * ChargePointConfiguration::setSeccLeafSubjectCommonName - setSeccLeafSubjectCommonName
+ * @secc_leaf_subject_common_name: 传入的 secc_leaf_subject_common_name
+ */
 void ChargePointConfiguration::setSeccLeafSubjectCommonName(const std::string& secc_leaf_subject_common_name) {
     if (this->getSeccLeafSubjectCommonName() != std::nullopt) {
         this->config["Internal"]["SeccLeafSubjectCommonName"] = secc_leaf_subject_common_name;
@@ -2555,6 +3656,11 @@ void ChargePointConfiguration::setSeccLeafSubjectCommonName(const std::string& s
     }
 }
 
+/**
+ * ChargePointConfiguration::getSeccLeafSubjectCommonNameKeyValue - getSeccLeafSubjectCommonNameKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getSeccLeafSubjectCommonNameKeyValue() {
     std::optional<KeyValue> secc_leaf_subject_common_name_kv = std::nullopt;
     auto secc_leaf_subject_common_name = this->getSeccLeafSubjectCommonName();
@@ -2568,6 +3674,11 @@ std::optional<KeyValue> ChargePointConfiguration::getSeccLeafSubjectCommonNameKe
     return secc_leaf_subject_common_name_kv;
 }
 
+/**
+ * ChargePointConfiguration::getSeccLeafSubjectCountry - getSeccLeafSubjectCountry
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getSeccLeafSubjectCountry() {
     std::optional<std::string> secc_leaf_subject_country = std::nullopt;
     if (this->config["Internal"].contains("SeccLeafSubjectCountry")) {
@@ -2576,6 +3687,10 @@ std::optional<std::string> ChargePointConfiguration::getSeccLeafSubjectCountry()
     return secc_leaf_subject_country;
 }
 
+/**
+ * ChargePointConfiguration::setSeccLeafSubjectCountry - setSeccLeafSubjectCountry
+ * @secc_leaf_subject_country: 传入的 secc_leaf_subject_country
+ */
 void ChargePointConfiguration::setSeccLeafSubjectCountry(const std::string& secc_leaf_subject_country) {
     if (this->getSeccLeafSubjectCountry() != std::nullopt) {
         this->config["Internal"]["SeccLeafSubjectCountry"] = secc_leaf_subject_country;
@@ -2583,6 +3698,11 @@ void ChargePointConfiguration::setSeccLeafSubjectCountry(const std::string& secc
     }
 }
 
+/**
+ * ChargePointConfiguration::getSeccLeafSubjectCountryKeyValue - getSeccLeafSubjectCountryKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getSeccLeafSubjectCountryKeyValue() {
     std::optional<KeyValue> secc_leaf_subject_country_kv = std::nullopt;
     auto secc_leaf_subject_country = this->getSeccLeafSubjectCountry();
@@ -2596,6 +3716,11 @@ std::optional<KeyValue> ChargePointConfiguration::getSeccLeafSubjectCountryKeyVa
     return secc_leaf_subject_country_kv;
 }
 
+/**
+ * ChargePointConfiguration::getSeccLeafSubjectOrganization - getSeccLeafSubjectOrganization
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getSeccLeafSubjectOrganization() {
     std::optional<std::string> secc_leaf_subject_organization = std::nullopt;
     if (this->config["Internal"].contains("SeccLeafSubjectOrganization")) {
@@ -2604,6 +3729,10 @@ std::optional<std::string> ChargePointConfiguration::getSeccLeafSubjectOrganizat
     return secc_leaf_subject_organization;
 }
 
+/**
+ * ChargePointConfiguration::setSeccLeafSubjectOrganization - setSeccLeafSubjectOrganization
+ * @secc_leaf_subject_organization: 传入的 secc_leaf_subject_organization
+ */
 void ChargePointConfiguration::setSeccLeafSubjectOrganization(const std::string& secc_leaf_subject_organization) {
     if (this->getSeccLeafSubjectOrganization() != std::nullopt) {
         this->config["Internal"]["SeccLeafSubjectOrganization"] = secc_leaf_subject_organization;
@@ -2611,6 +3740,11 @@ void ChargePointConfiguration::setSeccLeafSubjectOrganization(const std::string&
     }
 }
 
+/**
+ * ChargePointConfiguration::getSeccLeafSubjectOrganizationKeyValue - getSeccLeafSubjectOrganizationKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getSeccLeafSubjectOrganizationKeyValue() {
     std::optional<KeyValue> secc_leaf_subject_organization_kv = std::nullopt;
     auto secc_leaf_subject_organization = this->getSeccLeafSubjectOrganization();
@@ -2624,6 +3758,11 @@ std::optional<KeyValue> ChargePointConfiguration::getSeccLeafSubjectOrganization
     return secc_leaf_subject_organization_kv;
 }
 
+/**
+ * ChargePointConfiguration::getConnectorEvseIds - getConnectorEvseIds
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getConnectorEvseIds() {
     std::optional<std::string> connector_evse_ids = std::nullopt;
     if (this->config["Internal"].contains("ConnectorEvseIds")) {
@@ -2632,6 +3771,10 @@ std::optional<std::string> ChargePointConfiguration::getConnectorEvseIds() {
     return connector_evse_ids;
 }
 
+/**
+ * ChargePointConfiguration::setConnectorEvseIds - setConnectorEvseIds
+ * @connector_evse_ids: 传入的 connector_evse_ids
+ */
 void ChargePointConfiguration::setConnectorEvseIds(const std::string& connector_evse_ids) {
     if (this->getConnectorEvseIds() != std::nullopt) {
         this->config["Internal"]["ConnectorEvseIds"] = connector_evse_ids;
@@ -2639,6 +3782,11 @@ void ChargePointConfiguration::setConnectorEvseIds(const std::string& connector_
     }
 }
 
+/**
+ * ChargePointConfiguration::getConnectorEvseIdsKeyValue - getConnectorEvseIdsKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getConnectorEvseIdsKeyValue() {
     std::optional<KeyValue> connector_evse_ids_kv = std::nullopt;
     auto connector_evse_ids = this->getConnectorEvseIds();
@@ -2652,6 +3800,11 @@ std::optional<KeyValue> ChargePointConfiguration::getConnectorEvseIdsKeyValue() 
     return connector_evse_ids_kv;
 }
 
+/**
+ * ChargePointConfiguration::getAllowChargingProfileWithoutStartSchedule - getAllowChargingProfileWithoutStartSchedule
+ *
+ * 返回 std::optional<bool>。
+ */
 std::optional<bool> ChargePointConfiguration::getAllowChargingProfileWithoutStartSchedule() {
     std::optional<bool> allow = std::nullopt;
     if (this->config["Internal"].contains("AllowChargingProfileWithoutStartSchedule")) {
@@ -2660,6 +3813,10 @@ std::optional<bool> ChargePointConfiguration::getAllowChargingProfileWithoutStar
     return allow;
 }
 
+/**
+ * ChargePointConfiguration::setAllowChargingProfileWithoutStartSchedule - setAllowChargingProfileWithoutStartSchedule
+ * @allow: 传入的 allow
+ */
 void ChargePointConfiguration::setAllowChargingProfileWithoutStartSchedule(const bool allow) {
     if (this->getAllowChargingProfileWithoutStartSchedule() != std::nullopt) {
         this->config["Internal"]["AllowChargingProfileWithoutStartSchedule"] = allow;
@@ -2667,6 +3824,11 @@ void ChargePointConfiguration::setAllowChargingProfileWithoutStartSchedule(const
     }
 }
 
+/**
+ * ChargePointConfiguration::getAllowChargingProfileWithoutStartScheduleKeyValue - getAllowChargingProfileWithoutStartScheduleKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getAllowChargingProfileWithoutStartScheduleKeyValue() {
     std::optional<KeyValue> allow_opt = std::nullopt;
     auto allow = this->getAllowChargingProfileWithoutStartSchedule();
@@ -2680,10 +3842,19 @@ std::optional<KeyValue> ChargePointConfiguration::getAllowChargingProfileWithout
     return allow_opt;
 }
 
+/**
+ * ChargePointConfiguration::getWaitForStopTransactionsOnResetTimeout - getWaitForStopTransactionsOnResetTimeout
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t ChargePointConfiguration::getWaitForStopTransactionsOnResetTimeout() {
     return this->config["Internal"]["WaitForStopTransactionsOnResetTimeout"];
 }
 
+/**
+ * ChargePointConfiguration::setWaitForStopTransactionsOnResetTimeout - setWaitForStopTransactionsOnResetTimeout
+ * @wait_for_stop_transactions_on_reset_timeout: 传入的 wait_for_stop_transactions_on_reset_timeout
+ */
 void ChargePointConfiguration::setWaitForStopTransactionsOnResetTimeout(
     const std::int32_t wait_for_stop_transactions_on_reset_timeout) {
     this->config["Internal"]["WaitForStopTransactionsOnResetTimeout"] = wait_for_stop_transactions_on_reset_timeout;
@@ -2691,6 +3862,11 @@ void ChargePointConfiguration::setWaitForStopTransactionsOnResetTimeout(
                           wait_for_stop_transactions_on_reset_timeout);
 }
 
+/**
+ * ChargePointConfiguration::getWaitForStopTransactionsOnResetTimeoutKeyValue - getWaitForStopTransactionsOnResetTimeoutKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getWaitForStopTransactionsOnResetTimeoutKeyValue() {
     KeyValue kv;
     kv.key = "WaitForStopTransactionsOnResetTimeout";
@@ -2709,6 +3885,11 @@ bool ChargePointConfiguration::getCustomDisplayCostAndPriceEnabled() {
     return false;
 }
 
+/**
+ * ChargePointConfiguration::getCustomDisplayCostAndPriceEnabledKeyValue - getCustomDisplayCostAndPriceEnabledKeyValue
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getCustomDisplayCostAndPriceEnabledKeyValue() {
     const bool enabled = getCustomDisplayCostAndPriceEnabled();
     KeyValue kv;
@@ -2718,6 +3899,11 @@ KeyValue ChargePointConfiguration::getCustomDisplayCostAndPriceEnabledKeyValue()
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getPriceNumberOfDecimalsForCostValues - getPriceNumberOfDecimalsForCostValues
+ *
+ * 返回 std::optional<std::uint32_t>。
+ */
 std::optional<std::uint32_t> ChargePointConfiguration::getPriceNumberOfDecimalsForCostValues() {
     if (this->config.contains("CostAndPrice") and
         this->config.at("CostAndPrice").contains("NumberOfDecimalsForCostValues")) {
@@ -2727,6 +3913,11 @@ std::optional<std::uint32_t> ChargePointConfiguration::getPriceNumberOfDecimalsF
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getPriceNumberOfDecimalsForCostValuesKeyValue - getPriceNumberOfDecimalsForCostValuesKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getPriceNumberOfDecimalsForCostValuesKeyValue() {
     std::optional<KeyValue> kv_opt = std::nullopt;
     const std::optional<std::uint32_t> number_of_decimals = getPriceNumberOfDecimalsForCostValues();
@@ -2740,6 +3931,12 @@ std::optional<KeyValue> ChargePointConfiguration::getPriceNumberOfDecimalsForCos
     return kv_opt;
 }
 
+/**
+ * ChargePointConfiguration::getDefaultPriceText - getDefaultPriceText
+ * @language: 传入的 language
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getDefaultPriceText(const std::string& language) {
     if (this->config.contains("CostAndPrice") and this->config.at("CostAndPrice").contains("DefaultPriceText")) {
         bool found = false;
@@ -2770,6 +3967,12 @@ std::optional<std::string> ChargePointConfiguration::getDefaultPriceText(const s
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getDefaultTariffMessage - getDefaultTariffMessage
+ * @offline: 传入的 offline
+ *
+ * 返回 TariffMessage。
+ */
 TariffMessage ChargePointConfiguration::getDefaultTariffMessage(bool offline) {
     TariffMessage tariff_message;
 
@@ -2816,6 +4019,13 @@ TariffMessage ChargePointConfiguration::getDefaultTariffMessage(bool offline) {
     return tariff_message;
 }
 
+/**
+ * ChargePointConfiguration::setDefaultPriceText - setDefaultPriceText
+ * @key: 传入的 key
+ * @value: 传入的 value
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointConfiguration::setDefaultPriceText(const CiString<50>& key, const CiString<500>& value) {
     std::string language;
     const std::vector<std::string> default_prices = split_string(key.get(), ',');
@@ -2894,6 +4104,12 @@ ConfigurationStatus ChargePointConfiguration::setDefaultPriceText(const CiString
     return ConfigurationStatus::Accepted;
 }
 
+/**
+ * ChargePointConfiguration::getDefaultPriceTextKeyValue - getDefaultPriceTextKeyValue
+ * @language: 传入的 language
+ *
+ * 返回 KeyValue。
+ */
 KeyValue ChargePointConfiguration::getDefaultPriceTextKeyValue(const std::string& language) {
     KeyValue result;
     result.key = "DefaultPriceText," + language;
@@ -2912,6 +4128,11 @@ KeyValue ChargePointConfiguration::getDefaultPriceTextKeyValue(const std::string
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getAllDefaultPriceTextKeyValues - getAllDefaultPriceTextKeyValues
+ *
+ * 返回 std::optional<std::vector<KeyValue>>。
+ */
 std::optional<std::vector<KeyValue>> ChargePointConfiguration::getAllDefaultPriceTextKeyValues() {
     if (this->config.contains("CostAndPrice") and this->config.at("CostAndPrice").contains("DefaultPriceText")) {
         std::vector<KeyValue> key_values;
@@ -2945,6 +4166,11 @@ std::optional<std::vector<KeyValue>> ChargePointConfiguration::getAllDefaultPric
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getDefaultPrice - getDefaultPrice
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getDefaultPrice() {
     if (this->config.contains("CostAndPrice") and this->config.at("CostAndPrice").contains("DefaultPrice")) {
         return this->config["CostAndPrice"]["DefaultPrice"].dump(2);
@@ -2953,6 +4179,12 @@ std::optional<std::string> ChargePointConfiguration::getDefaultPrice() {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setDefaultPrice - setDefaultPrice
+ * @value: 传入的 value
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointConfiguration::setDefaultPrice(const std::string& value) {
 
     json default_price = json::object();
@@ -2969,6 +4201,11 @@ ConfigurationStatus ChargePointConfiguration::setDefaultPrice(const std::string&
     return ConfigurationStatus::Accepted;
 }
 
+/**
+ * ChargePointConfiguration::getDefaultPriceKeyValue - getDefaultPriceKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getDefaultPriceKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<std::string> default_price = getDefaultPrice();
@@ -2982,6 +4219,11 @@ std::optional<KeyValue> ChargePointConfiguration::getDefaultPriceKeyValue() {
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getDisplayTimeOffset - getDisplayTimeOffset
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getDisplayTimeOffset() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("TimeOffset")) {
         return this->config["CostAndPrice"]["TimeOffset"];
@@ -2990,6 +4232,12 @@ std::optional<std::string> ChargePointConfiguration::getDisplayTimeOffset() {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setDisplayTimeOffset - setDisplayTimeOffset
+ * @offset: 传入的 offset
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointConfiguration::setDisplayTimeOffset(const std::string& offset) {
     if (!checkTimeOffset(offset)) {
         return ConfigurationStatus::Rejected;
@@ -2999,6 +4247,11 @@ ConfigurationStatus ChargePointConfiguration::setDisplayTimeOffset(const std::st
     return ConfigurationStatus::Accepted;
 }
 
+/**
+ * ChargePointConfiguration::getDisplayTimeOffsetKeyValue - getDisplayTimeOffsetKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getDisplayTimeOffsetKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<std::string> time_offset = getDisplayTimeOffset();
@@ -3012,6 +4265,11 @@ std::optional<KeyValue> ChargePointConfiguration::getDisplayTimeOffsetKeyValue()
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getNextTimeOffsetTransitionDateTime - getNextTimeOffsetTransitionDateTime
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getNextTimeOffsetTransitionDateTime() {
     if (this->config.contains("CostAndPrice") and
         this->config["CostAndPrice"].contains("NextTimeOffsetTransitionDateTime")) {
@@ -3021,6 +4279,12 @@ std::optional<std::string> ChargePointConfiguration::getNextTimeOffsetTransition
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setNextTimeOffsetTransitionDateTime - setNextTimeOffsetTransitionDateTime
+ * @date_time: 传入的 date_time
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointConfiguration::setNextTimeOffsetTransitionDateTime(const std::string& date_time) {
     const DateTime d(date_time);
     if (d.to_time_point() > date::utc_clock::now()) {
@@ -3033,6 +4297,11 @@ ConfigurationStatus ChargePointConfiguration::setNextTimeOffsetTransitionDateTim
     return ConfigurationStatus::Rejected;
 }
 
+/**
+ * ChargePointConfiguration::getNextTimeOffsetTransitionDateTimeKeyValue - getNextTimeOffsetTransitionDateTimeKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getNextTimeOffsetTransitionDateTimeKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<std::string> offset = getNextTimeOffsetTransitionDateTime();
@@ -3046,6 +4315,11 @@ std::optional<KeyValue> ChargePointConfiguration::getNextTimeOffsetTransitionDat
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getTimeOffsetNextTransition - getTimeOffsetNextTransition
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getTimeOffsetNextTransition() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("TimeOffsetNextTransition")) {
         return this->config["CostAndPrice"]["TimeOffsetNextTransition"];
@@ -3054,6 +4328,12 @@ std::optional<std::string> ChargePointConfiguration::getTimeOffsetNextTransition
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setTimeOffsetNextTransition - setTimeOffsetNextTransition
+ * @offset: 传入的 offset
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointConfiguration::setTimeOffsetNextTransition(const std::string& offset) {
     if (!checkTimeOffset(offset)) {
         return ConfigurationStatus::Rejected;
@@ -3063,6 +4343,11 @@ ConfigurationStatus ChargePointConfiguration::setTimeOffsetNextTransition(const 
     return ConfigurationStatus::Accepted;
 }
 
+/**
+ * ChargePointConfiguration::getTimeOffsetNextTransitionKeyValue - getTimeOffsetNextTransitionKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getTimeOffsetNextTransitionKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<std::string> offset = getTimeOffsetNextTransition();
@@ -3076,6 +4361,11 @@ std::optional<KeyValue> ChargePointConfiguration::getTimeOffsetNextTransitionKey
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getCustomIdleFeeAfterStop - getCustomIdleFeeAfterStop
+ *
+ * 返回 std::optional<bool>。
+ */
 std::optional<bool> ChargePointConfiguration::getCustomIdleFeeAfterStop() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("CustomIdleFeeAfterStop")) {
         return this->config["CostAndPrice"]["CustomIdleFeeAfterStop"];
@@ -3084,11 +4374,20 @@ std::optional<bool> ChargePointConfiguration::getCustomIdleFeeAfterStop() {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setCustomIdleFeeAfterStop - setCustomIdleFeeAfterStop
+ * @value: 传入的 value
+ */
 void ChargePointConfiguration::setCustomIdleFeeAfterStop(const bool& value) {
     this->config["CostAndPrice"]["CustomIdleFeeAfterStop"] = value;
     this->setInUserConfig("CostAndPrice", "CustomIdleFeeAfterStop", value);
 }
 
+/**
+ * ChargePointConfiguration::getCustomIdleFeeAfterStopKeyValue - getCustomIdleFeeAfterStopKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCustomIdleFeeAfterStopKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<bool> idle_fee = getCustomIdleFeeAfterStop();
@@ -3102,6 +4401,11 @@ std::optional<KeyValue> ChargePointConfiguration::getCustomIdleFeeAfterStopKeyVa
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getCustomMultiLanguageMessagesEnabled - getCustomMultiLanguageMessagesEnabled
+ *
+ * 返回 std::optional<bool>。
+ */
 std::optional<bool> ChargePointConfiguration::getCustomMultiLanguageMessagesEnabled() {
     if (this->config.contains("CostAndPrice") and
         this->config["CostAndPrice"].contains("CustomMultiLanguageMessages")) {
@@ -3111,6 +4415,11 @@ std::optional<bool> ChargePointConfiguration::getCustomMultiLanguageMessagesEnab
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getCustomMultiLanguageMessagesEnabledKeyValue - getCustomMultiLanguageMessagesEnabledKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getCustomMultiLanguageMessagesEnabledKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<bool> multi_language = getCustomMultiLanguageMessagesEnabled();
@@ -3124,6 +4433,11 @@ std::optional<KeyValue> ChargePointConfiguration::getCustomMultiLanguageMessages
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getMultiLanguageSupportedLanguages - getMultiLanguageSupportedLanguages
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getMultiLanguageSupportedLanguages() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("SupportedLanguages")) {
         return this->config["CostAndPrice"]["SupportedLanguages"];
@@ -3132,6 +4446,11 @@ std::optional<std::string> ChargePointConfiguration::getMultiLanguageSupportedLa
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getMultiLanguageSupportedLanguagesKeyValue - getMultiLanguageSupportedLanguagesKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getMultiLanguageSupportedLanguagesKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<std::string> languages = getMultiLanguageSupportedLanguages();
@@ -3145,6 +4464,11 @@ std::optional<KeyValue> ChargePointConfiguration::getMultiLanguageSupportedLangu
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getLanguage - getLanguage
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePointConfiguration::getLanguage() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("Language")) {
         return this->config["CostAndPrice"]["Language"];
@@ -3153,6 +4477,11 @@ std::optional<std::string> ChargePointConfiguration::getLanguage() {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::getWaitForSetUserPriceTimeout - getWaitForSetUserPriceTimeout
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> ChargePointConfiguration::getWaitForSetUserPriceTimeout() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("WaitForSetUserPriceTimeout")) {
         return this->config["CostAndPrice"]["WaitForSetUserPriceTimeout"];
@@ -3161,6 +4490,10 @@ std::optional<std::int32_t> ChargePointConfiguration::getWaitForSetUserPriceTime
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::setWaitForSetUserPriceTimeout - setWaitForSetUserPriceTimeout
+ * @wait_for_set_user_price_timeout: 传入的 wait_for_set_user_price_timeout
+ */
 void ChargePointConfiguration::setWaitForSetUserPriceTimeout(const std::int32_t wait_for_set_user_price_timeout) {
     if (this->getWaitForSetUserPriceTimeout() != std::nullopt) {
         this->config["CostAndPrice"]["WaitForSetUserPriceTimeout"] = wait_for_set_user_price_timeout;
@@ -3168,6 +4501,11 @@ void ChargePointConfiguration::setWaitForSetUserPriceTimeout(const std::int32_t 
     }
 }
 
+/**
+ * ChargePointConfiguration::getWaitForSetUserPriceTimeoutKeyValue - getWaitForSetUserPriceTimeoutKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getWaitForSetUserPriceTimeoutKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     const auto wait_for_set_user_price_timeout = getWaitForSetUserPriceTimeout();
@@ -3181,6 +4519,12 @@ std::optional<KeyValue> ChargePointConfiguration::getWaitForSetUserPriceTimeoutK
     return result;
 }
 
+/**
+ * ChargePointConfiguration::getPublicKeyKeyValue - getPublicKeyKeyValue
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getPublicKeyKeyValue(const uint32_t connector_id) {
     if (!this->config["Internal"].contains("MeterPublicKeys")) {
         return std::nullopt;
@@ -3204,6 +4548,11 @@ std::optional<KeyValue> ChargePointConfiguration::getPublicKeyKeyValue(const uin
     return kv;
 }
 
+/**
+ * ChargePointConfiguration::getAllMeterPublicKeyKeyValues - getAllMeterPublicKeyKeyValues
+ *
+ * 返回 std::optional<std::vector<KeyValue>>。
+ */
 std::optional<std::vector<KeyValue>> ChargePointConfiguration::getAllMeterPublicKeyKeyValues() {
     if (!this->config["Internal"].contains("MeterPublicKeys")) {
         return std::nullopt;
@@ -3228,6 +4577,13 @@ std::optional<std::vector<KeyValue>> ChargePointConfiguration::getAllMeterPublic
     return key_values;
 }
 
+/**
+ * ChargePointConfiguration::setMeterPublicKey - setMeterPublicKey
+ * @connector_id: 传入的 connector_id
+ * @public_key_pem: 传入的 public_key_pem
+ *
+ * 返回 bool。
+ */
 bool ChargePointConfiguration::setMeterPublicKey(const int32_t connector_id, const std::string& public_key_pem) {
     if (connector_id > this->getNumberOfConnectors() or connector_id < 1) {
         EVLOG_warning << "Cannot set MeterPublicKey for connector " << connector_id
@@ -3254,11 +4610,20 @@ bool ChargePointConfiguration::setMeterPublicKey(const int32_t connector_id, con
     return true;
 }
 
+/**
+ * ChargePointConfiguration::setLanguage - setLanguage
+ * @language: 传入的 language
+ */
 void ChargePointConfiguration::setLanguage(const std::string& language) {
     this->config["CostAndPrice"]["Language"] = language;
     this->setInUserConfig("CostAndPrice", "Language", language);
 }
 
+/**
+ * ChargePointConfiguration::getLanguageKeyValue - getLanguageKeyValue
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::getLanguageKeyValue() {
     std::optional<KeyValue> result = std::nullopt;
     std::optional<std::string> language = getLanguage();
@@ -3294,6 +4659,14 @@ std::optional<KeyValue> ChargePointConfiguration::getCustomKeyValue(CiString<50>
     }
 }
 
+/**
+ * ChargePointConfiguration::setCustomKey - setCustomKey
+ * @key: 传入的 key
+ * @value: 传入的 value
+ * @force: 传入的 force
+ *
+ * 返回 ConfigurationStatus。
+ */
 ConfigurationStatus ChargePointConfiguration::setCustomKey(CiString<50> key, CiString<500> value, bool force) {
     const auto kv = this->getCustomKeyValue(key);
     if (!kv.has_value() or (kv.value().readonly and !force)) {
@@ -3330,6 +4703,10 @@ ConfigurationStatus ChargePointConfiguration::setCustomKey(CiString<50> key, CiS
     return ConfigurationStatus::Accepted;
 }
 
+/**
+ * ChargePointConfiguration::setCentralSystemURI - setCentralSystemURI
+ * @ocpp_uri: 传入的 ocpp_uri
+ */
 void ChargePointConfiguration::setCentralSystemURI(std::string ocpp_uri) {
     EVLOG_warning << "CentralSystemURI changed to: " << ocpp_uri;
     this->config["Internal"]["CentralSystemURI"] = ocpp_uri;
@@ -3337,6 +4714,7 @@ void ChargePointConfiguration::setCentralSystemURI(std::string ocpp_uri) {
 }
 
 namespace {
+/* parse meter public key index */
 std::optional<uint32_t> parse_meter_public_key_index(const std::string& input) {
     const std::string prefix = "MeterPublicKey[";
     const std::string suffix = "]";
@@ -3379,6 +4757,12 @@ std::optional<uint32_t> parse_meter_public_key_index(const std::string& input) {
 }
 } // namespace
 
+/**
+ * ChargePointConfiguration::get - get
+ * @key: 传入的 key
+ *
+ * 返回 std::optional<KeyValue>。
+ */
 std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
     const std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
     // Internal Profile
@@ -3784,6 +5168,11 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
     return std::nullopt;
 }
 
+/**
+ * ChargePointConfiguration::get_all_key_value - get all key value
+ *
+ * 返回 std::vector<KeyValue>。
+ */
 std::vector<KeyValue> ChargePointConfiguration::get_all_key_value() {
     std::vector<KeyValue> all;
     for (auto feature_profile : this->getSupportedFeatureProfilesSet()) {
@@ -3823,6 +5212,13 @@ std::vector<KeyValue> ChargePointConfiguration::get_all_key_value() {
     return all;
 }
 
+/**
+ * ChargePointConfiguration::set - set
+ * @key: 传入的 key
+ * @value: 传入的 value
+ *
+ * 返回 std::optional<ConfigurationStatus>。
+ */
 std::optional<ConfigurationStatus> ChargePointConfiguration::set(CiString<50> key, CiString<500> value) {
     const std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
     if (key == "IgnoredProfilePurposesOffline") {

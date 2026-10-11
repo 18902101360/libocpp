@@ -23,10 +23,12 @@ namespace ocpp {
 using namespace common;
 
 namespace {
+/* to unix milliseconds */
 std::int64_t to_unix_milliseconds(const DateTime& dt) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(dt.to_time_point().time_since_epoch()).count();
 }
 
+/* from unix milliseconds */
 DateTime from_unix_milliseconds(std::int64_t ms_since_epoch) {
     return DateTime(date::utc_clock::time_point(std::chrono::milliseconds(ms_since_epoch)));
 }
@@ -39,6 +41,9 @@ DatabaseHandler::DatabaseHandler(std::unique_ptr<ConnectionInterface> database,
     DatabaseHandlerCommon(std::move(database), sql_migration_files_path, MIGRATION_FILE_VERSION_V2) {
 }
 
+/**
+ * DatabaseHandler::init_sql - init sql
+ */
 void DatabaseHandler::init_sql() {
     if (sqlite3_threadsafe() != 1) {
         throw std::logic_error("SQLite must be in serialized thread mode");
@@ -52,6 +57,9 @@ void DatabaseHandler::init_sql() {
     }
 }
 
+/**
+ * DatabaseHandler::inintialize_enum_tables - inintialize enum tables
+ */
 void DatabaseHandler::inintialize_enum_tables() {
 
     // TODO: Don't throw away all meter value items to allow resuming transactions
@@ -73,6 +81,13 @@ void DatabaseHandler::inintialize_enum_tables() {
                                   conversions::location_enum_to_string);
 }
 
+/**
+ * DatabaseHandler::init_enum_table_inner - init enum table inner
+ * @table_name: 传入的 table_name
+ * @begin: 传入的 begin
+ * @end: 计算充电曲线时的结束时间
+ * @conversion: 传入的 conversion
+ */
 void DatabaseHandler::init_enum_table_inner(const std::string& table_name, const int begin, const int end,
                                             std::function<std::string(int)> conversion) {
     if (!this->database->clear_table(table_name)) {
@@ -103,12 +118,24 @@ void DatabaseHandler::init_enum_table_inner(const std::string& table_name, const
 }
 
 template <typename T>
+/**
+ * DatabaseHandler::init_enum_table - init enum table
+ * @table_name: 传入的 table_name
+ * @begin: 传入的 begin
+ * @end: 计算充电曲线时的结束时间
+ * @conversion: 传入的 conversion
+ */
 void DatabaseHandler::init_enum_table(const std::string& table_name, T begin, T end,
                                       std::function<std::string(T)> conversion) {
     auto conversion_func = [conversion](int value) { return conversion(static_cast<T>(value)); };
     init_enum_table_inner(table_name, static_cast<int>(begin), static_cast<int>(end), conversion_func);
 }
 
+/**
+ * DatabaseHandler::authorization_cache_insert_entry - authorization cache insert entry
+ * @id_token_hash: 传入的 id_token_hash
+ * @id_token_info: 传入的 id_token_info
+ */
 void DatabaseHandler::authorization_cache_insert_entry(const std::string& id_token_hash,
                                                        const IdTokenInfo& id_token_info) {
     const std::string sql =
@@ -130,6 +157,10 @@ void DatabaseHandler::authorization_cache_insert_entry(const std::string& id_tok
     }
 }
 
+/**
+ * DatabaseHandler::authorization_cache_update_last_used - authorization cache update last used
+ * @id_token_hash: 传入的 id_token_hash
+ */
 void DatabaseHandler::authorization_cache_update_last_used(const std::string& id_token_hash) {
     const std::string sql = "UPDATE AUTH_CACHE SET LAST_USED = @last_used WHERE ID_TOKEN_HASH = @id_token_hash";
     auto insert_stmt = this->database->new_statement(sql);
@@ -163,6 +194,10 @@ DatabaseHandler::authorization_cache_get_entry(const std::string& id_token_hash)
     throw QueryExecutionException(this->database->get_error_message());
 }
 
+/**
+ * DatabaseHandler::authorization_cache_delete_entry - authorization cache delete entry
+ * @id_token_hash: 传入的 id_token_hash
+ */
 void DatabaseHandler::authorization_cache_delete_entry(const std::string& id_token_hash) {
     const std::string sql = "DELETE FROM AUTH_CACHE WHERE ID_TOKEN_HASH = @id_token_hash";
     auto delete_stmt = this->database->new_statement(sql);
@@ -174,6 +209,10 @@ void DatabaseHandler::authorization_cache_delete_entry(const std::string& id_tok
     }
 }
 
+/**
+ * DatabaseHandler::authorization_cache_delete_nr_of_oldest_entries - authorization cache delete nr of oldest entries
+ * @nr_to_remove: 传入的 nr_to_remove
+ */
 void DatabaseHandler::authorization_cache_delete_nr_of_oldest_entries(size_t nr_to_remove) {
     const std::string sql = "DELETE FROM AUTH_CACHE WHERE ID_TOKEN_HASH IN (SELECT ID_TOKEN_HASH FROM AUTH_CACHE ORDER "
                             "BY LAST_USED ASC LIMIT @nr_to_remove)";
@@ -186,6 +225,10 @@ void DatabaseHandler::authorization_cache_delete_nr_of_oldest_entries(size_t nr_
     }
 }
 
+/**
+ * DatabaseHandler::authorization_cache_delete_expired_entries - authorization cache delete expired entries
+ * @auth_cache_lifetime: 传入的 auth_cache_lifetime
+ */
 void DatabaseHandler::authorization_cache_delete_expired_entries(
     std::optional<std::chrono::seconds> auth_cache_lifetime) {
 
@@ -207,12 +250,20 @@ void DatabaseHandler::authorization_cache_delete_expired_entries(
     }
 }
 
+/**
+ * DatabaseHandler::authorization_cache_clear - authorization cache clear
+ */
 void DatabaseHandler::authorization_cache_clear() {
     if (!this->database->clear_table("AUTH_CACHE")) {
         throw QueryExecutionException(this->database->get_error_message());
     }
 }
 
+/**
+ * DatabaseHandler::authorization_cache_get_binary_size - authorization cache get binary size
+ *
+ * 返回 size_t。
+ */
 size_t DatabaseHandler::authorization_cache_get_binary_size() {
     const std::string sql = "SELECT SUM(\"payload\") FROM \"dbstat\" WHERE name='AUTH_CACHE';";
     auto stmt = this->database->new_statement(sql);
@@ -224,6 +275,13 @@ size_t DatabaseHandler::authorization_cache_get_binary_size() {
     return stmt->column_int(0);
 }
 
+/**
+ * DatabaseHandler::insert_availability - insert availability
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @operational_status: 传入的 operational_status
+ * @replace: 传入的 replace
+ */
 void DatabaseHandler::insert_availability(std::int32_t evse_id, std::int32_t connector_id,
                                           OperationalStatusEnum operational_status, bool replace) {
     std::string sql;
@@ -249,6 +307,13 @@ void DatabaseHandler::insert_availability(std::int32_t evse_id, std::int32_t con
     }
 }
 
+/**
+ * DatabaseHandler::get_availability - get availability
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum DatabaseHandler::get_availability(std::int32_t evse_id, std::int32_t connector_id) {
     const std::string sql =
         "SELECT OPERATIONAL_STATUS FROM AVAILABILITY WHERE EVSE_ID = @evse_id AND CONNECTOR_ID = @connector_id;";
@@ -269,6 +334,10 @@ OperationalStatusEnum DatabaseHandler::get_availability(std::int32_t evse_id, st
     return conversions::string_to_operational_status_enum(select_stmt->column_text(0));
 }
 
+/**
+ * DatabaseHandler::insert_or_update_local_authorization_list_version - insert or update local authorization list version
+ * @version: 传入的 version
+ */
 void DatabaseHandler::insert_or_update_local_authorization_list_version(std::int32_t version) {
     const std::string sql = "INSERT OR REPLACE INTO AUTH_LIST_VERSION (ID, VERSION) VALUES (0, @version)";
     auto stmt = this->database->new_statement(sql);
@@ -281,6 +350,11 @@ void DatabaseHandler::insert_or_update_local_authorization_list_version(std::int
     }
 }
 
+/**
+ * DatabaseHandler::get_local_authorization_list_version - get local authorization list version
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t DatabaseHandler::get_local_authorization_list_version() {
     const std::string sql = "SELECT VERSION FROM AUTH_LIST_VERSION WHERE ID = 0";
     auto stmt = this->database->new_statement(sql);
@@ -293,6 +367,11 @@ std::int32_t DatabaseHandler::get_local_authorization_list_version() {
     return stmt->column_int(0);
 }
 
+/**
+ * DatabaseHandler::insert_or_update_local_authorization_list_entry - insert or update local authorization list entry
+ * @id_token: 传入的 id_token
+ * @id_token_info: 传入的 id_token_info
+ */
 void DatabaseHandler::insert_or_update_local_authorization_list_entry(const IdToken& id_token,
                                                                       const IdTokenInfo& id_token_info) {
     // add or replace
@@ -308,6 +387,10 @@ void DatabaseHandler::insert_or_update_local_authorization_list_entry(const IdTo
     }
 }
 
+/**
+ * DatabaseHandler::insert_or_update_local_authorization_list - insert or update local authorization list
+ * @local_authorization_list: 传入的 local_authorization_list
+ */
 void DatabaseHandler::insert_or_update_local_authorization_list(
     const std::vector<AuthorizationData>& local_authorization_list) {
     bool success = true; // indicates if all database operations succeeded
@@ -330,6 +413,10 @@ void DatabaseHandler::insert_or_update_local_authorization_list(
     }
 }
 
+/**
+ * DatabaseHandler::delete_local_authorization_list_entry - delete local authorization list entry
+ * @id_token: 传入的 id_token
+ */
 void DatabaseHandler::delete_local_authorization_list_entry(const IdToken& id_token) {
     const std::string sql = "DELETE FROM AUTH_LIST WHERE ID_TOKEN_HASH = @id_token_hash;";
     auto stmt = this->database->new_statement(sql);
@@ -341,6 +428,12 @@ void DatabaseHandler::delete_local_authorization_list_entry(const IdToken& id_to
     }
 }
 
+/**
+ * DatabaseHandler::get_local_authorization_list_entry - get local authorization list entry
+ * @id_token: 传入的 id_token
+ *
+ * 返回 std::optional<IdTokenInfo>。
+ */
 std::optional<IdTokenInfo> DatabaseHandler::get_local_authorization_list_entry(const IdToken& id_token) {
 
     const std::string sql = "SELECT ID_TOKEN_INFO FROM AUTH_LIST WHERE ID_TOKEN_HASH = @id_token_hash;";
@@ -361,6 +454,9 @@ std::optional<IdTokenInfo> DatabaseHandler::get_local_authorization_list_entry(c
     throw QueryExecutionException(this->database->get_error_message());
 }
 
+/**
+ * DatabaseHandler::clear_local_authorization_list - clear local authorization list
+ */
 void DatabaseHandler::clear_local_authorization_list() {
     const auto retval = this->database->clear_table("AUTH_LIST");
     if (retval == false) {
@@ -368,6 +464,11 @@ void DatabaseHandler::clear_local_authorization_list() {
     }
 }
 
+/**
+ * DatabaseHandler::get_local_authorization_list_number_of_entries - get local authorization list number of entries
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t DatabaseHandler::get_local_authorization_list_number_of_entries() {
     const std::string sql = "SELECT COUNT(*) FROM AUTH_LIST;";
     auto stmt = this->database->new_statement(sql);
@@ -379,6 +480,11 @@ std::int32_t DatabaseHandler::get_local_authorization_list_number_of_entries() {
     return stmt->column_int(0);
 }
 
+/**
+ * DatabaseHandler::transaction_metervalues_insert - transaction metervalues insert
+ * @transaction_id: 传入的 transaction_id
+ * @meter_value: 传入的 meter_value
+ */
 void DatabaseHandler::transaction_metervalues_insert(const std::string& transaction_id, const MeterValue& meter_value) {
     if (meter_value.sampledValue.empty()) {
         return;
@@ -501,6 +607,12 @@ void DatabaseHandler::transaction_metervalues_insert(const std::string& transact
     transaction->commit();
 }
 
+/**
+ * DatabaseHandler::transaction_metervalues_get_all - transaction metervalues get all
+ * @transaction_id: 传入的 transaction_id
+ *
+ * 返回 std::vector<MeterValue>。
+ */
 std::vector<MeterValue> DatabaseHandler::transaction_metervalues_get_all(const std::string& transaction_id) {
 
     const std::string sql1 = "SELECT * FROM METER_VALUES WHERE TRANSACTION_ID = @transaction_id;";
@@ -593,6 +705,10 @@ std::vector<MeterValue> DatabaseHandler::transaction_metervalues_get_all(const s
     return result;
 }
 
+/**
+ * DatabaseHandler::transaction_metervalues_clear - transaction metervalues clear
+ * @transaction_id: 传入的 transaction_id
+ */
 void DatabaseHandler::transaction_metervalues_clear(const std::string& transaction_id) {
 
     const std::string sql1 = "SELECT ROWID FROM METER_VALUES WHERE TRANSACTION_ID = @transaction_id;";
@@ -626,25 +742,54 @@ void DatabaseHandler::transaction_metervalues_clear(const std::string& transacti
     }
 }
 
+/**
+ * DatabaseHandler::insert_cs_availability - insert cs availability
+ * @operational_status: 传入的 operational_status
+ * @replace: 传入的 replace
+ */
 void DatabaseHandler::insert_cs_availability(OperationalStatusEnum operational_status, bool replace) {
     this->insert_availability(0, 0, operational_status, replace);
 }
 
+/**
+ * DatabaseHandler::get_cs_availability - get cs availability
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum DatabaseHandler::get_cs_availability() {
     return this->get_availability(0, 0);
 }
 
+/**
+ * DatabaseHandler::insert_evse_availability - insert evse availability
+ * @evse_id: 传入的 evse_id
+ * @operational_status: 传入的 operational_status
+ * @replace: 传入的 replace
+ */
 void DatabaseHandler::insert_evse_availability(std::int32_t evse_id, OperationalStatusEnum operational_status,
                                                bool replace) {
     assert(evse_id > 0);
     this->insert_availability(evse_id, 0, operational_status, replace);
 }
 
+/**
+ * DatabaseHandler::get_evse_availability - get evse availability
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum DatabaseHandler::get_evse_availability(std::int32_t evse_id) {
     assert(evse_id > 0);
     return this->get_availability(evse_id, 0);
 }
 
+/**
+ * DatabaseHandler::insert_connector_availability - insert connector availability
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @operational_status: 传入的 operational_status
+ * @replace: 传入的 replace
+ */
 void DatabaseHandler::insert_connector_availability(std::int32_t evse_id, std::int32_t connector_id,
                                                     OperationalStatusEnum operational_status, bool replace) {
     assert(evse_id > 0);
@@ -652,6 +797,13 @@ void DatabaseHandler::insert_connector_availability(std::int32_t evse_id, std::i
     this->insert_availability(evse_id, connector_id, operational_status, replace);
 }
 
+/**
+ * DatabaseHandler::get_connector_availability - get connector availability
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum DatabaseHandler::get_connector_availability(std::int32_t evse_id, std::int32_t connector_id) {
     assert(evse_id > 0);
     assert(connector_id > 0);
@@ -682,6 +834,12 @@ void DatabaseHandler::transaction_insert(const EnhancedTransaction& transaction,
     }
 }
 
+/**
+ * DatabaseHandler::transaction_get - transaction get
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 std::unique_ptr<EnhancedTransaction>。
+ */
 std::unique_ptr<EnhancedTransaction> DatabaseHandler::transaction_get(const std::int32_t evse_id) {
     const std::string sql = "SELECT TRANSACTION_ID, CONNECTOR_ID, TIME_START, SEQ_NO, CHARGING_STATE, ID_TAG_SENT FROM "
                             "TRANSACTIONS WHERE EVSE_ID = @evse_id";
@@ -711,6 +869,11 @@ std::unique_ptr<EnhancedTransaction> DatabaseHandler::transaction_get(const std:
     return transaction;
 }
 
+/**
+ * DatabaseHandler::transaction_update_seq_no - transaction update seq no
+ * @transaction_id: 传入的 transaction_id
+ * @seq_no: 传入的 seq_no
+ */
 void DatabaseHandler::transaction_update_seq_no(const std::string& transaction_id, std::int32_t seq_no) {
     const std::string sql = "UPDATE TRANSACTIONS SET SEQ_NO = @seq_no WHERE TRANSACTION_ID = @transaction_id";
     auto update_stmt = this->database->new_statement(sql);
@@ -723,6 +886,11 @@ void DatabaseHandler::transaction_update_seq_no(const std::string& transaction_i
     }
 }
 
+/**
+ * DatabaseHandler::transaction_update_charging_state - transaction update charging state
+ * @transaction_id: 传入的 transaction_id
+ * @charging_state: 传入的 charging_state
+ */
 void DatabaseHandler::transaction_update_charging_state(const std::string& transaction_id,
                                                         const ChargingStateEnum charging_state) {
     const std::string sql =
@@ -737,6 +905,11 @@ void DatabaseHandler::transaction_update_charging_state(const std::string& trans
     }
 }
 
+/**
+ * DatabaseHandler::transaction_update_id_token_sent - transaction update id token sent
+ * @transaction_id: 传入的 transaction_id
+ * @id_token_sent: 传入的 id_token_sent
+ */
 void DatabaseHandler::transaction_update_id_token_sent(const std::string& transaction_id, bool id_token_sent) {
     const std::string sql =
         "UPDATE TRANSACTIONS SET ID_TAG_SENT = @id_token_sent WHERE TRANSACTION_ID = @transaction_id";
@@ -750,6 +923,10 @@ void DatabaseHandler::transaction_update_id_token_sent(const std::string& transa
     }
 }
 
+/**
+ * DatabaseHandler::transaction_delete - transaction delete
+ * @transaction_id: 传入的 transaction_id
+ */
 void DatabaseHandler::transaction_delete(const std::string& transaction_id) {
     const std::string sql = "DELETE FROM TRANSACTIONS WHERE TRANSACTION_ID = @transaction_id";
     auto delete_stmt = this->database->new_statement(sql);
@@ -759,6 +936,12 @@ void DatabaseHandler::transaction_delete(const std::string& transaction_id) {
     }
 }
 
+/**
+ * DatabaseHandler::insert_or_update_charging_profile - insert or update charging profile
+ * @evse_id: 传入的 evse_id
+ * @profile: 传入的 profile
+ * @charging_limit_source: 传入的 charging_limit_source
+ */
 void DatabaseHandler::insert_or_update_charging_profile(const int evse_id, const v2::ChargingProfile& profile,
                                                         const CiString<20> charging_limit_source) {
     // add or replace
@@ -790,6 +973,12 @@ void DatabaseHandler::insert_or_update_charging_profile(const int evse_id, const
     }
 }
 
+/**
+ * DatabaseHandler::delete_charging_profile - delete charging profile
+ * @profile_id: 传入的 profile_id
+ *
+ * 返回 bool。
+ */
 bool DatabaseHandler::delete_charging_profile(const int profile_id) {
     const std::string sql = "DELETE FROM CHARGING_PROFILES WHERE ID = @profile_id;";
     auto stmt = this->database->new_statement(sql);
@@ -802,6 +991,10 @@ bool DatabaseHandler::delete_charging_profile(const int profile_id) {
     return stmt->changes() > 0;
 }
 
+/**
+ * DatabaseHandler::delete_charging_profile_by_transaction_id - delete charging profile by transaction id
+ * @transaction_id: 传入的 transaction_id
+ */
 void DatabaseHandler::delete_charging_profile_by_transaction_id(const std::string& transaction_id) {
     const std::string sql = "DELETE FROM CHARGING_PROFILES WHERE TRANSACTION_ID = @transaction_id";
     auto stmt = this->database->new_statement(sql);
@@ -812,10 +1005,22 @@ void DatabaseHandler::delete_charging_profile_by_transaction_id(const std::strin
     }
 }
 
+/**
+ * DatabaseHandler::clear_charging_profiles - clear charging profiles
+ *
+ * 返回 bool。
+ */
 bool DatabaseHandler::clear_charging_profiles() {
     return this->database->clear_table("CHARGING_PROFILES");
 }
 
+/**
+ * DatabaseHandler::clear_charging_profiles_matching_criteria - clear charging profiles matching criteria
+ * @profile_id: 传入的 profile_id
+ * @criteria: 传入的 criteria
+ *
+ * 返回 bool。
+ */
 bool DatabaseHandler::clear_charging_profiles_matching_criteria(const std::optional<std::int32_t> profile_id,
                                                                 const std::optional<ClearChargingProfile>& criteria) {
     // K10.FR.03, K10.FR.09
@@ -958,6 +1163,12 @@ DatabaseHandler::get_charging_profiles_matching_criteria(const std::optional<std
     return results;
 }
 
+/**
+ * DatabaseHandler::get_charging_profiles_for_evse - get charging profiles for evse
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 std::vector<v2::ChargingProfile>。
+ */
 std::vector<v2::ChargingProfile> DatabaseHandler::get_charging_profiles_for_evse(const int evse_id) {
     std::vector<v2::ChargingProfile> profiles;
 
@@ -975,6 +1186,11 @@ std::vector<v2::ChargingProfile> DatabaseHandler::get_charging_profiles_for_evse
     return profiles;
 }
 
+/**
+ * DatabaseHandler::get_all_charging_profiles - get all charging profiles
+ *
+ * 返回 std::vector<v2::ChargingProfile>。
+ */
 std::vector<v2::ChargingProfile> DatabaseHandler::get_all_charging_profiles() {
     std::vector<v2::ChargingProfile> profiles;
 
@@ -990,6 +1206,11 @@ std::vector<v2::ChargingProfile> DatabaseHandler::get_all_charging_profiles() {
     return profiles;
 }
 
+/**
+ * DatabaseHandler::get_all_charging_profiles_group_by_evse - get all charging profiles group by evse
+ *
+ * 返回 std::map<std::int32_t, std::vector<v2::ChargingProfile>>。
+ */
 std::map<std::int32_t, std::vector<v2::ChargingProfile>> DatabaseHandler::get_all_charging_profiles_group_by_evse() {
     std::map<std::int32_t, std::vector<v2::ChargingProfile>> map;
 
@@ -1010,6 +1231,12 @@ std::map<std::int32_t, std::vector<v2::ChargingProfile>> DatabaseHandler::get_al
     return map;
 }
 
+/**
+ * DatabaseHandler::get_charging_limit_source_for_profile - get charging limit source for profile
+ * @profile_id: 传入的 profile_id
+ *
+ * 返回 CiString<20>。
+ */
 CiString<20> DatabaseHandler::get_charging_limit_source_for_profile(const int profile_id) {
     const std::string sql = "SELECT CHARGING_LIMIT_SOURCE FROM CHARGING_PROFILES WHERE ID = @profile_id;";
 
@@ -1030,6 +1257,12 @@ CiString<20> DatabaseHandler::get_charging_limit_source_for_profile(const int pr
     return res;
 }
 
+/**
+ * DatabaseHandler::new_statement - new statement
+ * @sql: 传入的 sql
+ *
+ * 返回 std::unique_ptr<StatementInterface>。
+ */
 std::unique_ptr<StatementInterface> DatabaseHandler::new_statement(const std::string& sql) {
     return this->database->new_statement(sql);
 }

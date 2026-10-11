@@ -44,6 +44,10 @@ Security::~Security() {
     }
 }
 
+/**
+ * Security::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void Security::handle_message(const EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -62,6 +66,9 @@ void Security::handle_message(const EnhancedMessage<MessageType>& message) {
     }
 }
 
+/**
+ * Security::stop_certificate_signed_timer - stop certificate signed timer
+ */
 void Security::stop_certificate_signed_timer() {
     this->certificate_signed_timer.stop();
 }
@@ -107,6 +114,9 @@ Security::on_get_15118_ev_certificate_request(const Get15118EVCertificateRequest
     }
 }
 
+/**
+ * Security::init_certificate_expiration_check_timers - init certificate expiration check timers
+ */
 void Security::init_certificate_expiration_check_timers() {
     // Timers started with initial delays; callback functions are supposed to re-schedule on their own!
 
@@ -127,11 +137,22 @@ void Security::init_certificate_expiration_check_timers() {
             .value_or(60)));
 }
 
+/**
+ * Security::stop_certificate_expiration_check_timers - stop certificate expiration check timers
+ */
 void Security::stop_certificate_expiration_check_timers() {
     this->client_certificate_expiration_check_timer.stop();
     this->v2g_certificate_expiration_check_timer.stop();
 }
 
+/**
+ * Security::security_event_notification_req - security event notification req
+ * @event_type: 传入的 event_type
+ * @tech_info: 传入的 tech_info
+ * @triggered_internally: 传入的 triggered_internally
+ * @critical: 传入的 critical
+ * @timestamp: 传入的 timestamp
+ */
 void Security::security_event_notification_req(const CiString<50>& event_type,
                                                const std::optional<CiString<255>>& tech_info,
                                                const bool triggered_internally, const bool critical,
@@ -156,6 +177,11 @@ void Security::security_event_notification_req(const CiString<50>& event_type,
     }
 }
 
+/**
+ * Security::sign_certificate_req - sign certificate req
+ * @certificate_signing_use: 传入的 certificate_signing_use
+ * @initiated_by_trigger_message: 传入的 initiated_by_trigger_message
+ */
 void Security::sign_certificate_req(const ocpp::CertificateSigningUseEnum& certificate_signing_use,
                                     const bool initiated_by_trigger_message) {
     if (this->awaited_certificate_signing_use_enum.has_value()) {
@@ -231,6 +257,10 @@ void Security::sign_certificate_req(const ocpp::CertificateSigningUseEnum& certi
     this->context.message_dispatcher.dispatch_call(call, initiated_by_trigger_message);
 }
 
+/**
+ * Security::handle_certificate_signed_req - handle certificate signed req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Security::handle_certificate_signed_req(Call<CertificateSignedRequest> call) {
     // reset these parameters
     this->csr_attempt = 1;
@@ -289,6 +319,10 @@ void Security::handle_certificate_signed_req(Call<CertificateSignedRequest> call
     }
 }
 
+/**
+ * Security::handle_sign_certificate_response - handle sign certificate response
+ * @call_result: OCPP CALLRESULT 帧
+ */
 void Security::handle_sign_certificate_response(CallResult<SignCertificateResponse> call_result) {
     if (!this->awaited_certificate_signing_use_enum.has_value()) {
         EVLOG_warning
@@ -340,6 +374,10 @@ void Security::handle_sign_certificate_response(CallResult<SignCertificateRespon
     }
 }
 
+/**
+ * Security::handle_get_installed_certificate_ids_req - handle get installed certificate ids req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Security::handle_get_installed_certificate_ids_req(Call<GetInstalledCertificateIdsRequest> call) {
     EVLOG_debug << "Received GetInstalledCertificateIdsRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
     GetInstalledCertificateIdsResponse response;
@@ -380,6 +418,10 @@ void Security::handle_get_installed_certificate_ids_req(Call<GetInstalledCertifi
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Security::handle_install_certificate_req - handle install certificate req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Security::handle_install_certificate_req(Call<InstallCertificateRequest> call) {
     EVLOG_debug << "Received InstallCertificateRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -407,6 +449,10 @@ void Security::handle_install_certificate_req(Call<InstallCertificateRequest> ca
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Security::handle_delete_certificate_req - handle delete certificate req
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Security::handle_delete_certificate_req(Call<DeleteCertificateRequest> call) {
     EVLOG_debug << "Received DeleteCertificateRequest: " << call.msg << "\nwith messageId: " << call.uniqueId;
 
@@ -431,6 +477,12 @@ void Security::handle_delete_certificate_req(Call<DeleteCertificateRequest> call
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Security::should_allow_certificate_install - should allow certificate install
+ * @cert_type: 传入的 cert_type
+ *
+ * 返回 bool。
+ */
 bool Security::should_allow_certificate_install(InstallCertificateUseEnum cert_type) const {
     const int security_profile =
         this->context.device_model.get_value<int>(ControllerComponentVariables::SecurityProfile);
@@ -458,6 +510,9 @@ bool Security::should_allow_certificate_install(InstallCertificateUseEnum cert_t
     return false;
 }
 
+/**
+ * Security::scheduled_check_client_certificate_expiration - scheduled check client certificate expiration
+ */
 void Security::scheduled_check_client_certificate_expiration() {
     EVLOG_info << "Checking if CSMS client certificate has expired";
     const int expiry_days_count = this->context.evse_security.get_leaf_expiry_days_count(
@@ -476,6 +531,9 @@ void Security::scheduled_check_client_certificate_expiration() {
             .value_or(12 * 60 * 60)));
 }
 
+/**
+ * Security::scheduled_check_v2g_certificate_expiration - scheduled check v2g certificate expiration
+ */
 void Security::scheduled_check_v2g_certificate_expiration() {
     if (this->context.device_model
             .get_optional_value<bool>(ControllerComponentVariables::V2GCertificateInstallationEnabled)

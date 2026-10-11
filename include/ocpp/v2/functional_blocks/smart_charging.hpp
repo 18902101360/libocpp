@@ -103,6 +103,13 @@ std::string profile_validation_result_to_string(ProfileValidationResultEnum e);
 std::string profile_validation_result_to_reason_code(ProfileValidationResultEnum e);
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @validation_result: 传入的 validation_result
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ProfileValidationResultEnum validation_result);
 
 class SmartChargingInterface : public MessageHandlerInterface {

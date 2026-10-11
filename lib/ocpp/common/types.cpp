@@ -28,10 +28,19 @@ DateTimeImpl::DateTimeImpl(const std::string& timepoint_str) {
     this->from_rfc3339(timepoint_str);
 }
 
+/**
+ * DateTimeImpl::to_rfc3339 - to rfc3339
+ *
+ * 返回 std::string。
+ */
 std::string DateTimeImpl::to_rfc3339() const {
     return date::format("%FT%TZ", std::chrono::time_point_cast<std::chrono::milliseconds>(this->timepoint));
 }
 
+/**
+ * DateTimeImpl::from_rfc3339 - from rfc3339
+ * @timepoint_str: 传入的 timepoint_str
+ */
 void DateTimeImpl::from_rfc3339(const std::string& timepoint_str) {
     std::istringstream in{timepoint_str};
     in >> date::parse("%FT%T%Ez", this->timepoint);
@@ -50,33 +59,80 @@ void DateTimeImpl::from_rfc3339(const std::string& timepoint_str) {
     }
 }
 
+/**
+ * DateTimeImpl::to_time_point - to time point
+ *
+ * 返回 std::chrono::time_point<date::utc_clock>。
+ */
 std::chrono::time_point<date::utc_clock> DateTimeImpl::to_time_point() const {
     return this->timepoint;
 }
 
 DateTimeImpl& DateTimeImpl::operator=(const DateTimeImpl& dt) = default;
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @dt: 传入的 dt
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const DateTimeImpl& dt) {
     os << dt.to_rfc3339();
     return os;
 }
 
+/**
+ * operator> - 供日志或容器使用的比较、输出运算符。
+ * @lhs: 传入的 lhs
+ * @rhs: 传入的 rhs
+ *
+ * 返回 bool。
+ */
 bool operator>(const DateTimeImpl& lhs, const DateTimeImpl& rhs) {
     return lhs.timepoint > rhs.timepoint;
 }
 
+/**
+ * operator>= - 供日志或容器使用的比较、输出运算符。
+ * @lhs: 传入的 lhs
+ * @rhs: 传入的 rhs
+ *
+ * 返回 bool。
+ */
 bool operator>=(const DateTimeImpl& lhs, const DateTimeImpl& rhs) {
     return lhs.timepoint >= rhs.timepoint;
 }
 
+/**
+ * operator< - 供日志或容器使用的比较、输出运算符。
+ * @lhs: 传入的 lhs
+ * @rhs: 传入的 rhs
+ *
+ * 返回 bool。
+ */
 bool operator<(const DateTimeImpl& lhs, const DateTimeImpl& rhs) {
     return lhs.timepoint < rhs.timepoint;
 }
 
+/**
+ * operator<= - 供日志或容器使用的比较、输出运算符。
+ * @lhs: 传入的 lhs
+ * @rhs: 传入的 rhs
+ *
+ * 返回 bool。
+ */
 bool operator<=(const DateTimeImpl& lhs, const DateTimeImpl& rhs) {
     return lhs.timepoint <= rhs.timepoint;
 }
 
+/**
+ * operator== - 供日志或容器使用的比较、输出运算符。
+ * @lhs: 传入的 lhs
+ * @rhs: 传入的 rhs
+ *
+ * 返回 bool。
+ */
 bool operator==(const DateTimeImpl& lhs, const DateTimeImpl& rhs) {
     return lhs.timepoint == rhs.timepoint;
 }
@@ -88,6 +144,11 @@ CallError::CallError(const MessageId& uniqueId, const std::string& errorCode, co
     uniqueId(uniqueId), errorCode(errorCode), errorDescription(errorDescription), errorDetails(errorDetails) {
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void to_json(json& j, const CallError& c) {
     j = json::array();
     j.push_back(MessageTypeId::CALLERROR);
@@ -97,6 +158,11 @@ void to_json(json& j, const CallError& c) {
     j.push_back(c.errorDetails);
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, CallError& c) {
     // the required parts of the message
     c.uniqueId.set(j.at(MESSAGE_ID));
@@ -105,6 +171,13 @@ void from_json(const json& j, CallError& c) {
     c.errorDetails = j.at(CALLERROR_ERROR_DETAILS);
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @c: 传入的 c
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CallError& c) {
     os << json(c).dump(4);
     return os;
@@ -112,6 +185,12 @@ std::ostream& operator<<(std::ostream& os, const CallError& c) {
 
 namespace conversions {
 
+/**
+ * session_started_reason_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string session_started_reason_to_string(SessionStartedReason e) {
     switch (e) {
     case SessionStartedReason::Authorized:
@@ -122,6 +201,12 @@ std::string session_started_reason_to_string(SessionStartedReason e) {
     throw EnumToStringException{e, "SessionStartedReason"};
 }
 
+/**
+ * string_to_session_started_reason - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 SessionStartedReason。
+ */
 SessionStartedReason string_to_session_started_reason(const std::string& s) {
     if (s == "Authorized") {
         return SessionStartedReason::Authorized;
@@ -133,11 +218,23 @@ SessionStartedReason string_to_session_started_reason(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @session_started_reason: 传入的 session_started_reason
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const SessionStartedReason& session_started_reason) {
     os << conversions::session_started_reason_to_string(session_started_reason);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Current& k) {
     // the required parts of the type
     j = json({}, true);
@@ -159,6 +256,11 @@ void to_json(json& j, const Current& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Current& k) {
     // the required parts of the type
 
@@ -180,11 +282,23 @@ void from_json(const json& j, Current& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Current& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Voltage& k) {
     // the required parts of the type
     j = json({}, true);
@@ -203,6 +317,11 @@ void to_json(json& j, const Voltage& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Voltage& k) {
     // the required parts of the type
 
@@ -221,11 +340,23 @@ void from_json(const json& j, Voltage& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Voltage& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Frequency& k) {
     // the required parts of the type
     j = json{
@@ -240,6 +371,11 @@ void to_json(json& j, const Frequency& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Frequency& k) {
     // the required parts of the type
     k.L1 = j.at("L1");
@@ -253,11 +389,23 @@ void from_json(const json& j, Frequency& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Frequency& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Power& k) {
     // the required parts of the type
     j = json{
@@ -275,6 +423,11 @@ void to_json(json& j, const Power& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Power& k) {
     // the required parts of the type
     k.total = j.at("total");
@@ -291,11 +444,23 @@ void from_json(const json& j, Power& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Power& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Energy& k) {
     // the required parts of the type
     j = json{
@@ -313,6 +478,11 @@ void to_json(json& j, const Energy& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Energy& k) {
     // the required parts of the type
     k.total = j.at("total");
@@ -329,11 +499,23 @@ void from_json(const json& j, Energy& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Energy& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const ReactivePower& k) {
     // the required parts of the type
     j = json{
@@ -351,6 +533,11 @@ void to_json(json& j, const ReactivePower& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, ReactivePower& k) {
     // the required parts of the type
     k.total = j.at("total");
@@ -367,11 +554,23 @@ void from_json(const json& j, ReactivePower& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const ReactivePower& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Powermeter& k) {
     // the required parts of the type
     j = json{
@@ -405,6 +604,11 @@ void to_json(json& j, const Powermeter& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Powermeter& k) {
     // the required parts of the type
     k.timestamp = j.at("timestamp");
@@ -437,11 +641,23 @@ void from_json(const json& j, Powermeter& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Powermeter& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Temperature& k) {
     // the required parts of the type
     j = json{
@@ -453,6 +669,11 @@ void to_json(json& j, const Temperature& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Temperature& k) {
     // the required parts of the type
     k.value = j.at("value");
@@ -463,11 +684,23 @@ void from_json(const json& j, Temperature& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Temperature& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const StateOfCharge& k) {
     // the required parts of the type
     j = json{
@@ -479,6 +712,11 @@ void to_json(json& j, const StateOfCharge& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, StateOfCharge& k) {
     // the required parts of the type
     k.value = j.at("value");
@@ -489,11 +727,23 @@ void from_json(const json& j, StateOfCharge& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const StateOfCharge& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const RPM& k) {
     // the required parts of the type
     j = json{
@@ -505,6 +755,11 @@ void to_json(json& j, const RPM& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, RPM& k) {
     // the required parts of the type
     k.value = j.at("value");
@@ -515,11 +770,23 @@ void from_json(const json& j, RPM& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const RPM& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const Measurement& k) {
     to_json(j, k.power_meter);
     j["temperature_C"] = k.temperature_C;
@@ -531,6 +798,11 @@ void to_json(json& j, const Measurement& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, Measurement& k) {
     from_json(j, k.power_meter);
     k.temperature_C = j.at("temperature_C");
@@ -542,11 +814,23 @@ void from_json(const json& j, Measurement& k) {
     }
 }
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @k: 对应的 OCPP 结构体
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const Measurement& k) {
     os << json(k).dump(4);
     return os;
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @m: 要转换的枚举值
+ */
 void from_json(const json& j, DisplayMessageContent& m) {
     if (j.contains("content")) {
         m.message = j.at("content");
@@ -561,6 +845,11 @@ void from_json(const json& j, DisplayMessageContent& m) {
     }
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @m: 要转换的枚举值
+ */
 void to_json(json& j, const DisplayMessageContent& m) {
     j["message"] = m.message;
 
@@ -573,6 +862,11 @@ void to_json(json& j, const DisplayMessageContent& m) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, RunningCostChargingPrice& c) {
     if (j.contains("kWhPrice")) {
         c.kWh_price = j.at("kWhPrice");
@@ -587,6 +881,11 @@ void from_json(const json& j, RunningCostChargingPrice& c) {
     }
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void to_json(json& j, const RunningCostChargingPrice& c) {
     if (c.kWh_price.has_value()) {
         j["kWhPrice"] = c.kWh_price.value();
@@ -601,6 +900,11 @@ void to_json(json& j, const RunningCostChargingPrice& c) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, RunningCostIdlePrice& c) {
     if (j.contains("graceMinutes")) {
         c.idle_grace_minutes = j.at("graceMinutes");
@@ -611,6 +915,11 @@ void from_json(const json& j, RunningCostIdlePrice& c) {
     }
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void to_json(json& j, const RunningCostIdlePrice& c) {
     if (c.idle_hour_price.has_value()) {
         j["hourPrice"] = c.idle_hour_price.value();
@@ -622,6 +931,12 @@ void to_json(json& j, const RunningCostIdlePrice& c) {
 }
 
 namespace conversions {
+/**
+ * string_to_running_cost_state - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @state: 传入的 state
+ *
+ * 返回 RunningCostState。
+ */
 RunningCostState string_to_running_cost_state(const std::string& state) {
     if (state == "Charging") {
         return RunningCostState::Charging;
@@ -636,6 +951,12 @@ RunningCostState string_to_running_cost_state(const std::string& state) {
     throw StringToEnumException(state, "No known string conversion for provided enum of type RunningCostState");
 }
 
+/**
+ * running_cost_state_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @state: 传入的 state
+ *
+ * 返回 std::string。
+ */
 std::string running_cost_state_to_string(const RunningCostState& state) {
     switch (state) {
     case RunningCostState::Charging:
@@ -649,6 +970,11 @@ std::string running_cost_state_to_string(const RunningCostState& state) {
 }
 } // namespace conversions
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, RunningCost& c) {
     if (j.contains("transactionId")) {
         if (j.at("transactionId").is_number()) {
@@ -729,6 +1055,11 @@ void from_json(const json& j, RunningCost& c) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @t: 传入的 t
+ */
 void from_json(const json& j, TriggerMeterValue& t) {
     if (j.is_object()) {
         if (j.contains("atTime")) {
@@ -763,6 +1094,12 @@ void from_json(const json& j, TriggerMeterValue& t) {
 }
 
 namespace conversions {
+/**
+ * ca_certificate_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string ca_certificate_type_to_string(CaCertificateType e) {
     switch (e) {
     case CaCertificateType::V2G:
@@ -780,6 +1117,12 @@ std::string ca_certificate_type_to_string(CaCertificateType e) {
     throw EnumToStringException{e, "CaCertificateType"};
 }
 
+/**
+ * string_to_ca_certificate_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CaCertificateType。
+ */
 CaCertificateType string_to_ca_certificate_type(const std::string& s) {
     if (s == "V2G") {
         return CaCertificateType::V2G;
@@ -800,12 +1143,25 @@ CaCertificateType string_to_ca_certificate_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @ca_certificate_type: 传入的 ca_certificate_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CaCertificateType& ca_certificate_type) {
     os << conversions::ca_certificate_type_to_string(ca_certificate_type);
     return os;
 }
 
 namespace conversions {
+/**
+ * certificate_validation_result_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string certificate_validation_result_to_string(CertificateValidationResult e) {
     switch (e) {
     case CertificateValidationResult::Valid:
@@ -827,6 +1183,12 @@ std::string certificate_validation_result_to_string(CertificateValidationResult 
     throw EnumToStringException{e, "CertificateValidationResult"};
 }
 
+/**
+ * string_to_certificate_validation_result - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CertificateValidationResult。
+ */
 CertificateValidationResult string_to_certificate_validation_result(const std::string& s) {
     if (s == "Valid") {
         return CertificateValidationResult::Valid;
@@ -853,12 +1215,25 @@ CertificateValidationResult string_to_certificate_validation_result(const std::s
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @certificate_validation_result: 传入的 certificate_validation_result
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CertificateValidationResult& certificate_validation_result) {
     os << conversions::certificate_validation_result_to_string(certificate_validation_result);
     return os;
 }
 
 namespace conversions {
+/**
+ * install_certificate_result_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string install_certificate_result_to_string(InstallCertificateResult e) {
     switch (e) {
     case InstallCertificateResult::InvalidSignature:
@@ -884,6 +1259,12 @@ std::string install_certificate_result_to_string(InstallCertificateResult e) {
     throw EnumToStringException{e, "UpdateFirmwareStatusEnumType"};
 }
 
+/**
+ * string_to_install_certificate_result - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 InstallCertificateResult。
+ */
 InstallCertificateResult string_to_install_certificate_result(const std::string& s) {
     if (s == "InvalidSignature") {
         return InstallCertificateResult::InvalidSignature;
@@ -916,12 +1297,25 @@ InstallCertificateResult string_to_install_certificate_result(const std::string&
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @install_certificate_result: 传入的 install_certificate_result
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const InstallCertificateResult& install_certificate_result) {
     os << conversions::install_certificate_result_to_string(install_certificate_result);
     return os;
 }
 
 namespace conversions {
+/**
+ * delete_certificate_result_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string delete_certificate_result_to_string(DeleteCertificateResult e) {
     switch (e) {
     case DeleteCertificateResult::Accepted:
@@ -935,6 +1329,12 @@ std::string delete_certificate_result_to_string(DeleteCertificateResult e) {
     throw EnumToStringException{e, "DeleteCertificateResult"};
 }
 
+/**
+ * string_to_delete_certificate_result - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 DeleteCertificateResult。
+ */
 DeleteCertificateResult string_to_delete_certificate_result(const std::string& s) {
     if (s == "Accepted") {
         return DeleteCertificateResult::Accepted;
@@ -950,6 +1350,13 @@ DeleteCertificateResult string_to_delete_certificate_result(const std::string& s
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @delete_certificate_result: 传入的 delete_certificate_result
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const DeleteCertificateResult& delete_certificate_result) {
     os << conversions::delete_certificate_result_to_string(delete_certificate_result);
     return os;
@@ -1027,6 +1434,12 @@ std::ostream& operator<<(std::ostream& os, const CertificateHashDataChain& k) {
 
 // from: DeleteCertificateRequest
 namespace conversions {
+/**
+ * hash_algorithm_enum_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string hash_algorithm_enum_type_to_string(HashAlgorithmEnumType e) {
     switch (e) {
     case HashAlgorithmEnumType::SHA256:
@@ -1040,6 +1453,12 @@ std::string hash_algorithm_enum_type_to_string(HashAlgorithmEnumType e) {
     throw EnumToStringException{e, "HashAlgorithmEnumType"};
 }
 
+/**
+ * string_to_hash_algorithm_enum_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 HashAlgorithmEnumType。
+ */
 HashAlgorithmEnumType string_to_hash_algorithm_enum_type(const std::string& s) {
     if (s == "SHA256") {
         return HashAlgorithmEnumType::SHA256;
@@ -1055,12 +1474,25 @@ HashAlgorithmEnumType string_to_hash_algorithm_enum_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @hash_algorithm_enum_type: 传入的 hash_algorithm_enum_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const HashAlgorithmEnumType& hash_algorithm_enum_type) {
     os << conversions::hash_algorithm_enum_type_to_string(hash_algorithm_enum_type);
     return os;
 }
 
 namespace conversions {
+/**
+ * ocpp_protocol_version_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string ocpp_protocol_version_to_string(OcppProtocolVersion e) {
     switch (e) {
     case OcppProtocolVersion::v16:
@@ -1076,6 +1508,12 @@ std::string ocpp_protocol_version_to_string(OcppProtocolVersion e) {
     throw EnumToStringException{e, "OcppProtocolVersion"};
 }
 
+/**
+ * string_to_ocpp_protocol_version - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 OcppProtocolVersion。
+ */
 OcppProtocolVersion string_to_ocpp_protocol_version(const std::string& s) {
     if (s == "ocpp1.6") {
         return OcppProtocolVersion::v16;
@@ -1093,12 +1531,25 @@ OcppProtocolVersion string_to_ocpp_protocol_version(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @ocpp_protocol_version: 传入的 ocpp_protocol_version
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const OcppProtocolVersion& ocpp_protocol_version) {
     os << conversions::ocpp_protocol_version_to_string(ocpp_protocol_version);
     return os;
 }
 
 namespace conversions {
+/**
+ * certificate_signing_use_enum_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string certificate_signing_use_enum_to_string(CertificateSigningUseEnum e) {
     switch (e) {
     case CertificateSigningUseEnum::ChargingStationCertificate:
@@ -1114,6 +1565,12 @@ std::string certificate_signing_use_enum_to_string(CertificateSigningUseEnum e) 
     throw EnumToStringException{e, "CertificateSigningUseEnum"};
 }
 
+/**
+ * string_to_certificate_signing_use_enum - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CertificateSigningUseEnum。
+ */
 CertificateSigningUseEnum string_to_certificate_signing_use_enum(const std::string& s) {
     if (s == "ChargingStationCertificate") {
         return CertificateSigningUseEnum::ChargingStationCertificate;
@@ -1132,12 +1589,25 @@ CertificateSigningUseEnum string_to_certificate_signing_use_enum(const std::stri
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @certificate_signing_use_enum: 传入的 certificate_signing_use_enum
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CertificateSigningUseEnum& certificate_signing_use_enum) {
     os << conversions::certificate_signing_use_enum_to_string(certificate_signing_use_enum);
     return os;
 }
 
 namespace conversions {
+/**
+ * certificate_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string certificate_type_to_string(CertificateType e) {
     switch (e) {
     case CertificateType::V2GRootCertificate:
@@ -1157,6 +1627,12 @@ std::string certificate_type_to_string(CertificateType e) {
     throw EnumToStringException{e, "CertificateType"};
 }
 
+/**
+ * string_to_certificate_type - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 CertificateType。
+ */
 CertificateType string_to_certificate_type(const std::string& s) {
     if (s == "V2GRootCertificate") {
         return CertificateType::V2GRootCertificate;
@@ -1181,6 +1657,13 @@ CertificateType string_to_certificate_type(const std::string& s) {
 }
 } // namespace conversions
 
+/**
+ * operator<< - 供日志或容器使用的比较、输出运算符。
+ * @os: 输出流，用于日志
+ * @certificate_type: 传入的 certificate_type
+ *
+ * 返回 std::ostream&。
+ */
 std::ostream& operator<<(std::ostream& os, const CertificateType& certificate_type) {
     os << conversions::certificate_type_to_string(certificate_type);
     return os;
@@ -1188,6 +1671,12 @@ std::ostream& operator<<(std::ostream& os, const CertificateType& certificate_ty
 
 namespace conversions {
 
+/**
+ * bool_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @b: 传入的 b
+ *
+ * 返回 std::string。
+ */
 std::string bool_to_string(bool b) {
     if (b) {
         return "true";
@@ -1195,6 +1684,12 @@ std::string bool_to_string(bool b) {
     return "false";
 }
 
+/**
+ * string_to_bool - 把 OCPP 协议字符串解析成对应的枚举或状态。无法识别的字符串按该函数原有逻辑处理。
+ * @s: OCPP 协议中的字符串
+ *
+ * 返回 bool。
+ */
 bool string_to_bool(const std::string& s) {
     std::string out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
@@ -1204,6 +1699,13 @@ bool string_to_bool(const std::string& s) {
     return false;
 }
 
+/**
+ * double_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @d: 传入的 d
+ * @precision: 传入的 precision
+ *
+ * 返回 std::string。
+ */
 std::string double_to_string(double d, int precision) {
     std::ostringstream str;
     str.precision(precision);
@@ -1211,6 +1713,12 @@ std::string double_to_string(double d, int precision) {
     return str.str();
 }
 
+/**
+ * double_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @d: 传入的 d
+ *
+ * 返回 std::string。
+ */
 std::string double_to_string(double d) {
     return ocpp::conversions::double_to_string(d, 2);
 }
@@ -1218,6 +1726,12 @@ std::string double_to_string(double d) {
 } // namespace conversions
 
 namespace conversions {
+/**
+ * generate_certificate_signing_request_status_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @status: 传入的 status
+ *
+ * 返回 std::string。
+ */
 std::string generate_certificate_signing_request_status_to_string(const GetCertificateSignRequestStatus status) {
     switch (status) {
     case GetCertificateSignRequestStatus::Accepted:
@@ -1234,6 +1748,12 @@ std::string generate_certificate_signing_request_status_to_string(const GetCerti
 } // namespace conversions
 
 namespace conversions {
+/**
+ * firmware_status_notification_to_firmware_status - firmware status notification to firmware status
+ * @status: 传入的 status
+ *
+ * 返回 v16::FirmwareStatus。
+ */
 v16::FirmwareStatus firmware_status_notification_to_firmware_status(const FirmwareStatusNotification status) {
     switch (status) {
     case FirmwareStatusNotification::Downloaded:
@@ -1299,6 +1819,12 @@ firmware_status_notification_to_firmware_status_enum_type(const FirmwareStatusNo
     throw EnumConversionException("Could not convert to v16::FirmwareStatusEnumType");
 }
 
+/**
+ * queue_type_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @queue_type: 传入的 queue_type
+ *
+ * 返回 std::string。
+ */
 std::string queue_type_to_string(const QueueType queue_type) {
     switch (queue_type) {
     case ocpp::QueueType::None:

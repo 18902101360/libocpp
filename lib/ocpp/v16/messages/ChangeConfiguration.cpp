@@ -12,10 +12,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v16 {
 
+/**
+ * ChangeConfigurationRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string ChangeConfigurationRequest::get_type() const {
     return "ChangeConfiguration";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const ChangeConfigurationRequest& k) {
     // the required parts of the message
     j = json{
@@ -25,6 +35,11 @@ void to_json(json& j, const ChangeConfigurationRequest& k) {
     // the optional parts of the message
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, ChangeConfigurationRequest& k) {
     // the required parts of the message
     k.key = j.at("key");
@@ -41,10 +56,20 @@ std::ostream& operator<<(std::ostream& os, const ChangeConfigurationRequest& k) 
     return os;
 }
 
+/**
+ * ChangeConfigurationResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string ChangeConfigurationResponse::get_type() const {
     return "ChangeConfigurationResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const ChangeConfigurationResponse& k) {
     // the required parts of the message
     j = json{
@@ -53,6 +78,11 @@ void to_json(json& j, const ChangeConfigurationResponse& k) {
     // the optional parts of the message
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, ChangeConfigurationResponse& k) {
     // the required parts of the message
     k.status = conversions::string_to_configuration_status(j.at("status"));

@@ -34,6 +34,10 @@ ConnectivityManager::ConnectivityManager(DeviceModel& device_model, std::shared_
     cache_network_connection_profiles();
 }
 
+/**
+ * ConnectivityManager::set_websocket_authorization_key - set websocket authorization key
+ * @authorization_key: 传入的 authorization_key
+ */
 void ConnectivityManager::set_websocket_authorization_key(const std::string& authorization_key) {
     if (this->websocket != nullptr) {
         this->websocket->set_authorization_key(authorization_key);
@@ -41,12 +45,19 @@ void ConnectivityManager::set_websocket_authorization_key(const std::string& aut
     }
 }
 
+/**
+ * ConnectivityManager::set_websocket_connection_options - set websocket connection options
+ * @connection_options: 传入的 connection_options
+ */
 void ConnectivityManager::set_websocket_connection_options(const WebsocketConnectionOptions& connection_options) {
     if (this->websocket != nullptr) {
         this->websocket->set_connection_options(connection_options);
     }
 }
 
+/**
+ * ConnectivityManager::set_websocket_connection_options_without_reconnect - set websocket connection options without reconnect
+ */
 void ConnectivityManager::set_websocket_connection_options_without_reconnect() {
     const int configuration_slot = get_active_network_configuration_slot();
     const auto connection_options = this->get_ws_connection_options(configuration_slot);
@@ -55,18 +66,34 @@ void ConnectivityManager::set_websocket_connection_options_without_reconnect() {
     }
 }
 
+/**
+ * ConnectivityManager::set_websocket_connected_callback - set websocket connected callback
+ * @callback: 传入的 callback
+ */
 void ConnectivityManager::set_websocket_connected_callback(WebsocketConnectionCallback callback) {
     this->websocket_connected_callback = callback;
 }
 
+/**
+ * ConnectivityManager::set_websocket_disconnected_callback - set websocket disconnected callback
+ * @callback: 传入的 callback
+ */
 void ConnectivityManager::set_websocket_disconnected_callback(WebsocketConnectionCallback callback) {
     this->websocket_disconnected_callback = callback;
 }
 
+/**
+ * ConnectivityManager::set_websocket_connection_failed_callback - set websocket connection failed callback
+ * @callback: 传入的 callback
+ */
 void ConnectivityManager::set_websocket_connection_failed_callback(WebsocketConnectionFailedCallback callback) {
     this->websocket_connection_failed_callback = callback;
 }
 
+/**
+ * ConnectivityManager::set_configure_network_connection_profile_callback - set configure network connection profile callback
+ * @callback: 传入的 callback
+ */
 void ConnectivityManager::set_configure_network_connection_profile_callback(
     ConfigureNetworkConnectionProfileCallback callback) {
     this->configure_network_connection_profile_callback = callback;
@@ -103,22 +130,47 @@ ConnectivityManager::get_priority_from_configuration_slot(const int configuratio
     return std::nullopt;
 }
 
+/**
+ * ConnectivityManager::get_active_network_configuration_slot - get active network configuration slot
+ *
+ * 返回 int。
+ */
 int ConnectivityManager::get_active_network_configuration_slot() const {
     return this->network_connection_slots.at(this->active_network_configuration_priority);
 }
 
+/**
+ * ConnectivityManager::get_configuration_slot_from_priority - get configuration slot from priority
+ * @priority: 传入的 priority
+ *
+ * 返回 int。
+ */
 int ConnectivityManager::get_configuration_slot_from_priority(const int priority) {
     return this->network_connection_slots.at(priority);
 }
 
+/**
+ * ConnectivityManager::get_network_connection_slots - get network connection slots
+ *
+ * 返回 const std::vector<int>&。
+ */
 const std::vector<int>& ConnectivityManager::get_network_connection_slots() const {
     return this->network_connection_slots;
 }
 
+/**
+ * ConnectivityManager::is_websocket_connected - is websocket connected
+ *
+ * 返回 bool。
+ */
 bool ConnectivityManager::is_websocket_connected() {
     return this->websocket != nullptr && this->websocket->is_connected();
 }
 
+/**
+ * ConnectivityManager::connect - connect
+ * @network_profile_slot: 传入的 network_profile_slot
+ */
 void ConnectivityManager::connect(std::optional<std::int32_t> network_profile_slot) {
     if (this->network_connection_slots.empty()) {
         EVLOG_warning << "No network connection profiles configured, aborting websocket connection.";
@@ -143,6 +195,9 @@ void ConnectivityManager::connect(std::optional<std::int32_t> network_profile_sl
     }
 }
 
+/**
+ * ConnectivityManager::disconnect - disconnect
+ */
 void ConnectivityManager::disconnect() {
     this->wants_to_be_connected = false;
     this->websocket_timer.stop();
@@ -151,6 +206,9 @@ void ConnectivityManager::disconnect() {
     }
 }
 
+/**
+ * ConnectivityManager::confirm_successful_connection - confirm successful connection
+ */
 void ConnectivityManager::confirm_successful_connection() {
     const int config_slot_int = this->get_active_network_configuration_slot();
 
@@ -168,6 +226,9 @@ void ConnectivityManager::confirm_successful_connection() {
     this->check_cache_for_invalid_security_profiles();
 }
 
+/**
+ * ConnectivityManager::try_connect_websocket - try connect websocket
+ */
 void ConnectivityManager::try_connect_websocket() {
     if (this->device_model.get_value<std::string>(ControllerComponentVariables::ChargePointId).find(':') !=
         std::string::npos) {
@@ -276,6 +337,12 @@ ConnectivityManager::handle_configure_network_connection_profile_callback(int sl
     return std::nullopt;
 }
 
+/**
+ * ConnectivityManager::get_next_configuration_slot - get next configuration slot
+ * @configuration_slot: 传入的 configuration_slot
+ *
+ * 返回 int。
+ */
 int ConnectivityManager::get_next_configuration_slot(std::int32_t configuration_slot) {
 
     if (this->network_connection_slots.size() > 1) {
@@ -291,6 +358,12 @@ int ConnectivityManager::get_next_configuration_slot(std::int32_t configuration_
     return get_configuration_slot_from_priority(network_configuration_priority);
 }
 
+/**
+ * ConnectivityManager::send_to_websocket - send to websocket
+ * @message: 已经组好的 JSON 报文
+ *
+ * 返回 bool。
+ */
 bool ConnectivityManager::send_to_websocket(const std::string& message) {
     if (this->websocket == nullptr) {
         return false;
@@ -299,6 +372,10 @@ bool ConnectivityManager::send_to_websocket(const std::string& message) {
     return this->websocket->send(message);
 }
 
+/**
+ * ConnectivityManager::on_network_disconnected - on network disconnected
+ * @ocpp_interface: 传入的 ocpp_interface
+ */
 void ConnectivityManager::on_network_disconnected(OCPPInterfaceEnum ocpp_interface) {
 
     const int actual_configuration_slot = get_active_network_configuration_slot();
@@ -314,6 +391,9 @@ void ConnectivityManager::on_network_disconnected(OCPPInterfaceEnum ocpp_interfa
     }
 }
 
+/**
+ * ConnectivityManager::on_charging_station_certificate_changed - on charging station certificate changed
+ */
 void ConnectivityManager::on_charging_station_certificate_changed() {
     if (this->websocket != nullptr) {
         // After the websocket gets closed a reconnect will be triggered
@@ -379,6 +459,10 @@ ConnectivityManager::get_ws_connection_options(const std::int32_t configuration_
     return std::nullopt;
 }
 
+/**
+ * ConnectivityManager::on_websocket_connected - on websocket connected
+ * @protocol: 传入的 protocol
+ */
 void ConnectivityManager::on_websocket_connected(OcppProtocolVersion protocol) {
     this->connected_ocpp_version = protocol;
     const int actual_configuration_slot = get_active_network_configuration_slot();
@@ -391,6 +475,9 @@ void ConnectivityManager::on_websocket_connected(OcppProtocolVersion protocol) {
     }
 }
 
+/**
+ * ConnectivityManager::on_websocket_disconnected - on websocket disconnected
+ */
 void ConnectivityManager::on_websocket_disconnected() {
     std::optional<NetworkConnectionProfile> network_connection_profile =
         this->get_network_connection_profile(this->get_active_network_configuration_slot());
@@ -401,6 +488,10 @@ void ConnectivityManager::on_websocket_disconnected() {
     }
 }
 
+/**
+ * ConnectivityManager::on_websocket_stopped_connecting - on websocket stopped connecting
+ * @reason: 传入的 reason
+ */
 void ConnectivityManager::on_websocket_stopped_connecting(ocpp::WebsocketCloseReason reason) {
     EVLOG_warning << "Closed websocket of NetworkConfigurationPriority: "
                   << this->active_network_configuration_priority + 1 << " which is configurationSlot "
@@ -419,6 +510,9 @@ void ConnectivityManager::on_websocket_stopped_connecting(ocpp::WebsocketCloseRe
     }
 }
 
+/**
+ * ConnectivityManager::cache_network_connection_profiles - cache network connection profiles
+ */
 void ConnectivityManager::cache_network_connection_profiles() {
     // get all the network connection profiles from the device model and cache them
     this->cached_network_connection_profiles =
@@ -443,6 +537,9 @@ void ConnectivityManager::cache_network_connection_profiles() {
     }
 }
 
+/**
+ * ConnectivityManager::check_cache_for_invalid_security_profiles - check cache for invalid security profiles
+ */
 void ConnectivityManager::check_cache_for_invalid_security_profiles() {
     const auto security_level = this->device_model.get_value<int>(ControllerComponentVariables::SecurityProfile);
 
@@ -472,6 +569,9 @@ void ConnectivityManager::check_cache_for_invalid_security_profiles() {
     }
 }
 
+/**
+ * ConnectivityManager::remove_network_connection_profiles_below_actual_security_profile - remove network connection profiles below actual security profile
+ */
 void ConnectivityManager::remove_network_connection_profiles_below_actual_security_profile() {
     if (not ControllerComponentVariables::NetworkConnectionProfiles.variable.has_value()) {
         EVLOG_warning << "NetworkConnectionProfiles variable is not set, cannot remove associated connection profiles";

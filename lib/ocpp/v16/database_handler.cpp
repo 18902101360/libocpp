@@ -20,6 +20,9 @@ DatabaseHandler::DatabaseHandler(std::unique_ptr<ConnectionInterface> database,
     number_of_connectors(number_of_connectors) {
 }
 
+/**
+ * DatabaseHandler::init_sql - init sql
+ */
 void DatabaseHandler::init_sql() {
     this->init_connector_table();
     try {
@@ -29,6 +32,9 @@ void DatabaseHandler::init_sql() {
     }
 }
 
+/**
+ * DatabaseHandler::init_connector_table - init connector table
+ */
 void DatabaseHandler::init_connector_table() {
     for (std::int32_t connector = 0; connector <= this->number_of_connectors; connector++) {
         const std::string sql =
@@ -81,6 +87,12 @@ void DatabaseHandler::insert_transaction(const std::string& session_id, const st
     }
 }
 
+/**
+ * DatabaseHandler::update_transaction - update transaction
+ * @session_id: 传入的 session_id
+ * @transaction_id: 传入的 transaction_id
+ * @parent_id_tag: 传入的 parent_id_tag
+ */
 void DatabaseHandler::update_transaction(const std::string& session_id, std::int32_t transaction_id,
                                          std::optional<CiString<20>> parent_id_tag) {
 
@@ -101,6 +113,15 @@ void DatabaseHandler::update_transaction(const std::string& session_id, std::int
     }
 }
 
+/**
+ * DatabaseHandler::update_transaction - update transaction
+ * @session_id: 传入的 session_id
+ * @meter_stop: 传入的 meter_stop
+ * @time_end: 传入的 time_end
+ * @id_tag_end: 传入的 id_tag_end
+ * @stop_reason: 传入的 stop_reason
+ * @stop_transaction_message_id: 传入的 stop_transaction_message_id
+ */
 void DatabaseHandler::update_transaction(const std::string& session_id, std::int32_t meter_stop,
                                          const std::string& time_end, std::optional<CiString<20>> id_tag_end,
                                          std::optional<v16::Reason> stop_reason,
@@ -128,6 +149,10 @@ void DatabaseHandler::update_transaction(const std::string& session_id, std::int
     }
 }
 
+/**
+ * DatabaseHandler::update_transaction_csms_ack - update transaction csms ack
+ * @transaction_id: 传入的 transaction_id
+ */
 void DatabaseHandler::update_transaction_csms_ack(const std::int32_t transaction_id) {
     const std::string sql =
         "UPDATE TRANSACTIONS SET CSMS_ACK=1, LAST_UPDATE=@last_update WHERE TRANSACTION_ID==@transaction_id";
@@ -141,6 +166,11 @@ void DatabaseHandler::update_transaction_csms_ack(const std::int32_t transaction
     }
 }
 
+/**
+ * DatabaseHandler::update_start_transaction_message_id - update start transaction message id
+ * @/: 见函数签名
+ * @start_transaction_message_id: 传入的 start_transaction_message_id
+ */
 void DatabaseHandler::update_start_transaction_message_id(const std::string& /*session_id*/,
                                                           const std::string& start_transaction_message_id) {
     const std::string sql = "UPDATE TRANSACTIONS SET START_TRANSACTION_MESSAGE_ID=@start_transaction_message_id, "
@@ -155,6 +185,12 @@ void DatabaseHandler::update_start_transaction_message_id(const std::string& /*s
     }
 }
 
+/**
+ * DatabaseHandler::update_transaction_meter_value - update transaction meter value
+ * @session_id: 传入的 session_id
+ * @value: 传入的 value
+ * @last_meter_time: 传入的 last_meter_time
+ */
 void DatabaseHandler::update_transaction_meter_value(const std::string& session_id, const std::int32_t value,
                                                      const std::string& last_meter_time) {
     const std::string sql = "UPDATE TRANSACTIONS SET METER_LAST=@meter_last, METER_LAST_TIME=@meter_last_time, "
@@ -171,6 +207,12 @@ void DatabaseHandler::update_transaction_meter_value(const std::string& session_
     }
 }
 
+/**
+ * DatabaseHandler::get_transactions - get transactions
+ * @filter_incomplete: 传入的 filter_incomplete
+ *
+ * 返回 std::vector<TransactionEntry>。
+ */
 std::vector<TransactionEntry> DatabaseHandler::get_transactions(bool filter_incomplete) {
     std::vector<TransactionEntry> transactions;
 
@@ -254,6 +296,12 @@ void DatabaseHandler::insert_or_update_authorization_cache_entry(const CiString<
     }
 }
 
+/**
+ * DatabaseHandler::get_authorization_cache_entry - get authorization cache entry
+ * @id_tag: 传入的 id_tag
+ *
+ * 返回 std::optional<v16::IdTagInfo>。
+ */
 std::optional<v16::IdTagInfo> DatabaseHandler::get_authorization_cache_entry(const CiString<20>& id_tag) {
 
     const std::string sql =
@@ -299,6 +347,9 @@ std::optional<v16::IdTagInfo> DatabaseHandler::get_authorization_cache_entry(con
     throw QueryExecutionException(this->database->get_error_message());
 }
 
+/**
+ * DatabaseHandler::clear_authorization_cache - clear authorization cache
+ */
 void DatabaseHandler::clear_authorization_cache() {
     const auto retval = this->database->clear_table("AUTH_CACHE");
     if (retval == false) {
@@ -306,6 +357,11 @@ void DatabaseHandler::clear_authorization_cache() {
     }
 }
 
+/**
+ * DatabaseHandler::insert_or_update_connector_availability - insert or update connector availability
+ * @connector: 传入的 connector
+ * @availability_type: 传入的 availability_type
+ */
 void DatabaseHandler::insert_or_update_connector_availability(std::int32_t connector,
                                                               const v16::AvailabilityType& availability_type) {
     const std::string sql = "INSERT OR REPLACE INTO CONNECTORS (ID, AVAILABILITY) VALUES (@id, @availability)";
@@ -329,6 +385,12 @@ void DatabaseHandler::insert_or_update_connector_availability(const std::vector<
     }
 }
 
+/**
+ * DatabaseHandler::get_connector_availability - get connector availability
+ * @connector: 传入的 connector
+ *
+ * 返回 v16::AvailabilityType。
+ */
 v16::AvailabilityType DatabaseHandler::get_connector_availability(std::int32_t connector) {
     const std::string sql = "SELECT AVAILABILITY FROM CONNECTORS WHERE ID = @connector";
     auto stmt = this->database->new_statement(sql);
@@ -349,6 +411,11 @@ v16::AvailabilityType DatabaseHandler::get_connector_availability(std::int32_t c
     return v16::conversions::string_to_availability_type(stmt->column_text(0));
 }
 
+/**
+ * DatabaseHandler::get_connector_availability - get connector availability
+ *
+ * 返回 std::map<std::int32_t, v16::AvailabilityType>。
+ */
 std::map<std::int32_t, v16::AvailabilityType> DatabaseHandler::get_connector_availability() {
     std::map<std::int32_t, v16::AvailabilityType> availability_map;
     const std::string sql = "SELECT ID, AVAILABILITY FROM CONNECTORS";
@@ -367,6 +434,10 @@ std::map<std::int32_t, v16::AvailabilityType> DatabaseHandler::get_connector_ava
     return availability_map;
 }
 
+/**
+ * DatabaseHandler::insert_or_ignore_local_list_version - insert or ignore local list version
+ * @version: 传入的 version
+ */
 void DatabaseHandler::insert_or_ignore_local_list_version(std::int32_t version) {
     const std::string sql = "INSERT OR IGNORE INTO AUTH_LIST_VERSION (ID, VERSION) VALUES (0, @version)";
     auto stmt = this->database->new_statement(sql);
@@ -388,6 +459,11 @@ void DatabaseHandler::insert_or_update_local_list_version(std::int32_t version) 
     }
 }
 
+/**
+ * DatabaseHandler::get_local_list_version - get local list version
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t DatabaseHandler::get_local_list_version() {
     const std::string sql = "SELECT VERSION FROM AUTH_LIST_VERSION WHERE ID = 0";
     auto stmt = this->database->new_statement(sql);
@@ -404,6 +480,11 @@ std::int32_t DatabaseHandler::get_local_list_version() {
     return stmt->column_int(0);
 }
 
+/**
+ * DatabaseHandler::insert_or_update_local_authorization_list_entry - insert or update local authorization list entry
+ * @id_tag: 传入的 id_tag
+ * @id_tag_info: 传入的 id_tag_info
+ */
 void DatabaseHandler::insert_or_update_local_authorization_list_entry(const CiString<20>& id_tag,
                                                                       const v16::IdTagInfo& id_tag_info) {
     // add or replace
@@ -427,6 +508,10 @@ void DatabaseHandler::insert_or_update_local_authorization_list_entry(const CiSt
     }
 }
 
+/**
+ * DatabaseHandler::insert_or_update_local_authorization_list - insert or update local authorization list
+ * @local_authorization_list: 传入的 local_authorization_list
+ */
 void DatabaseHandler::insert_or_update_local_authorization_list(
     std::vector<v16::LocalAuthorizationList> local_authorization_list) {
     bool success = true; // indicates if all database operations succeeded
@@ -449,6 +534,10 @@ void DatabaseHandler::insert_or_update_local_authorization_list(
     }
 }
 
+/**
+ * DatabaseHandler::delete_local_authorization_list_entry - delete local authorization list entry
+ * @id_tag: 传入的 id_tag
+ */
 void DatabaseHandler::delete_local_authorization_list_entry(const std::string& id_tag) {
     const std::string sql = "DELETE FROM AUTH_LIST WHERE ID_TAG = @id_tag;";
     auto stmt = this->database->new_statement(sql);
@@ -459,6 +548,12 @@ void DatabaseHandler::delete_local_authorization_list_entry(const std::string& i
     }
 }
 
+/**
+ * DatabaseHandler::get_local_authorization_list_entry - get local authorization list entry
+ * @id_tag: 传入的 id_tag
+ *
+ * 返回 std::optional<v16::IdTagInfo>。
+ */
 std::optional<v16::IdTagInfo> DatabaseHandler::get_local_authorization_list_entry(const CiString<20>& id_tag) {
     const std::string sql =
         "SELECT ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG FROM AUTH_LIST WHERE ID_TAG = @id_tag";
@@ -504,6 +599,9 @@ std::optional<v16::IdTagInfo> DatabaseHandler::get_local_authorization_list_entr
     throw QueryExecutionException(this->database->get_error_message());
 }
 
+/**
+ * DatabaseHandler::clear_local_authorization_list - clear local authorization list
+ */
 void DatabaseHandler::clear_local_authorization_list() {
     const auto retval = this->database->clear_table("AUTH_LIST");
     if (retval == false) {
@@ -511,6 +609,11 @@ void DatabaseHandler::clear_local_authorization_list() {
     }
 }
 
+/**
+ * DatabaseHandler::get_local_authorization_list_number_of_entries - get local authorization list number of entries
+ *
+ * 返回 std::int32_t。
+ */
 std::int32_t DatabaseHandler::get_local_authorization_list_number_of_entries() {
     const std::string sql = "SELECT COUNT(*) FROM AUTH_LIST;";
     auto stmt = this->database->new_statement(sql);
@@ -522,6 +625,11 @@ std::int32_t DatabaseHandler::get_local_authorization_list_number_of_entries() {
     return stmt->column_int(0);
 }
 
+/**
+ * DatabaseHandler::insert_or_update_charging_profile - insert or update charging profile
+ * @connector_id: 传入的 connector_id
+ * @profile: 传入的 profile
+ */
 void DatabaseHandler::insert_or_update_charging_profile(const int connector_id, const v16::ChargingProfile& profile) {
 
     // Ensure compliance with OCPP 1.6 3.13.2. Stacking charging profiles:
@@ -562,6 +670,10 @@ void DatabaseHandler::insert_or_update_charging_profile(const int connector_id, 
     }
 }
 
+/**
+ * DatabaseHandler::delete_charging_profile - delete charging profile
+ * @profile_id: 传入的 profile_id
+ */
 void DatabaseHandler::delete_charging_profile(const int profile_id) {
     const std::string sql = "DELETE FROM CHARGING_PROFILES WHERE ID = @id;";
     auto stmt = this->database->new_statement(sql);
@@ -572,6 +684,9 @@ void DatabaseHandler::delete_charging_profile(const int profile_id) {
     }
 }
 
+/**
+ * DatabaseHandler::delete_charging_profiles - delete charging profiles
+ */
 void DatabaseHandler::delete_charging_profiles() {
     const auto retval = this->database->clear_table("CHARGING_PROFILES");
     if (retval == false) {
@@ -579,6 +694,11 @@ void DatabaseHandler::delete_charging_profiles() {
     }
 }
 
+/**
+ * DatabaseHandler::get_charging_profiles - get charging profiles
+ *
+ * 返回 std::vector<v16::ChargingProfile>。
+ */
 std::vector<v16::ChargingProfile> DatabaseHandler::get_charging_profiles() {
 
     std::vector<v16::ChargingProfile> profiles;
@@ -597,6 +717,12 @@ std::vector<v16::ChargingProfile> DatabaseHandler::get_charging_profiles() {
     return profiles;
 }
 
+/**
+ * DatabaseHandler::get_connector_id - get connector id
+ * @profile_id: 传入的 profile_id
+ *
+ * 返回 int。
+ */
 int DatabaseHandler::get_connector_id(const int profile_id) {
     const std::string sql = "SELECT CONNECTOR_ID FROM CHARGING_PROFILES WHERE ID = @profile_id";
     auto stmt = this->database->new_statement(sql);

@@ -22,25 +22,40 @@ namespace ocpp::v2 {
 namespace {
 // Forward declarations.
 void check_integrity(const std::map<ComponentKey, std::vector<DeviceModelVariable>>& component_configs);
+/* check integrity value type */
 std::vector<std::string> check_integrity_value_type(const DeviceModelVariable& variable);
+/* value is of type */
 bool value_is_of_type(const std::string& value, const DataEnum& type);
+/* is same component key */
 bool is_same_component_key(const ComponentKey& component_key1, const ComponentKey& component_key2);
+/* is same attribute type */
 bool is_same_attribute_type(const VariableAttribute attribute1, const VariableAttribute& attribute2);
+/* is attribute different */
 bool is_attribute_different(const VariableAttribute& attribute1, const VariableAttribute& attribute2);
+/* variable has same attributes */
 bool variable_has_same_attributes(const std::vector<DbVariableAttribute>& attributes1,
                                   const std::vector<DbVariableAttribute>& attributes2);
+/* variable has same monitors */
 bool variable_has_same_monitors(const std::vector<VariableMonitoringMeta>& monitors1,
                                 const std::vector<VariableMonitoringMeta>& monitors2);
+/* is characteristics different */
 bool is_characteristics_different(const VariableCharacteristics& c1, const VariableCharacteristics& c2);
+/* is same variable */
 bool is_same_variable(const DeviceModelVariable& v1, const DeviceModelVariable& v2);
+/* is variable different */
 bool is_variable_different(const DeviceModelVariable& v1, const DeviceModelVariable& v2);
+/* is monitor different */
 bool is_monitor_different(const VariableMonitoringMeta& meta1, const VariableMonitoringMeta& meta2);
 // Spec based monitor duplicate detection
 bool is_monitor_duplicate(const VariableMonitoringMeta& meta1, const VariableMonitoringMeta& meta2);
+/* has attribute actual value */
 bool has_attribute_actual_value(const VariableAttribute& attribute,
                                 const std::optional<std::string>& default_actual_value);
+/* get string value from json */
 std::string get_string_value_from_json(const json& value);
+/* get component name for logging */
 std::string get_component_name_for_logging(const ComponentKey& component);
+/* get variable name for logging */
 std::string get_variable_name_for_logging(const DeviceModelVariable& variable);
 ///
 /// \brief Check if a specific component exists in the databsae.
@@ -74,6 +89,11 @@ InitDeviceModelDb::~InitDeviceModelDb() {
     close_connection();
 }
 
+/**
+ * InitDeviceModelDb::initialize_database - initialize database
+ * @component_configs: 传入的 component_configs
+ * @delete_db_if_exists: 传入的 delete_db_if_exists
+ */
 void InitDeviceModelDb::initialize_database(
     const std::map<ComponentKey, std::vector<DeviceModelVariable>>& component_configs,
     bool delete_db_if_exists = true) {
@@ -100,6 +120,10 @@ void InitDeviceModelDb::initialize_database(
     transaction->commit();
 }
 
+/**
+ * InitDeviceModelDb::execute_init_sql - execute init sql
+ * @delete_db_if_exists: 传入的 delete_db_if_exists
+ */
 void InitDeviceModelDb::execute_init_sql(const bool delete_db_if_exists) {
     if (delete_db_if_exists) {
         if (std::filesystem::exists(database_path)) {
@@ -131,6 +155,7 @@ void InitDeviceModelDb::execute_init_sql(const bool delete_db_if_exists) {
 
 namespace {
 
+/* get component config from directory */
 std::vector<std::filesystem::path> get_component_config_from_directory(const std::filesystem::path& directory) {
     std::vector<std::filesystem::path> component_config_files;
     for (const auto& p : std::filesystem::directory_iterator(directory)) {
@@ -217,6 +242,11 @@ get_all_component_configs(const std::filesystem::path& directory) {
     return components;
 }
 
+/**
+ * InitDeviceModelDb::insert_components - insert components
+ * @components: 传入的 components
+ * @existing_components: 传入的 existing_components
+ */
 void InitDeviceModelDb::insert_components(
     const std::map<ComponentKey, std::vector<DeviceModelVariable>>& components,
     const std::map<ComponentKey, std::vector<DeviceModelVariable>>& existing_components) {
@@ -234,6 +264,11 @@ void InitDeviceModelDb::insert_components(
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_component - insert component
+ * @component_key: 传入的 component_key
+ * @component_variables: 传入的 component_variables
+ */
 void InitDeviceModelDb::insert_component(const ComponentKey& component_key,
                                          const std::vector<DeviceModelVariable>& component_variables) {
     EVLOG_debug << "Inserting component " << component_key.name;
@@ -283,6 +318,11 @@ void InitDeviceModelDb::insert_component(const ComponentKey& component_key,
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_variable_characteristics - insert variable characteristics
+ * @characteristics: 传入的 characteristics
+ * @variable_id: 传入的 variable_id
+ */
 void InitDeviceModelDb::insert_variable_characteristics(const VariableCharacteristics& characteristics,
                                                         const std::int64_t& variable_id) {
     static const std::string statement = "INSERT OR REPLACE INTO VARIABLE_CHARACTERISTICS (DATATYPE_ID, VARIABLE_ID, "
@@ -336,6 +376,12 @@ void InitDeviceModelDb::insert_variable_characteristics(const VariableCharacteri
     }
 }
 
+/**
+ * InitDeviceModelDb::update_variable_characteristics - update variable characteristics
+ * @characteristics: 传入的 characteristics
+ * @characteristics_id: 传入的 characteristics_id
+ * @variable_id: 传入的 variable_id
+ */
 void InitDeviceModelDb::update_variable_characteristics(const VariableCharacteristics& characteristics,
                                                         const std::int64_t& characteristics_id,
                                                         const std::int64_t& variable_id) {
@@ -389,6 +435,11 @@ void InitDeviceModelDb::update_variable_characteristics(const VariableCharacteri
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_variable - insert variable
+ * @variable: 传入的 variable
+ * @component_id: 传入的 component_id
+ */
 void InitDeviceModelDb::insert_variable(const DeviceModelVariable& variable, const std::uint64_t& component_id) {
     static const std::string statement =
         "INSERT OR REPLACE INTO VARIABLE (NAME, INSTANCE, COMPONENT_ID, SOURCE) VALUES "
@@ -428,6 +479,12 @@ void InitDeviceModelDb::insert_variable(const DeviceModelVariable& variable, con
     insert_variable_monitors(variable.monitors, variable_id);
 }
 
+/**
+ * InitDeviceModelDb::update_variable - update variable
+ * @variable: 传入的 variable
+ * @db_variable: 传入的 db_variable
+ * @component_id: 传入的 component_id
+ */
 void InitDeviceModelDb::update_variable(const DeviceModelVariable& variable, const DeviceModelVariable& db_variable,
                                         const std::uint64_t component_id) {
     if (!db_variable.db_id.has_value()) {
@@ -485,6 +542,10 @@ void InitDeviceModelDb::update_variable(const DeviceModelVariable& variable, con
     }
 }
 
+/**
+ * InitDeviceModelDb::delete_variable - delete variable
+ * @variable: 传入的 variable
+ */
 void InitDeviceModelDb::delete_variable(const DeviceModelVariable& variable) {
     if (!variable.db_id.has_value()) {
         EVLOG_error << "Can not remove variable " << variable.name << " from db: id unknown";
@@ -510,6 +571,12 @@ void InitDeviceModelDb::delete_variable(const DeviceModelVariable& variable) {
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_attribute - insert attribute
+ * @attribute: 传入的 attribute
+ * @variable_id: 传入的 variable_id
+ * @default_actual_value: 传入的 default_actual_value
+ */
 void InitDeviceModelDb::insert_attribute(const VariableAttribute& attribute, const std::uint64_t& variable_id,
                                          const std::optional<std::string>& default_actual_value) {
     static const std::string statement =
@@ -551,6 +618,12 @@ void InitDeviceModelDb::insert_attribute(const VariableAttribute& attribute, con
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_attributes - insert attributes
+ * @attributes: 传入的 attributes
+ * @variable_id: 传入的 variable_id
+ * @default_actual_value: 传入的 default_actual_value
+ */
 void InitDeviceModelDb::insert_attributes(const std::vector<DbVariableAttribute>& attributes,
                                           const std::uint64_t& variable_id,
                                           const std::optional<std::string>& default_actual_value) {
@@ -559,6 +632,13 @@ void InitDeviceModelDb::insert_attributes(const std::vector<DbVariableAttribute>
     }
 }
 
+/**
+ * InitDeviceModelDb::update_attributes - update attributes
+ * @new_attributes: 传入的 new_attributes
+ * @db_attributes: 传入的 db_attributes
+ * @variable_id: 传入的 variable_id
+ * @default_actual_value: 传入的 default_actual_value
+ */
 void InitDeviceModelDb::update_attributes(const std::vector<DbVariableAttribute>& new_attributes,
                                           const std::vector<DbVariableAttribute>& db_attributes,
                                           const std::uint64_t& variable_id,
@@ -593,6 +673,12 @@ void InitDeviceModelDb::update_attributes(const std::vector<DbVariableAttribute>
     }
 }
 
+/**
+ * InitDeviceModelDb::update_attribute - update attribute
+ * @attribute: 传入的 attribute
+ * @db_attribute: 传入的 db_attribute
+ * @default_actual_value: 传入的 default_actual_value
+ */
 void InitDeviceModelDb::update_attribute(const VariableAttribute& attribute, const DbVariableAttribute& db_attribute,
                                          const std::optional<std::string>& default_actual_value) {
     if (!db_attribute.db_id.has_value()) {
@@ -659,6 +745,10 @@ void InitDeviceModelDb::update_attribute(const VariableAttribute& attribute, con
     }
 }
 
+/**
+ * InitDeviceModelDb::delete_attribute - delete attribute
+ * @attribute: 传入的 attribute
+ */
 void InitDeviceModelDb::delete_attribute(const DbVariableAttribute& attribute) {
     if (!attribute.db_id.has_value()) {
         EVLOG_error << "Could not remove attribute, because id is unknown.";
@@ -681,6 +771,14 @@ void InitDeviceModelDb::delete_attribute(const DbVariableAttribute& attribute) {
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_variable_attribute_value - insert variable attribute value
+ * @variable_attribute_id: 传入的 variable_attribute_id
+ * @variable_attribute_value: 传入的 variable_attribute_value
+ * @warn_source_not_default: 传入的 warn_source_not_default
+ *
+ * 返回 bool。
+ */
 bool InitDeviceModelDb::insert_variable_attribute_value(const std::int64_t& variable_attribute_id,
                                                         const std::string& variable_attribute_value,
                                                         const bool warn_source_not_default) {
@@ -717,6 +815,11 @@ bool InitDeviceModelDb::insert_variable_attribute_value(const std::int64_t& vari
     return true;
 }
 
+/**
+ * InitDeviceModelDb::insert_variable_monitor - insert variable monitor
+ * @monitor: 传入的 monitor
+ * @variable_id: 传入的 variable_id
+ */
 void InitDeviceModelDb::insert_variable_monitor(const VariableMonitoringMeta& monitor,
                                                 const std::int64_t& variable_id) {
     const std::string insert_statement =
@@ -748,6 +851,11 @@ void InitDeviceModelDb::insert_variable_monitor(const VariableMonitoringMeta& mo
     }
 }
 
+/**
+ * InitDeviceModelDb::insert_variable_monitors - insert variable monitors
+ * @monitors: 传入的 monitors
+ * @variable_id: 传入的 variable_id
+ */
 void InitDeviceModelDb::insert_variable_monitors(const std::vector<VariableMonitoringMeta>& monitors,
                                                  const std::int64_t& variable_id) {
     for (const VariableMonitoringMeta& monitor : monitors) {
@@ -755,6 +863,12 @@ void InitDeviceModelDb::insert_variable_monitors(const std::vector<VariableMonit
     }
 }
 
+/**
+ * InitDeviceModelDb::update_variable_monitor - update variable monitor
+ * @new_monitor: 传入的 new_monitor
+ * @db_monitor: 传入的 db_monitor
+ * @variable_id: 传入的 variable_id
+ */
 void InitDeviceModelDb::update_variable_monitor(const VariableMonitoringMeta& new_monitor,
                                                 const VariableMonitoringMeta& db_monitor,
                                                 const std::int64_t& variable_id) {
@@ -786,6 +900,12 @@ void InitDeviceModelDb::update_variable_monitor(const VariableMonitoringMeta& ne
     }
 }
 
+/**
+ * InitDeviceModelDb::update_variable_monitors - update variable monitors
+ * @new_monitors: 传入的 new_monitors
+ * @db_monitors: 传入的 db_monitors
+ * @variable_id: 传入的 variable_id
+ */
 void InitDeviceModelDb::update_variable_monitors(const std::vector<VariableMonitoringMeta>& new_monitors,
                                                  const std::vector<VariableMonitoringMeta>& db_monitors,
                                                  const std::int64_t& variable_id) {
@@ -823,6 +943,11 @@ void InitDeviceModelDb::update_variable_monitors(const std::vector<VariableMonit
     }
 }
 
+/**
+ * InitDeviceModelDb::delete_variable_monitor - delete variable monitor
+ * @monitor: 传入的 monitor
+ * @/: 见函数签名
+ */
 void InitDeviceModelDb::delete_variable_monitor(const VariableMonitoringMeta& monitor,
                                                 const std::int64_t& /*variable_id*/) {
     try {
@@ -837,6 +962,11 @@ void InitDeviceModelDb::delete_variable_monitor(const VariableMonitoringMeta& mo
         throw InitDeviceModelDbError("Delete monitor error: " + std::string(e.what()));
     }
 }
+/**
+ * InitDeviceModelDb::get_all_components_from_db - get all components from db
+ *
+ * 返回 std::map<ComponentKey, std::vector<DeviceModelVariable>>。
+ */
 std::map<ComponentKey, std::vector<DeviceModelVariable>> InitDeviceModelDb::get_all_components_from_db() {
     /* clang-format off */
     const std::string statement =
@@ -987,6 +1117,7 @@ component_exists_in_db(const std::map<ComponentKey, std::vector<DeviceModelVaria
     return std::nullopt;
 }
 
+/* component exists in config */
 bool component_exists_in_config(const std::map<ComponentKey, std::vector<DeviceModelVariable>>& component_config,
                                 const ComponentKey& component) {
     for (const auto& component_in_config : component_config) {
@@ -999,6 +1130,11 @@ bool component_exists_in_config(const std::map<ComponentKey, std::vector<DeviceM
 }
 } // namespace
 
+/**
+ * InitDeviceModelDb::remove_not_existing_components_from_db - remove not existing components from db
+ * @component_config: 传入的 component_config
+ * @db_components: 传入的 db_components
+ */
 void InitDeviceModelDb::remove_not_existing_components_from_db(
     const std::map<ComponentKey, std::vector<DeviceModelVariable>>& component_config,
     const std::map<ComponentKey, std::vector<DeviceModelVariable>>& db_components) {
@@ -1009,6 +1145,12 @@ void InitDeviceModelDb::remove_not_existing_components_from_db(
     }
 }
 
+/**
+ * InitDeviceModelDb::remove_component_from_db - remove component from db
+ * @component: 传入的 component
+ *
+ * 返回 bool。
+ */
 bool InitDeviceModelDb::remove_component_from_db(const ComponentKey& component) {
     const std::string& delete_component_statement = "DELETE FROM COMPONENT WHERE ID = @component_id";
 
@@ -1033,6 +1175,11 @@ bool InitDeviceModelDb::remove_component_from_db(const ComponentKey& component) 
     return true;
 }
 
+/**
+ * InitDeviceModelDb::update_component_variables - update component variables
+ * @db_component_variables: 传入的 db_component_variables
+ * @variables: 传入的 variables
+ */
 void InitDeviceModelDb::update_component_variables(
     const std::pair<ComponentKey, std::vector<DeviceModelVariable>>& db_component_variables,
     const std::vector<DeviceModelVariable>& variables) {
@@ -1075,6 +1222,12 @@ void InitDeviceModelDb::update_component_variables(
     }
 }
 
+/**
+ * InitDeviceModelDb::get_variable_attributes_from_db - get variable attributes from db
+ * @variable_id: 传入的 variable_id
+ *
+ * 返回 std::vector<DbVariableAttribute>。
+ */
 std::vector<DbVariableAttribute> InitDeviceModelDb::get_variable_attributes_from_db(const std::uint64_t& variable_id) {
     std::vector<DbVariableAttribute> attributes;
 
@@ -1121,6 +1274,12 @@ std::vector<DbVariableAttribute> InitDeviceModelDb::get_variable_attributes_from
     return attributes;
 }
 
+/**
+ * InitDeviceModelDb::get_variable_monitors_from_db - get variable monitors from db
+ * @variable_id: 传入的 variable_id
+ *
+ * 返回 std::vector<VariableMonitoringMeta>。
+ */
 std::vector<VariableMonitoringMeta> InitDeviceModelDb::get_variable_monitors_from_db(const std::uint64_t& variable_id) {
     std::vector<VariableMonitoringMeta> monitors{};
 
@@ -1169,6 +1328,9 @@ std::vector<VariableMonitoringMeta> InitDeviceModelDb::get_variable_monitors_fro
     return monitors;
 }
 
+/**
+ * InitDeviceModelDb::init_sql - init sql
+ */
 void InitDeviceModelDb::init_sql() {
     static const std::string foreign_keys_on_statement = "PRAGMA foreign_keys = ON;";
 
@@ -1187,11 +1349,23 @@ void InitDeviceModelDb::init_sql() {
     }
 }
 
+/**
+ * operator< - 供日志或容器使用的比较、输出运算符。
+ * @l: 传入的 l
+ * @r: 传入的 r
+ *
+ * 返回 bool。
+ */
 bool operator<(const ComponentKey& l, const ComponentKey& r) {
     return std::tie(l.name, l.evse_id, l.connector_id, l.instance) <
            std::tie(r.name, r.evse_id, r.connector_id, r.instance);
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, ComponentKey& c) {
     c.name = j.at("name");
 
@@ -1208,6 +1382,11 @@ void from_json(const json& j, ComponentKey& c) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, VariableMonitoringMeta& c) {
     c.type = conversions::string_to_variable_monitor_type(j.at("config_type"));
 
@@ -1227,6 +1406,11 @@ void from_json(const json& j, VariableMonitoringMeta& c) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @c: 传入的 c
+ */
 void from_json(const json& j, DeviceModelVariable& c) {
     c.name = j.at("variable_name");
     c.characteristics = j.at("characteristics");
@@ -1461,6 +1645,7 @@ bool variable_has_same_attributes(const std::vector<DbVariableAttribute>& attrib
     return true;
 }
 
+/* is monitor duplicate */
 bool is_monitor_duplicate(const VariableMonitoringMeta& meta1, const VariableMonitoringMeta& meta2) {
     // 3.77. SetMonitoringStatusEnumType
     // Duplicate - A monitor already exists for the given type/severity combination.
@@ -1471,6 +1656,7 @@ bool is_monitor_duplicate(const VariableMonitoringMeta& meta1, const VariableMon
     return false;
 }
 
+/* is monitor different */
 bool is_monitor_different(const VariableMonitoringMeta& meta1, const VariableMonitoringMeta& meta2) {
     if (meta1.type != meta2.type || meta1.reference_value != meta2.reference_value) {
         return true;
@@ -1491,6 +1677,7 @@ bool is_monitor_different(const VariableMonitoringMeta& meta1, const VariableMon
     return false;
 }
 
+/* variable has same monitors */
 bool variable_has_same_monitors(const std::vector<VariableMonitoringMeta>& monitors1,
                                 const std::vector<VariableMonitoringMeta>& monitors2) {
     if (monitors1.size() != monitors2.size()) {

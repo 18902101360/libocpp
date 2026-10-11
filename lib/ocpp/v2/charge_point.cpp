@@ -116,6 +116,11 @@ ChargePoint::ChargePoint(const std::map<std::int32_t, std::int32_t>& evse_connec
 
 ChargePoint::~ChargePoint() = default;
 
+/**
+ * ChargePoint::start - start
+ * @bootreason: 传入的 bootreason
+ * @start_connecting: 传入的 start_connecting
+ */
 void ChargePoint::start(BootReasonEnum bootreason, bool start_connecting) {
     this->message_queue->start();
 
@@ -160,6 +165,9 @@ void ChargePoint::start(BootReasonEnum bootreason, bool start_connecting) {
     }
 }
 
+/**
+ * ChargePoint::stop - stop
+ */
 void ChargePoint::stop() {
     this->ocsp_updater.stop();
     this->availability->stop_heartbeat_timer();
@@ -171,22 +179,43 @@ void ChargePoint::stop() {
     this->security->stop_certificate_signed_timer();
 }
 
+/**
+ * ChargePoint::disconnect_websocket - disconnect websocket
+ */
 void ChargePoint::disconnect_websocket() {
     this->connectivity_manager->disconnect();
 }
 
+/**
+ * ChargePoint::on_network_disconnected - on network disconnected
+ * @ocpp_interface: 传入的 ocpp_interface
+ */
 void ChargePoint::on_network_disconnected(OCPPInterfaceEnum ocpp_interface) {
     this->connectivity_manager->on_network_disconnected(ocpp_interface);
 }
 
+/**
+ * ChargePoint::on_firmware_update_status_notification - on firmware update status notification
+ * @request_id: 传入的 request_id
+ * @firmware_update_status: 传入的 firmware_update_status
+ */
 void ChargePoint::on_firmware_update_status_notification(std::int32_t request_id,
                                                          const FirmwareStatusEnum& firmware_update_status) {
     this->firmware_update->on_firmware_update_status_notification(request_id, firmware_update_status);
 }
 
+/**
+ * ChargePoint::connect_websocket - connect websocket
+ * @network_profile_slot: 传入的 network_profile_slot
+ */
 void ChargePoint::connect_websocket(std::optional<std::int32_t> network_profile_slot) {
     this->connectivity_manager->connect(network_profile_slot);
 }
+/**
+ * ChargePoint::on_session_started - on session started
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_session_started(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::PlugIn);
 }
@@ -197,6 +226,20 @@ ChargePoint::on_get_15118_ev_certificate_request(const Get15118EVCertificateRequ
     return this->security->on_get_15118_ev_certificate_request(request);
 }
 
+/**
+ * ChargePoint::on_transaction_started - on transaction started
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @session_id: 传入的 session_id
+ * @timestamp: 传入的 timestamp
+ * @trigger_reason: 传入的 trigger_reason
+ * @meter_start: 传入的 meter_start
+ * @id_token: 传入的 id_token
+ * @group_id_token: 传入的 group_id_token
+ * @reservation_id: 传入的 reservation_id
+ * @remote_start_id: 传入的 remote_start_id
+ * @charging_state: 传入的 charging_state
+ */
 void ChargePoint::on_transaction_started(const std::int32_t evse_id, const std::int32_t connector_id,
                                          const std::string& session_id, const DateTime& timestamp,
                                          const TriggerReasonEnum trigger_reason, const MeterValue& meter_start,
@@ -217,6 +260,17 @@ void ChargePoint::on_transaction_started(const std::int32_t evse_id, const std::
                                               charging_state);
 }
 
+/**
+ * ChargePoint::on_transaction_finished - on transaction finished
+ * @evse_id: 传入的 evse_id
+ * @timestamp: 传入的 timestamp
+ * @meter_stop: 传入的 meter_stop
+ * @reason: 传入的 reason
+ * @trigger_reason: 传入的 trigger_reason
+ * @id_token: 传入的 id_token
+ * @signed_meter_value: 传入的 signed_meter_value
+ * @charging_state: 传入的 charging_state
+ */
 void ChargePoint::on_transaction_finished(const std::int32_t evse_id, const DateTime& timestamp,
                                           const MeterValue& meter_stop, const ReasonEnum reason,
                                           const TriggerReasonEnum trigger_reason,
@@ -227,10 +281,21 @@ void ChargePoint::on_transaction_finished(const std::int32_t evse_id, const Date
                                                signed_meter_value, charging_state);
 }
 
+/**
+ * ChargePoint::on_session_finished - on session finished
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_session_finished(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::PlugOut);
 }
 
+/**
+ * ChargePoint::on_authorized - on authorized
+ * @evse_id: 传入的 evse_id
+ * @/: 见函数签名
+ * @id_token: 传入的 id_token
+ */
 void ChargePoint::on_authorized(const std::int32_t evse_id, const std::int32_t /*connector_id*/,
                                 const IdToken& id_token) {
     auto& evse = this->evse_manager->get_evse(evse_id);
@@ -253,10 +318,19 @@ void ChargePoint::on_authorized(const std::int32_t evse_id, const std::int32_t /
                                              std::nullopt, std::nullopt, this->is_offline(), std::nullopt);
 }
 
+/**
+ * ChargePoint::on_meter_value - on meter value
+ * @evse_id: 传入的 evse_id
+ * @meter_value: 传入的 meter_value
+ */
 void ChargePoint::on_meter_value(const std::int32_t evse_id, const MeterValue& meter_value) {
     this->meter_values->on_meter_value(evse_id, meter_value);
 }
 
+/**
+ * ChargePoint::configure_message_logging_format - configure message logging format
+ * @message_log_path: 传入的 message_log_path
+ */
 void ChargePoint::configure_message_logging_format(const std::string& message_log_path) {
     auto log_formats = this->device_model->get_value<std::string>(ControllerComponentVariables::LogMessagesFormat);
     const bool log_to_console = log_formats.find("console") != std::string::npos;
@@ -307,34 +381,72 @@ void ChargePoint::configure_message_logging_format(const std::string& message_lo
     }
 }
 
+/**
+ * ChargePoint::on_unavailable - on unavailable
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_unavailable(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::Unavailable);
 }
 
+/**
+ * ChargePoint::on_enabled - on enabled
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_enabled(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::UnavailableCleared);
 }
 
+/**
+ * ChargePoint::on_faulted - on faulted
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_faulted(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::Error);
 }
 
+/**
+ * ChargePoint::on_fault_cleared - on fault cleared
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_fault_cleared(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::ErrorCleared);
 }
 
+/**
+ * ChargePoint::on_reserved - on reserved
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_reserved(const std::int32_t evse_id, const std::int32_t connector_id) {
     if (this->reservation != nullptr) {
         this->reservation->on_reserved(evse_id, connector_id);
     }
 }
 
+/**
+ * ChargePoint::on_reservation_cleared - on reservation cleared
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void ChargePoint::on_reservation_cleared(const std::int32_t evse_id, const std::int32_t connector_id) {
     if (this->reservation != nullptr) {
         this->reservation->on_reservation_cleared(evse_id, connector_id);
     }
 }
 
+/**
+ * ChargePoint::on_charging_state_changed - on charging state changed
+ * @evse_id: 传入的 evse_id
+ * @charging_state: 传入的 charging_state
+ * @trigger_reason: 传入的 trigger_reason
+ *
+ * 返回 bool。
+ */
 bool ChargePoint::on_charging_state_changed(const std::uint32_t evse_id, const ChargingStateEnum charging_state,
                                             const TriggerReasonEnum trigger_reason) {
     if (evse_id > std::numeric_limits<std::int32_t>::max()) {
@@ -361,6 +473,12 @@ bool ChargePoint::on_charging_state_changed(const std::uint32_t evse_id, const C
     return true;
 }
 
+/**
+ * ChargePoint::get_evse_transaction_id - get evse transaction id
+ * @evse_id: 传入的 evse_id
+ *
+ * 返回 std::optional<std::string>。
+ */
 std::optional<std::string> ChargePoint::get_evse_transaction_id(std::int32_t evse_id) {
     const auto& tx = this->evse_manager->get_evse(evse_id).get_transaction();
 
@@ -371,15 +489,32 @@ std::optional<std::string> ChargePoint::get_evse_transaction_id(std::int32_t evs
     return std::nullopt;
 }
 
+/**
+ * ChargePoint::validate_token - validate token
+ * @id_token: 传入的 id_token
+ * @certificate: 传入的 certificate
+ * @ocsp_request_data: 传入的 ocsp_request_data
+ *
+ * 返回 AuthorizeResponse。
+ */
 AuthorizeResponse ChargePoint::validate_token(const IdToken id_token, const std::optional<CiString<10000>>& certificate,
                                               const std::optional<std::vector<OCSPRequestData>>& ocsp_request_data) {
     return this->authorization->validate_token(id_token, certificate, ocsp_request_data);
 }
 
+/**
+ * ChargePoint::on_event - on event
+ * @events: 传入的 events
+ */
 void ChargePoint::on_event(const std::vector<EventData>& events) {
     this->diagnostics->notify_event_req(events);
 }
 
+/**
+ * ChargePoint::on_log_status_notification - on log status notification
+ * @status: 传入的 status
+ * @requestId: 传入的 requestId
+ */
 void ChargePoint::on_log_status_notification(UploadLogStatusEnum status, std::int32_t requestId) {
     LogStatusNotificationRequest request;
     request.status = status;
@@ -393,6 +528,13 @@ void ChargePoint::on_log_status_notification(UploadLogStatusEnum status, std::in
     this->message_dispatcher->dispatch_call(call);
 }
 
+/**
+ * ChargePoint::on_security_event - on security event
+ * @event_type: 传入的 event_type
+ * @tech_info: 传入的 tech_info
+ * @critical: 传入的 critical
+ * @timestamp: 传入的 timestamp
+ */
 void ChargePoint::on_security_event(const CiString<50>& event_type, const std::optional<CiString<255>>& tech_info,
                                     const std::optional<bool>& critical, const std::optional<DateTime>& timestamp) {
     auto critical_security_event = true;
@@ -404,20 +546,38 @@ void ChargePoint::on_security_event(const CiString<50>& event_type, const std::o
     this->security->security_event_notification_req(event_type, tech_info, false, critical_security_event, timestamp);
 }
 
+/**
+ * ChargePoint::on_variable_changed - on variable changed
+ * @set_variable_data: 传入的 set_variable_data
+ */
 void ChargePoint::on_variable_changed(const SetVariableData& set_variable_data) {
     this->provisioning->on_variable_changed(set_variable_data);
 }
 
+/**
+ * ChargePoint::on_reservation_status - on reservation status
+ * @reservation_id: 传入的 reservation_id
+ * @status: 传入的 status
+ */
 void ChargePoint::on_reservation_status(const std::int32_t reservation_id, const ReservationUpdateStatusEnum status) {
     if (reservation != nullptr) {
         this->reservation->on_reservation_status(reservation_id, status);
     }
 }
 
+/**
+ * ChargePoint::on_ev_charging_needs - on ev charging needs
+ * @request: 传入的 request
+ */
 void ChargePoint::on_ev_charging_needs(const NotifyEVChargingNeedsRequest& request) {
     this->smart_charging->notify_ev_charging_needs_req(request);
 }
 
+/**
+ * ChargePoint::initialize - initialize
+ * @evse_connector_structure: 传入的 evse_connector_structure
+ * @message_log_path: 传入的 message_log_path
+ */
 void ChargePoint::initialize(const std::map<std::int32_t, std::int32_t>& evse_connector_structure,
                              const std::string& message_log_path) {
     this->device_model->check_integrity(evse_connector_structure);
@@ -642,6 +802,10 @@ void ChargePoint::initialize(const std::map<std::int32_t, std::int32_t>& evse_co
                                   VARIABLE_ATTRIBUTE_VALUE_SOURCE_INTERNAL, true);
 }
 
+/**
+ * ChargePoint::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void ChargePoint::handle_message(const EnhancedMessage<v2::MessageType>& message) {
     const auto& json_message = message.message;
     try {
@@ -884,6 +1048,10 @@ void ChargePoint::handle_message(const EnhancedMessage<v2::MessageType>& message
     }
 }
 
+/**
+ * ChargePoint::message_callback - message callback
+ * @message: 已经组好的 JSON 报文
+ */
 void ChargePoint::message_callback(const std::string& message) {
     this->logging->raw(message, LogType::CentralSystem);
     EnhancedMessage<v2::MessageType> enhanced_message;
@@ -1065,19 +1233,44 @@ void ChargePoint::message_callback(const std::string& message) {
     }
 }
 
+/**
+ * ChargePoint::is_offline - is offline
+ *
+ * 返回 bool。
+ */
 bool ChargePoint::is_offline() {
     return !this->connectivity_manager->is_websocket_connected();
 }
+/**
+ * ChargePoint::data_transfer_req - data transfer req
+ * @vendorId: 传入的 vendorId
+ * @messageId: 传入的 messageId
+ * @data: 传入的 data
+ *
+ * 返回 std::optional<DataTransferResponse>。
+ */
 std::optional<DataTransferResponse> ChargePoint::data_transfer_req(const CiString<255>& vendorId,
                                                                    const std::optional<CiString<50>>& messageId,
                                                                    const std::optional<json>& data) {
     return this->data_transfer->data_transfer_req(vendorId, messageId, data);
 }
 
+/**
+ * ChargePoint::data_transfer_req - data transfer req
+ * @request: 传入的 request
+ *
+ * 返回 std::optional<DataTransferResponse>。
+ */
 std::optional<DataTransferResponse> ChargePoint::data_transfer_req(const DataTransferRequest& request) {
     return this->data_transfer->data_transfer_req(request);
 }
 
+/**
+ * ChargePoint::websocket_connected_callback - websocket connected callback
+ * @configuration_slot: 传入的 configuration_slot
+ * @network_connection_profile: 传入的 network_connection_profile
+ * @ocpp_version: 传入的 ocpp_version
+ */
 void ChargePoint::websocket_connected_callback(const int configuration_slot,
                                                const NetworkConnectionProfile& network_connection_profile,
                                                const OcppProtocolVersion ocpp_version) {
@@ -1118,6 +1311,11 @@ void ChargePoint::websocket_connected_callback(const int configuration_slot,
     }
 }
 
+/**
+ * ChargePoint::websocket_disconnected_callback - websocket disconnected callback
+ * @configuration_slot: 传入的 configuration_slot
+ * @network_connection_profile: 传入的 network_connection_profile
+ */
 void ChargePoint::websocket_disconnected_callback(const int configuration_slot,
                                                   const NetworkConnectionProfile& network_connection_profile) {
     this->message_queue->pause();
@@ -1135,6 +1333,10 @@ void ChargePoint::websocket_disconnected_callback(const int configuration_slot,
     }
 }
 
+/**
+ * ChargePoint::websocket_connection_failed - websocket connection failed
+ * @reason: 传入的 reason
+ */
 void ChargePoint::websocket_connection_failed(ConnectionFailedReason reason) {
     switch (reason) {
     case ConnectionFailedReason::InvalidCSMSCertificate:
@@ -1153,6 +1355,12 @@ void ChargePoint::websocket_connection_failed(ConnectionFailedReason reason) {
         break;
     }
 }
+/**
+ * ChargePoint::update_dm_availability_state - update dm availability state
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ * @status: 传入的 status
+ */
 void ChargePoint::update_dm_availability_state(const std::int32_t evse_id, const std::int32_t connector_id,
                                                const ConnectorStatusEnum status) {
     RequiredComponentVariable charging_station = ControllerComponentVariables::ChargingStationAvailabilityState;
@@ -1179,6 +1387,9 @@ void ChargePoint::update_dm_availability_state(const std::int32_t evse_id, const
     }
 }
 
+/**
+ * ChargePoint::clear_invalid_charging_profiles - clear invalid charging profiles
+ */
 void ChargePoint::clear_invalid_charging_profiles() {
     try {
         auto evses = this->database_handler->get_all_charging_profiles_group_by_evse();
@@ -1212,6 +1423,12 @@ ChargePoint::set_variables(const std::vector<SetVariableData>& set_variable_data
     return this->provisioning->set_variables(set_variable_data_vector, source);
 }
 
+/**
+ * ChargePoint::get_composite_schedule - get composite schedule
+ * @request: 传入的 request
+ *
+ * 返回 GetCompositeScheduleResponse。
+ */
 GetCompositeScheduleResponse ChargePoint::get_composite_schedule(const GetCompositeScheduleRequest& request) {
     if (this->smart_charging == nullptr) {
         GetCompositeScheduleResponse response;
@@ -1229,6 +1446,13 @@ ChargePoint::get_composite_schedule(std::int32_t evse_id, std::chrono::seconds d
     return this->smart_charging->get_composite_schedule(evse_id, duration, unit);
 }
 
+/**
+ * ChargePoint::get_all_composite_schedules - get all composite schedules
+ * @duration_s: 传入的 duration_s
+ * @unit: 传入的 unit
+ *
+ * 返回 std::vector<CompositeSchedule>。
+ */
 std::vector<CompositeSchedule> ChargePoint::get_all_composite_schedules(const std::int32_t duration_s,
                                                                         const ChargingRateUnitEnum& unit) {
     if (this->smart_charging == nullptr) {
@@ -1242,14 +1466,30 @@ ChargePoint::get_network_connection_profile(const std::int32_t configuration_slo
     return this->connectivity_manager->get_network_connection_profile(configuration_slot);
 }
 
+/**
+ * ChargePoint::get_priority_from_configuration_slot - get priority from configuration slot
+ * @configuration_slot: 传入的 configuration_slot
+ *
+ * 返回 std::optional<int>。
+ */
 std::optional<int> ChargePoint::get_priority_from_configuration_slot(const int configuration_slot) const {
     return this->connectivity_manager->get_priority_from_configuration_slot(configuration_slot);
 }
 
+/**
+ * ChargePoint::get_network_connection_slots - get network connection slots
+ *
+ * 返回 const std::vector<int>&。
+ */
 const std::vector<int>& ChargePoint::get_network_connection_slots() const {
     return this->connectivity_manager->get_network_connection_slots();
 }
 
+/**
+ * ChargePoint::send_not_implemented_error - send not implemented error
+ * @unique_message_id: 传入的 unique_message_id
+ * @message_type_id: 传入的 message_type_id
+ */
 void ChargePoint::send_not_implemented_error(const MessageId unique_message_id, const MessageTypeId message_type_id) {
     if (message_type_id == MessageTypeId::CALL) {
         const auto call_error = CallError(unique_message_id, "NotImplemented", "", json({}));

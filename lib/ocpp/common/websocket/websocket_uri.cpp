@@ -13,6 +13,7 @@
 namespace ocpp {
 
 namespace {
+/* path split last segment */
 auto path_split_last_segment(std::string path) {
     struct result {
         std::string path_without_last_segment;
@@ -36,6 +37,14 @@ auto path_split_last_segment(std::string path) {
 }
 } // namespace
 
+/**
+ * Uri::parse_and_validate - parse and validate
+ * @uri: 传入的 uri
+ * @chargepoint_id: 传入的 chargepoint_id
+ * @security_profile: 传入的 security_profile
+ *
+ * 返回 Uri。
+ */
 Uri Uri::parse_and_validate(std::string uri, std::string chargepoint_id, int security_profile) {
     if (uri.empty()) {
         throw std::invalid_argument("`uri`-parameter must not be empty");

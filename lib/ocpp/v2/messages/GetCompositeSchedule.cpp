@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v2 {
 
+/**
+ * GetCompositeScheduleRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string GetCompositeScheduleRequest::get_type() const {
     return "GetCompositeSchedule";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const GetCompositeScheduleRequest& k) {
     // the required parts of the message
     j = json{
@@ -32,6 +42,11 @@ void to_json(json& j, const GetCompositeScheduleRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, GetCompositeScheduleRequest& k) {
     // the required parts of the message
     k.duration = j.at("duration");
@@ -54,10 +69,20 @@ std::ostream& operator<<(std::ostream& os, const GetCompositeScheduleRequest& k)
     return os;
 }
 
+/**
+ * GetCompositeScheduleResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string GetCompositeScheduleResponse::get_type() const {
     return "GetCompositeScheduleResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const GetCompositeScheduleResponse& k) {
     // the required parts of the message
     j = json{
@@ -75,6 +100,11 @@ void to_json(json& j, const GetCompositeScheduleResponse& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, GetCompositeScheduleResponse& k) {
     // the required parts of the message
     k.status = conversions::string_to_generic_status_enum(j.at("status"));

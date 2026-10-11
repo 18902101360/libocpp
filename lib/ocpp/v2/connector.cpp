@@ -11,6 +11,12 @@ namespace v2 {
 
 namespace conversions {
 
+/**
+ * connector_event_to_string - 把枚举或状态写成 OCPP 协议里的字符串。
+ * @e: 要转换的枚举值
+ *
+ * 返回 std::string。
+ */
 std::string connector_event_to_string(ConnectorEvent e) {
     switch (e) {
     case ConnectorEvent::PlugIn:
@@ -41,6 +47,10 @@ Connector::Connector(const std::int32_t evse_id, const std::int32_t connector_id
     evse_id(evse_id), connector_id(connector_id), component_state_manager(component_state_manager) {
 }
 
+/**
+ * Connector::submit_event - submit event
+ * @event: 传入的 event
+ */
 void Connector::submit_event(ConnectorEvent event) {
     const std::lock_guard lk(this->status_mutex);
     switch (event) {
@@ -71,11 +81,19 @@ void Connector::submit_event(ConnectorEvent event) {
     }
 }
 
+/**
+ * Connector::set_connector_operative_status - set connector operative status
+ * @new_status: 传入的 new_status
+ * @persist: 传入的 persist
+ */
 void Connector::set_connector_operative_status(OperationalStatusEnum new_status, bool persist) {
     this->component_state_manager->set_connector_individual_operational_status(this->evse_id, this->connector_id,
                                                                                new_status, persist);
 }
 
+/**
+ * Connector::restore_connector_operative_status - restore connector operative status
+ */
 void Connector::restore_connector_operative_status() {
     try {
         auto persisted_status = this->component_state_manager->get_connector_persisted_operational_status(
@@ -91,10 +109,20 @@ void Connector::restore_connector_operative_status() {
     }
 }
 
+/**
+ * Connector::get_effective_operational_status - get effective operational status
+ *
+ * 返回 OperationalStatusEnum。
+ */
 OperationalStatusEnum Connector::get_effective_operational_status() {
     return this->component_state_manager->get_connector_effective_operational_status(this->evse_id, this->connector_id);
 }
 
+/**
+ * Connector::get_effective_connector_status - get effective connector status
+ *
+ * 返回 ConnectorStatusEnum。
+ */
 ConnectorStatusEnum Connector::get_effective_connector_status() {
     return this->component_state_manager->get_connector_effective_status(this->evse_id, this->connector_id);
 }

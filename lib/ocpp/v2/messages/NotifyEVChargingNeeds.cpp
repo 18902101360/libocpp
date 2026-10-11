@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v2 {
 
+/**
+ * NotifyEVChargingNeedsRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string NotifyEVChargingNeedsRequest::get_type() const {
     return "NotifyEVChargingNeeds";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const NotifyEVChargingNeedsRequest& k) {
     // the required parts of the message
     j = json{
@@ -35,6 +45,11 @@ void to_json(json& j, const NotifyEVChargingNeedsRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, NotifyEVChargingNeedsRequest& k) {
     // the required parts of the message
     k.evseId = j.at("evseId");
@@ -60,10 +75,20 @@ std::ostream& operator<<(std::ostream& os, const NotifyEVChargingNeedsRequest& k
     return os;
 }
 
+/**
+ * NotifyEVChargingNeedsResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string NotifyEVChargingNeedsResponse::get_type() const {
     return "NotifyEVChargingNeedsResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const NotifyEVChargingNeedsResponse& k) {
     // the required parts of the message
     j = json{
@@ -78,6 +103,11 @@ void to_json(json& j, const NotifyEVChargingNeedsResponse& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, NotifyEVChargingNeedsResponse& k) {
     // the required parts of the message
     k.status = conversions::string_to_notify_evcharging_needs_status_enum(j.at("status"));

@@ -22,13 +22,29 @@ EvseManager::EvseManager(const std::map<std::int32_t, std::int32_t>& evse_connec
     }
 }
 
+/**
+ * EvseManager::begin - begin
+ *
+ * 返回 EvseManager::EvseIterator。
+ */
 EvseManager::EvseIterator EvseManager::begin() {
     return EvseIterator(std::make_unique<EvseIteratorImpl>(this->evses.begin()));
 }
+/**
+ * EvseManager::end - end
+ *
+ * 返回 EvseManager::EvseIterator。
+ */
 EvseManager::EvseIterator EvseManager::end() {
     return EvseIterator(std::make_unique<EvseIteratorImpl>(this->evses.end()));
 }
 
+/**
+ * EvseManager::get_evse - get evse
+ * @id: 传入的 id
+ *
+ * 返回 EvseInterface&。
+ */
 EvseInterface& EvseManager::get_evse(std::int32_t id) {
     if (id <= 0 or id > this->evses.size()) {
         throw EvseOutOfRangeException(id);
@@ -36,6 +52,12 @@ EvseInterface& EvseManager::get_evse(std::int32_t id) {
     return *this->evses.at(id - 1);
 }
 
+/**
+ * EvseManager::get_evse - get evse
+ * @id: 传入的 id
+ *
+ * 返回 const EvseInterface&。
+ */
 const EvseInterface& EvseManager::get_evse(const std::int32_t id) const {
     if (id <= 0 or id > this->evses.size()) {
         throw EvseOutOfRangeException(id);
@@ -43,6 +65,13 @@ const EvseInterface& EvseManager::get_evse(const std::int32_t id) const {
     return *this->evses.at(id - 1);
 }
 
+/**
+ * EvseManager::does_connector_exist - does connector exist
+ * @evse_id: 传入的 evse_id
+ * @connector_type: 传入的 connector_type
+ *
+ * 返回 bool。
+ */
 bool EvseManager::does_connector_exist(const std::int32_t evse_id, const CiString<20> connector_type) const {
     const EvseInterface* evse = nullptr;
     try {
@@ -55,10 +84,21 @@ bool EvseManager::does_connector_exist(const std::int32_t evse_id, const CiStrin
     return evse->does_connector_exist(connector_type);
 }
 
+/**
+ * EvseManager::does_evse_exist - does evse exist
+ * @id: 传入的 id
+ *
+ * 返回 bool。
+ */
 bool EvseManager::does_evse_exist(const std::int32_t id) const {
     return id >= 0 && static_cast<std::uint64_t>(id) <= this->evses.size();
 }
 
+/**
+ * EvseManager::are_all_connectors_effectively_inoperative - are all connectors effectively inoperative
+ *
+ * 返回 bool。
+ */
 bool EvseManager::are_all_connectors_effectively_inoperative() const {
     // Check that all connectors on all EVSEs are inoperative
     for (const auto& evse : this->evses) {
@@ -73,10 +113,21 @@ bool EvseManager::are_all_connectors_effectively_inoperative() const {
     return true;
 }
 
+/**
+ * EvseManager::get_number_of_evses - get number of evses
+ *
+ * 返回 size_t。
+ */
 size_t EvseManager::get_number_of_evses() const {
     return this->evses.size();
 }
 
+/**
+ * EvseManager::get_transaction_evseid - get transaction evseid
+ * @transaction_id: 传入的 transaction_id
+ *
+ * 返回 std::optional<std::int32_t>。
+ */
 std::optional<std::int32_t> EvseManager::get_transaction_evseid(const CiString<36>& transaction_id) const {
     for (const auto& evse : this->evses) {
         if (evse->has_active_transaction()) {
@@ -89,6 +140,12 @@ std::optional<std::int32_t> EvseManager::get_transaction_evseid(const CiString<3
     return std::nullopt;
 }
 
+/**
+ * EvseManager::any_transaction_active - any transaction active
+ * @evse: 传入的 evse
+ *
+ * 返回 bool。
+ */
 bool EvseManager::any_transaction_active(const std::optional<EVSE>& evse) const {
     if (!evse.has_value()) {
         for (const auto& evse : this->evses) {
@@ -101,6 +158,12 @@ bool EvseManager::any_transaction_active(const std::optional<EVSE>& evse) const 
     return this->get_evse(evse.value().id).has_active_transaction();
 }
 
+/**
+ * EvseManager::is_valid_evse - is valid evse
+ * @evse: 传入的 evse
+ *
+ * 返回 bool。
+ */
 bool EvseManager::is_valid_evse(const EVSE& evse) const {
     return this->does_evse_exist(evse.id) and
            (!evse.connectorId.has_value() or

@@ -13,14 +13,60 @@ namespace ocpp {
 /// \brief Case insensitive compare for a case insensitive (Ci)String
 bool iequals(const std::string& lhs, const std::string rhs);
 
+/**
+ * is_integer - is integer
+ * @value: 传入的 value
+ *
+ * 返回 bool。
+ */
 bool is_integer(const std::string& value);
+/**
+ * is_positive_integer - is positive integer
+ * @value: 传入的 value
+ *
+ * 返回 std::tuple<bool, int>。
+ */
 std::tuple<bool, int> is_positive_integer(const std::string& value);
+/**
+ * is_decimal_number - is decimal number
+ * @value: 传入的 value
+ *
+ * 返回 bool。
+ */
 bool is_decimal_number(const std::string& value);
 
+/**
+ * is_rfc3339_datetime - is rfc3339 datetime
+ * @value: 传入的 value
+ *
+ * 返回 bool。
+ */
 bool is_rfc3339_datetime(const std::string& value);
+/**
+ * is_boolean - is boolean
+ * @value: 传入的 value
+ *
+ * 返回 bool。
+ */
 bool is_boolean(const std::string& value);
 
+/**
+ * is_equal - is equal
+ * @value1: 传入的 value1
+ * @value2: 传入的 value2
+ * @epsilon: 传入的 epsilon
+ *
+ * 返回 bool。
+ */
 bool is_equal(const float& value1, const float& value2, const double& epsilon = std::numeric_limits<double>::epsilon());
+/**
+ * is_equal - is equal
+ * @value1: 传入的 value1
+ * @value2: 传入的 value2
+ * @epsilon: 传入的 epsilon
+ *
+ * 返回 bool。
+ */
 bool is_equal(const double& value1, const double& value2,
               const double& epsilon = std::numeric_limits<double>::epsilon());
 
@@ -48,6 +94,12 @@ template <typename T, typename U> T constexpr clamp_to(U len) {
     return (len <= std::numeric_limits<T>::max()) ? static_cast<T>(len) : std::numeric_limits<T>::max();
 }
 
+/**
+ * convert_to_positive_size_t - convert to positive size t
+ * @value: 传入的 value
+ *
+ * 返回 std::size_t。
+ */
 std::size_t convert_to_positive_size_t(float value);
 } // namespace ocpp
 

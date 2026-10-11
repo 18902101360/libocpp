@@ -13,10 +13,20 @@ using json = nlohmann::json;
 namespace ocpp {
 namespace v21 {
 
+/**
+ * NotifyAllowedEnergyTransferRequest::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string NotifyAllowedEnergyTransferRequest::get_type() const {
     return "NotifyAllowedEnergyTransfer";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const NotifyAllowedEnergyTransferRequest& k) {
     // the required parts of the message
     j = json{
@@ -32,6 +42,11 @@ void to_json(json& j, const NotifyAllowedEnergyTransferRequest& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, NotifyAllowedEnergyTransferRequest& k) {
     // the required parts of the message
     k.transactionId = j.at("transactionId");
@@ -53,10 +68,20 @@ std::ostream& operator<<(std::ostream& os, const NotifyAllowedEnergyTransferRequ
     return os;
 }
 
+/**
+ * NotifyAllowedEnergyTransferResponse::get_type - 返回这条 OCPP 报文的 action 名，分发器靠它识别报文类型。
+ *
+ * 返回 std::string。
+ */
 std::string NotifyAllowedEnergyTransferResponse::get_type() const {
     return "NotifyAllowedEnergyTransferResponse";
 }
 
+/**
+ * to_json - 把 C++ 对象写成 JSON。必填字段总是写出，可选字段只在有值时写出。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void to_json(json& j, const NotifyAllowedEnergyTransferResponse& k) {
     // the required parts of the message
     j = json{
@@ -71,6 +96,11 @@ void to_json(json& j, const NotifyAllowedEnergyTransferResponse& k) {
     }
 }
 
+/**
+ * from_json - 从 JSON 填回 C++ 对象。缺必填字段时 nlohmann::json 会抛异常。
+ * @j: JSON 对象。写出时作为目标，读入时作为来源
+ * @k: 对应的 OCPP 结构体
+ */
 void from_json(const json& j, NotifyAllowedEnergyTransferResponse& k) {
     // the required parts of the message
     k.status = ocpp::v2::conversions::string_to_notify_allowed_energy_transfer_status_enum(j.at("status"));

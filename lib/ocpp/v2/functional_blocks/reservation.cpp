@@ -23,6 +23,10 @@ Reservation::Reservation(const FunctionalBlockContext& functional_block_context,
     is_reservation_for_token_callback(is_reservation_for_token_callback) {
 }
 
+/**
+ * Reservation::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void Reservation::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -35,6 +39,11 @@ void Reservation::handle_message(const ocpp::EnhancedMessage<MessageType>& messa
     }
 }
 
+/**
+ * Reservation::on_reservation_status - on reservation status
+ * @reservation_id: 传入的 reservation_id
+ * @status: 传入的 status
+ */
 void Reservation::on_reservation_status(const std::int32_t reservation_id, const ReservationUpdateStatusEnum status) {
     ReservationStatusUpdateRequest req;
     req.reservationId = reservation_id;
@@ -53,14 +62,28 @@ Reservation::is_evse_reserved_for_other(const EvseInterface& evse, const IdToken
     return this->is_reservation_for_token_callback(evse.get_id(), id_token.idToken, groupIdToken);
 }
 
+/**
+ * Reservation::on_reserved - on reserved
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void Reservation::on_reserved(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->context.evse_manager.get_evse(evse_id).submit_event(connector_id, ConnectorEvent::Reserve);
 }
 
+/**
+ * Reservation::on_reservation_cleared - on reservation cleared
+ * @evse_id: 传入的 evse_id
+ * @connector_id: 传入的 connector_id
+ */
 void Reservation::on_reservation_cleared(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->context.evse_manager.get_evse(evse_id).submit_event(connector_id, ConnectorEvent::ReservationCleared);
 }
 
+/**
+ * Reservation::handle_reserve_now_request - handle reserve now request
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Reservation::handle_reserve_now_request(Call<ReserveNowRequest> call) {
     ReserveNowResponse response;
     response.status = ReserveNowStatusEnum::Rejected;
@@ -171,6 +194,10 @@ void Reservation::handle_reserve_now_request(Call<ReserveNowRequest> call) {
     }
 }
 
+/**
+ * Reservation::handle_cancel_reservation_callback - handle cancel reservation callback
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void Reservation::handle_cancel_reservation_callback(Call<CancelReservationRequest> call) {
 
     CancelReservationResponse response;
@@ -193,6 +220,11 @@ void Reservation::handle_cancel_reservation_callback(Call<CancelReservationReque
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * Reservation::send_reserve_now_rejected_response - send reserve now rejected response
+ * @unique_id: 传入的 unique_id
+ * @status_info: 传入的 status_info
+ */
 void Reservation::send_reserve_now_rejected_response(const MessageId& unique_id, const std::string& status_info) {
     ReserveNowResponse response;
     response.status = ReserveNowStatusEnum::Rejected;

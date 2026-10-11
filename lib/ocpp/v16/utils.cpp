@@ -8,10 +8,21 @@ namespace ocpp {
 namespace v16 {
 namespace utils {
 
+/**
+ * get_message_size - get message size
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ *
+ * 返回 size_t。
+ */
 size_t get_message_size(const ocpp::Call<StopTransactionRequest>& call) {
     return json(call).at(CALL_PAYLOAD).dump().length();
 }
 
+/**
+ * drop_transaction_data - drop transaction data
+ * @max_message_size: 传入的 max_message_size
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void drop_transaction_data(size_t max_message_size, ocpp::Call<StopTransactionRequest>& call) {
     auto& transaction_data = call.msg.transactionData.value();
     while (get_message_size(call) > max_message_size && transaction_data.size() > 2) {
@@ -21,6 +32,12 @@ void drop_transaction_data(size_t max_message_size, ocpp::Call<StopTransactionRe
     }
 }
 
+/**
+ * is_critical - is critical
+ * @security_event: 传入的 security_event
+ *
+ * 返回 bool。
+ */
 bool is_critical(const std::string& security_event) {
     if (security_event == ocpp::security_events::FIRMWARE_UPDATED) {
         return true;

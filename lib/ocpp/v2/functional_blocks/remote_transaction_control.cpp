@@ -81,6 +81,10 @@ RemoteTransactionControl::RemoteTransactionControl(
     upload_log_status_id(upload_log_status_id) {
 }
 
+/**
+ * RemoteTransactionControl::handle_message - handle message
+ * @message: 已经组好的 JSON 报文
+ */
 void RemoteTransactionControl::handle_message(const ocpp::EnhancedMessage<MessageType>& message) {
     const auto& json_message = message.message;
 
@@ -97,6 +101,10 @@ void RemoteTransactionControl::handle_message(const ocpp::EnhancedMessage<Messag
     }
 }
 
+/**
+ * RemoteTransactionControl::handle_unlock_connector - handle unlock connector
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void RemoteTransactionControl::handle_unlock_connector(Call<UnlockConnectorRequest> call) {
     const UnlockConnectorRequest& msg = call.msg;
     UnlockConnectorResponse unlock_response;
@@ -119,6 +127,10 @@ void RemoteTransactionControl::handle_unlock_connector(Call<UnlockConnectorReque
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * RemoteTransactionControl::handle_remote_start_transaction_request - handle remote start transaction request
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void RemoteTransactionControl::handle_remote_start_transaction_request(Call<RequestStartTransactionRequest> call) {
     auto msg = call.msg;
 
@@ -209,6 +221,10 @@ void RemoteTransactionControl::handle_remote_start_transaction_request(Call<Requ
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * RemoteTransactionControl::handle_remote_stop_transaction_request - handle remote stop transaction request
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void RemoteTransactionControl::handle_remote_stop_transaction_request(Call<RequestStopTransactionRequest> call) {
     const auto msg = call.msg;
 
@@ -227,6 +243,10 @@ void RemoteTransactionControl::handle_remote_stop_transaction_request(Call<Reque
     this->context.message_dispatcher.dispatch_call_result(call_result);
 }
 
+/**
+ * RemoteTransactionControl::handle_trigger_message - handle trigger message
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ */
 void RemoteTransactionControl::handle_trigger_message(Call<TriggerMessageRequest> call) {
     const TriggerMessageRequest& msg = call.msg;
     TriggerMessageResponse response;

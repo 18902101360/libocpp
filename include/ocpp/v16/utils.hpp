@@ -12,6 +12,12 @@ namespace ocpp {
 namespace v16 {
 namespace utils {
 
+/**
+ * get_message_size - get message size
+ * @call: OCPP CALL 帧，JSON 数组 [2, uniqueId, action, payload]
+ *
+ * 返回 size_t。
+ */
 size_t get_message_size(const ocpp::Call<StopTransactionRequest>& call);
 
 /// \brief Drops every second entry from transactionData as long as the message size of the \p call is greater than the

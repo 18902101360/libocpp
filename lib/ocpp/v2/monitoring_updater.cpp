@@ -13,6 +13,7 @@ namespace ocpp::v2 {
 
 namespace {
 template <DataEnum T>
+/* triggers monitor */
 bool triggers_monitor(const VariableMonitoringMeta& monitor_meta, const std::string& value_old,
                       const std::string& value_new) {
     if constexpr (T == DataEnum::boolean) {
@@ -44,6 +45,7 @@ bool triggers_monitor(const VariableMonitoringMeta& monitor_meta, const std::str
     return false;
 }
 
+/* is monitor active */
 bool is_monitor_active(MonitoringBaseEnum active_monitoring_base, const VariableMonitoringMeta& monitor_meta) {
     // Skip monitors that are not active
     if (active_monitoring_base != MonitoringBaseEnum::All) {
@@ -65,6 +67,7 @@ bool is_monitor_active(MonitoringBaseEnum active_monitoring_base, const Variable
     return true;
 }
 
+/* get next clock aligned point */
 std::chrono::time_point<std::chrono::system_clock> get_next_clock_aligned_point(float monitor_interval) {
     auto monitor_seconds =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<float>(monitor_interval));
@@ -96,6 +99,7 @@ std::chrono::time_point<std::chrono::system_clock> get_next_clock_aligned_point(
     return aligned_timepoint;
 }
 
+/* create notify event */
 EventData create_notify_event(std::int32_t unique_id, const std::string& reported_value, const Component& component,
                               const Variable& variable, const VariableMonitoringMeta& monitor_meta) {
     EventData notify_event;
@@ -152,6 +156,9 @@ MonitoringUpdater::~MonitoringUpdater() {
     }
 }
 
+/**
+ * MonitoringUpdater::start_monitoring - start monitoring
+ */
 void MonitoringUpdater::start_monitoring() {
     // Bind function to this instance
     auto fn = [this](const std::unordered_map<std::int64_t, VariableMonitoringMeta>& monitors,
@@ -184,14 +191,29 @@ void MonitoringUpdater::start_monitoring() {
     }
 }
 
+/**
+ * MonitoringUpdater::stop_monitoring - stop monitoring
+ */
 void MonitoringUpdater::stop_monitoring() {
     monitors_timer.stop();
 }
 
+/**
+ * MonitoringUpdater::process_triggered_monitors - process triggered monitors
+ */
 void MonitoringUpdater::process_triggered_monitors() {
     this->process_monitors_internal(false, true);
 }
 
+/**
+ * MonitoringUpdater::on_monitor_updated - on monitor updated
+ * @updated_monitor: 传入的 updated_monitor
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ * @characteristics: 传入的 characteristics
+ * @attribute: 传入的 attribute
+ * @current_value: 传入的 current_value
+ */
 void MonitoringUpdater::on_monitor_updated(const VariableMonitoringMeta& updated_monitor, const Component& component,
                                            const Variable& variable, const VariableCharacteristics& characteristics,
                                            const VariableAttribute& attribute, const std::string& current_value) {
@@ -217,6 +239,16 @@ void MonitoringUpdater::on_monitor_updated(const VariableMonitoringMeta& updated
     }
 }
 
+/**
+ * MonitoringUpdater::evaluate_monitor - evaluate monitor
+ * @monitor_meta: 传入的 monitor_meta
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ * @characteristics: 传入的 characteristics
+ * @attribute: 传入的 attribute
+ * @value_previous: 传入的 value_previous
+ * @value_current: 传入的 value_current
+ */
 void MonitoringUpdater::evaluate_monitor(const VariableMonitoringMeta& monitor_meta, const Component& component,
                                          const Variable& variable, const VariableCharacteristics& characteristics,
                                          const VariableAttribute& attribute, const std::string& value_previous,
@@ -352,6 +384,16 @@ void MonitoringUpdater::evaluate_monitor(const VariableMonitoringMeta& monitor_m
     }
 }
 
+/**
+ * MonitoringUpdater::on_variable_changed - on variable changed
+ * @monitors: 传入的 monitors
+ * @component: 传入的 component
+ * @variable: 传入的 variable
+ * @characteristics: 传入的 characteristics
+ * @attribute: 传入的 attribute
+ * @value_previous: 传入的 value_previous
+ * @value_current: 传入的 value_current
+ */
 void MonitoringUpdater::on_variable_changed(const std::unordered_map<std::int64_t, VariableMonitoringMeta>& monitors,
                                             const Component& component, const Variable& variable,
                                             const VariableCharacteristics& characteristics,
@@ -372,6 +414,9 @@ void MonitoringUpdater::on_variable_changed(const std::unordered_map<std::int64_
     }
 }
 
+/**
+ * MonitoringUpdater::update_periodic_monitors_internal - update periodic monitors internal
+ */
 void MonitoringUpdater::update_periodic_monitors_internal() {
     // Update the list of periodic monitors
     auto periodic_monitors = this->device_model.get_periodic_monitors();
@@ -449,6 +494,10 @@ void MonitoringUpdater::update_periodic_monitors_internal() {
     }
 }
 
+/**
+ * MonitoringUpdater::process_monitor_meta_internal - process monitor meta internal
+ * @updater_meta_data: 传入的 updater_meta_data
+ */
 void MonitoringUpdater::process_monitor_meta_internal(UpdaterMonitorMeta& updater_meta_data) {
     const auto& monitor_meta = updater_meta_data.monitor_meta;
     const auto& monitor = monitor_meta.monitor;
@@ -579,6 +628,11 @@ bool should_remove_monitor_meta_internal(const UpdaterMonitorMeta& updater_meta_
 }
 } // namespace
 
+/**
+ * MonitoringUpdater::process_monitors_internal - process monitors internal
+ * @allow_periodics: 传入的 allow_periodics
+ * @allow_trigger: 传入的 allow_trigger
+ */
 void MonitoringUpdater::process_monitors_internal(bool allow_periodics, bool allow_trigger) {
     if (!is_monitoring_enabled()) {
         return;
@@ -682,11 +736,23 @@ void MonitoringUpdater::process_monitors_internal(bool allow_periodics, bool all
     }
 }
 
+/**
+ * MonitoringUpdater::is_monitoring_enabled - is monitoring enabled
+ *
+ * 返回 bool。
+ */
 bool MonitoringUpdater::is_monitoring_enabled() {
     return this->device_model.get_optional_value<bool>(ControllerComponentVariables::MonitoringCtrlrEnabled)
         .value_or(false);
 }
 
+/**
+ * MonitoringUpdater::get_monitoring_info - get monitoring info
+ * @out_is_offline: 传入的 out_is_offline
+ * @out_offline_severity: 传入的 out_offline_severity
+ * @out_active_monitoring_level: 传入的 out_active_monitoring_level
+ * @out_active_monitoring_base: 传入的 out_active_monitoring_base
+ */
 void MonitoringUpdater::get_monitoring_info(bool& out_is_offline, int& out_offline_severity,
                                             int& out_active_monitoring_level,
                                             MonitoringBaseEnum& out_active_monitoring_base) {
